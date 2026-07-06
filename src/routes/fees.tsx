@@ -1,8 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useStore, semesterSummary, studentTotals, inr } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,7 +21,7 @@ import { StudentAutosuggest } from "@/components/student-autosuggest";
 export const Route = createFileRoute("/fees")({
   head: () => ({
     meta: [
-      { title: "Fees — Northfield CMS" },
+      { title: "Fees — Imperial CMS" },
       { name: "description", content: "Semester-wise fee ledger, collections, and pending balances." },
     ],
   }),
@@ -25,12 +29,78 @@ export const Route = createFileRoute("/fees")({
 });
 
 function FeesPage() {
-  const students = useStore((s) => s.students);
-  const programs = useStore((s) => s.programs);
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
-  const canEditPayments = useStore((s) => s.can("payments", "edit"));
+  const { user } = useAuth();
+  
+  const { data: canEditPayments } = useQuery({
+    queryKey: ['canEditPayments', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.from('user_roles').select('role, permissions').eq('id', user.id).single();
+      if (error || !data) return false;
+      if (data.role === 'admin') return true;
+      return !!data.permissions?.payments?.edit;
+    },
+    enabled: !!user,
+  });
+
+  const { data: programs = [], isLoading: loadingPrograms } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*').order('created_at', { ascending: true });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+  
+  // Fetch ledger data
+  const { data: charges = [], isLoading: loadingCharges } = useQuery({
+    queryKey: ['fee_charges'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_charges').select('*');
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    }
+  });
+  
+  const { data: adjustments = [], isLoading: loadingAdjustments } = useQuery({
+    queryKey: ['fee_adjustments'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_adjustments').select('*');
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    }
+  });
+  
+  const { data: payments = [], isLoading: loadingPayments } = useQuery({
+    queryKey: ['fee_payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_payments').select('*');
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        amount: d.amount, method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, voidReason: d.void_reason
+      }));
+    }
+  });
+
+  const isLoading = loadingPrograms || loadingStudents || loadingCharges || loadingAdjustments || loadingPayments;
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -49,23 +119,26 @@ function FeesPage() {
 
   const rows = useMemo(() => {
     const items: {
-      st: (typeof students)[number];
+      st: any;
       semester: number;
       sum: ReturnType<typeof semesterSummary>;
     }[] = [];
-    students.forEach((st) => {
+    
+    if (!students.length) return items;
+    
+    students.forEach((st: any) => {
       if (pickStudentId && st.id !== pickStudentId) return;
-      if (program !== "all" && st.programId !== program) return;
+      if (program !== "all" && st.program_id !== program) return;
       if (debouncedQ) {
         const t = debouncedQ.toLowerCase();
         const hit =
-          st.name.toLowerCase().includes(t) ||
-          st.admissionNo.toLowerCase().includes(t);
+          (st.name || "").toLowerCase().includes(t) ||
+          (st.admission_no || "").toLowerCase().includes(t);
         if (!hit) return;
       }
-      const semesters = sem === "all" ? Array.from({ length: st.currentSemester }, (_, i) => i + 1) : [Number(sem)];
+      const semesters = sem === "all" ? Array.from({ length: st.current_semester }, (_, i) => i + 1) : [Number(sem)];
       semesters.forEach((s) => {
-        if (s > st.currentSemester) return;
+        if (s > st.current_semester) return;
         const sum = semesterSummary(st.id, s, { charges, adjustments, payments });
         if (status === "pending" && sum.balance <= 0) return;
         if (status === "cleared" && sum.balance > 0) return;
@@ -78,15 +151,22 @@ function FeesPage() {
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-
   const totals = useMemo(() => {
     let paid = 0, balance = 0, billed = 0;
-    students.forEach((st) => {
-      const t = studentTotals(st.id, st.currentSemester, { charges, adjustments, payments });
+    students.forEach((st: any) => {
+      const t = studentTotals(st.id, st.current_semester, { charges, adjustments, payments });
       billed += t.netPayable; paid += t.totalPaid; balance += t.balance;
     });
     return { billed, paid, balance };
   }, [students, charges, adjustments, payments]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -109,7 +189,6 @@ function FeesPage() {
         <SummaryTile label="Pending" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
       </div>
 
-
       <Card>
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="relative sm:col-span-2">
@@ -121,7 +200,7 @@ function FeesPage() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All programs</SelectItem>
-              {programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              {programs.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <div className="grid grid-cols-2 gap-2">
@@ -170,7 +249,7 @@ function FeesPage() {
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{st.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {programs.find((p) => p.id === st.programId)?.name} · Roll {st.rolls[semester] || "—"}
+                        {programs.find((p: any) => p.id === st.program_id)?.name} · Roll {(st.rolls && st.rolls[semester]) || "—"}
                       </p>
                     </td>
                     <td className="px-4 py-3">Sem {semester}</td>

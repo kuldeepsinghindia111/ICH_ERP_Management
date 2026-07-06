@@ -65,15 +65,15 @@ export type CollegePaymentInfo = {
 };
 
 export const COLLEGE_PAYMENT_INFO: CollegePaymentInfo = {
-  collegeName: "Northfield College",
-  accountName: "Principal, Northfield College",
+  collegeName: "Imperial College Hisar",
+  accountName: "Principal, Imperial College Hisar",
   accountNumber: "50100 2345 67890",
   ifsc: "HDFC0001234",
-  bankName: "HDFC Bank — Northfield Branch",
-  branch: "Northfield, MG Road",
-  upiId: "northfield.principal@hdfcbank",
-  upiName: "Northfield College",
-  supportEmail: "accounts@northfield.edu",
+  bankName: "HDFC Bank — Hisar Branch",
+  branch: "Hisar, Haryana, India",
+  upiId: "imperial.principal@hdfcbank",
+  upiName: "Imperial College Hisar",
+  supportEmail: "accounts@imperialcollegehisar.edu",
   supportPhone: "+91 98100 00000",
 };
 

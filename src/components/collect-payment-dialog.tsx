@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Download, Loader2, Plus, RefreshCcw, Wallet, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { supabase } from "@/lib/supabase";
 import {
   useStore, semesterSummary, inr, nextReceiptNo,
   validatePaymentFields, referenceHint,
@@ -18,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/hooks/use-auth";
 
 type Method = "cash" | "upi" | "card" | "bank" | "cheque";
 const METHOD_LABEL: Record<Method, string> = {
@@ -45,18 +48,85 @@ export function CollectPaymentDialog({
   trigger?: React.ReactNode;
   variant?: "primary" | "outline" | "sm";
 }) {
-  const student = useStore((s) => s.students.find((x) => x.id === studentId));
-  const programs = useStore((s) => s.programs);
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
-  const addPayment = useStore((s) => s.addPayment);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const { data: canEditPayments } = useQuery({
+    queryKey: ['canEditPayments', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.from('user_roles').select('role, permissions').eq('id', user.id).single();
+      if (error || !data) return false;
+      if (data.role === 'admin') return true;
+      return !!data.permissions?.payments?.edit;
+    },
+    enabled: !!user,
+  });
+
+  const { data: student } = useQuery({
+    queryKey: ['student', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*').eq('id', studentId).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentId,
+  });
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: charges = [] } = useQuery({
+    queryKey: ['fee_charges', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_charges').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    },
+    enabled: !!studentId,
+  });
+  
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['fee_adjustments', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_adjustments').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    },
+    enabled: !!studentId,
+  });
+  
+  const { data: payments = [] } = useQuery({
+    queryKey: ['fee_payments'], // Fetch all for nextReceiptNo to work correctly across the system
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_payments').select('*');
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        amount: d.amount, method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, voidReason: d.void_reason
+      }));
+    }
+  });
+
   const paymentInfo = useStore((s) => s.paymentInfo);
   const receiptFormat = useStore((s) => s.receiptFormat);
-  const can = useStore((s) => s.can);
 
   const [open, setOpen] = useState(false);
-  const [sem, setSem] = useState(String(semester ?? student?.currentSemester ?? 1));
+  const [sem, setSem] = useState(String(semester ?? student?.current_semester ?? 1));
   const [method, setMethod] = useState<Method>("cash");
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
@@ -66,8 +136,8 @@ export function CollectPaymentDialog({
   const [preview, setPreview] = useState<Preview>(null);
 
   const semList = useMemo(
-    () => Array.from({ length: student?.currentSemester ?? 1 }, (_, i) => i + 1),
-    [student?.currentSemester],
+    () => Array.from({ length: student?.current_semester ?? 1 }, (_, i) => i + 1),
+    [student?.current_semester],
   );
 
   const sum = useMemo(
@@ -86,7 +156,7 @@ export function CollectPaymentDialog({
     if (open && (method === "cash" || !reference)) {
       setReference(nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat));
     }
-  }, [open, method, paidAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, method, paidAt, payments]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Revoke blob url when preview replaced / dialog closed.
   const previewUrl = preview?.status === "ready" ? preview.url : undefined;
@@ -123,8 +193,39 @@ export function CollectPaymentDialog({
     [amount, method, reference, paidAt, payments],
   );
 
+  const savePaymentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from('fee_payments').insert([{
+        student_id: data.studentId,
+        semester: data.semester,
+        amount: data.amount,
+        method: data.method,
+        reference: data.reference,
+        note: data.note,
+        paid_at: data.paidAt,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Payment recorded successfully");
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      // Generate receipt
+      const amt = Number(amount);
+      const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
+      const program = programs.find((p: any) => p.id === student.program_id);
+      generatePreview({
+        college: paymentInfo,
+        payment: { amount: amt, method, reference: ref, paidAt: new Date(paidAt).toISOString() },
+        student: { name: student.name, admissionNo: student.admission_no, rollNo: (student.rolls && student.rolls[Number(sem)]) || "" },
+        program: program ? { name: program.name, code: program.code } : undefined,
+        semester: Number(sem),
+      });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   if (!student) return null;
-  if (!can("payments", "edit")) return null;
+  if (!canEditPayments) return null;
 
   const resetForm = () => {
     setReference(""); setNote(""); setAmount(""); setTouched({});
@@ -144,216 +245,163 @@ export function CollectPaymentDialog({
     const amt = Number(amount);
     const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
     const iso = new Date(paidAt).toISOString();
-    const res = addPayment({
+    
+    savePaymentMutation.mutate({
       studentId: student.id, semester: Number(sem), amount: amt,
       method, reference: ref, note: note || undefined, paidAt: iso,
     });
-    if (!res.ok) return toast.error(res.error);
-    toast.success(`Received ${inr(amt)} for ${student.name}`);
-
-    const program = programs.find((p) => p.id === student.programId);
-    const data: ReceiptData = {
-      college: paymentInfo,
-      payment: { amount: amt, method, reference: res.reference, note: note || undefined, paidAt: iso },
-      student: { name: student.name, admissionNo: student.admissionNo, rollNo: student.rolls[Number(sem)] },
-      program: program ? { name: program.name, code: program.code } : undefined,
-      semester: Number(sem),
-    };
-    await generatePreview(data);
   };
-
-  const downloadCurrent = () => {
-    if (preview?.status !== "ready") return;
-    const a = document.createElement("a");
-    a.href = preview.url;
-    a.download = preview.filename;
-    a.click();
-  };
-
-  const recordAnother = () => {
-    setPreview(null);
-    resetForm();
-  };
-
-  const defaultTrigger =
-    variant === "sm" ? (
-      <Button size="sm"><Wallet className="mr-1 h-3.5 w-3.5" /> Collect</Button>
-    ) : variant === "outline" ? (
-      <Button variant="outline" size="sm"><Plus className="mr-1 h-3.5 w-3.5" /> Record payment</Button>
-    ) : (
-      <Button><Wallet className="mr-1 h-4 w-4" /> Collect fees</Button>
-    );
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) closeAll(); else setOpen(true); }}>
-      <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>
-      <DialogContent className={preview ? "max-w-3xl" : "max-w-lg"}>
-        <DialogHeader>
-          <DialogTitle className="font-display">
-            {preview ? "Payment saved · receipt preview" : "Collect fees"}
-          </DialogTitle>
-          <DialogDescription>
-            {student.name} · {student.admissionNo}
-            {preview && <> · Receipt <span className="font-mono">{preview.data.payment.reference}</span></>}
-          </DialogDescription>
-        </DialogHeader>
-
-        {preview ? (
-          <div className="space-y-3">
-            <div className="rounded-md border border-border bg-muted/40 p-3 text-xs flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                Preview of the printable receipt
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger ? trigger : (
+          <Button size={variant === "sm" ? "sm" : "default"} variant={variant === "outline" ? "outline" : "default"} className={variant === "outline" ? "bg-white" : ""}>
+            <Wallet className={`${variant === "sm" ? "mr-1 h-3.5 w-3.5" : "mr-2 h-4 w-4"}`} />
+            Collect
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="max-w-md sm:max-w-lg overflow-y-auto max-h-[90vh]">
+        {!preview ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display">Collect Payment</DialogTitle>
+              <DialogDescription>
+                Record a fee payment for <strong>{student.name}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Semester</Label>
+                  <Select value={sem} onValueChange={setSem}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {semList.map((n) => (
+                        <SelectItem key={n} value={String(n)}>Sem {n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input type="date" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} max={new Date().toISOString().slice(0, 10)} />
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-muted-foreground">Amount </span>
-                <span className="font-semibold text-success">{inr(preview.data.payment.amount)}</span>
+              <div>
+                <Label>Payment Method</Label>
+                <Select value={method} onValueChange={(v) => { setMethod(v as Method); setTouched({ ...touched, reference: false }); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(METHOD_LABEL) as Method[]).map((k) => (
+                      <SelectItem key={k} value={k}>{METHOD_LABEL[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <Label className={touched.amount && errors.amount ? "text-destructive" : ""}>Amount paid</Label>
+                    {sum && sum.balance > 0 && (
+                      <span className="text-[10px] uppercase text-muted-foreground">Due: {inr(sum.balance)}</span>
+                    )}
+                  </div>
+                  <Input
+                    type="number" min={0} step="0.01"
+                    className={touched.amount && errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}
+                    value={amount}
+                    onChange={(e) => { setAmount(e.target.value); setTouched({ ...touched, amount: true }); }}
+                    placeholder="0.00"
+                  />
+                  {touched.amount && errors.amount && (
+                    <p className="mt-1 text-[10px] text-destructive">{errors.amount}</p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <Label className={touched.reference && errors.reference ? "text-destructive" : ""}>Reference / Receipt No.</Label>
+                    <button type="button" onClick={regenReceipt} className="text-muted-foreground hover:text-primary">
+                      <RefreshCcw className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <Input
+                    className={touched.reference && errors.reference ? "border-destructive focus-visible:ring-destructive" : ""}
+                    value={reference}
+                    onChange={(e) => { setReference(e.target.value); setTouched({ ...touched, reference: true }); }}
+                    placeholder={referenceHint(method)}
+                  />
+                  {touched.reference && errors.reference ? (
+                    <p className="mt-1 text-[10px] text-destructive">{errors.reference}</p>
+                  ) : (
+                    <p className="mt-1 text-[10px] text-muted-foreground">{referenceHint(method)}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label>Notes (Optional)</Label>
+                <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any additional details..." className="h-16 resize-none" />
               </div>
             </div>
-            {preview.status === "ready" ? (
-              <iframe
-                title="Receipt preview"
-                src={preview.url}
-                className="h-[520px] w-full rounded-md border border-border bg-white"
-              />
-            ) : preview.status === "loading" ? (
-              <div className="flex h-[520px] w-full flex-col items-center justify-center gap-3 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p>Generating receipt PDF…</p>
-                <p className="text-[11px]">This usually takes a moment.</p>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={submit} disabled={savePaymentMutation.isPending}>
+                {savePaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirm Payment
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-4 py-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/20 text-success">
+              <CheckCircleIcon className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-center font-display text-xl">Payment successful!</DialogTitle>
+            <p className="text-center text-sm text-muted-foreground">
+              A receipt has been generated for {student.name}.
+            </p>
+            {preview.status === "loading" ? (
+              <div className="mt-4 flex items-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating PDF...
+              </div>
+            ) : preview.status === "error" ? (
+              <div className="mt-4 flex items-center rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                <AlertTriangle className="mr-2 h-4 w-4" /> {preview.error}
               </div>
             ) : (
-              <div className="flex h-[520px] w-full flex-col items-center justify-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
-                <p className="font-medium text-foreground">Receipt preview failed to generate</p>
-                <p className="text-xs text-muted-foreground">{preview.error}</p>
-                <Button size="sm" variant="outline" onClick={() => generatePreview(preview.data)}>
-                  <RefreshCcw className="mr-1 h-3.5 w-3.5" /> Retry
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <Button asChild>
+                  <a href={preview.url} download={preview.filename}>
+                    <Download className="mr-2 h-4 w-4" /> Download PDF
+                  </a>
                 </Button>
-                <p className="text-[11px] text-muted-foreground">The payment has already been saved.</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label>Semester</Label>
-                <Select value={sem} onValueChange={setSem}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {semList.map((n) => (
-                      <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Payment date</Label>
-                <Input type="date" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
-              </div>
-            </div>
-
-            {sum && (
-              <div className="rounded-md border border-border bg-muted/50 p-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Net payable</span>
-                  <span className="font-medium">{inr(sum.netPayable)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Already paid</span>
-                  <span className="text-success">{inr(sum.totalPaid)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between border-t border-border pt-1">
-                  <span className="text-muted-foreground">Outstanding</span>
-                  <span className={sum.balance > 0 ? "font-semibold text-destructive" : "text-success"}>
-                    {inr(Math.max(sum.balance, 0))}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label>Amount received (INR)</Label>
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
-                  aria-invalid={!!(touched.amount && errors.amount)}
-                />
-                {touched.amount && errors.amount && (
-                  <p className="mt-1 text-xs text-destructive">{errors.amount}</p>
-                )}
-              </div>
-              <div>
-                <Label>Method</Label>
-                <Select value={method} onValueChange={(v) => { setMethod(v as Method); setTouched((t) => ({ ...t, reference: false })); }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(METHOD_LABEL) as Method[]).map((m) => (
-                      <SelectItem key={m} value={m}>{METHOD_LABEL[m]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <Label>Reference / receipt no.</Label>
-                <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={regenReceipt}>
-                  <RefreshCcw className="mr-1 h-3 w-3" /> Auto receipt no.
+                <Button variant="outline" asChild>
+                  <a href={preview.url} target="_blank" rel="noreferrer">
+                    <FileText className="mr-2 h-4 w-4" /> View receipt
+                  </a>
                 </Button>
               </div>
-              <Input
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, reference: true }))}
-                placeholder="Txn ID, cheque no., receipt no."
-                aria-invalid={!!(touched.reference && errors.reference)}
-              />
-              {touched.reference && errors.reference ? (
-                <p className="mt-1 text-xs text-destructive">{errors.reference}</p>
-              ) : (
-                <p className="mt-1 text-[11px] text-muted-foreground">{referenceHint(method)}</p>
-              )}
-            </div>
-            <div>
-              <Label>Note (optional)</Label>
-              <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-            </div>
+            )}
+            <Button variant="ghost" className="mt-2 text-xs" onClick={closeAll}>
+              Close
+            </Button>
           </div>
         )}
-
-        <DialogFooter className="gap-2 sm:justify-between">
-          {preview ? (
-            <>
-              <Button variant="ghost" onClick={recordAnother}>Record another</Button>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={downloadCurrent}
-                  disabled={preview.status !== "ready"}
-                >
-                  {preview.status === "loading" ? (
-                    <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Preparing…</>
-                  ) : (
-                    <><Download className="mr-1 h-4 w-4" /> Download PDF</>
-                  )}
-                </Button>
-                <Button onClick={closeAll}>Done</Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" onClick={closeAll}>Cancel</Button>
-              <Button onClick={submit}>Save & preview receipt</Button>
-            </>
-          )}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
   );
 }

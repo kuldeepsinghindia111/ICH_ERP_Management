@@ -3,9 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Building2, Copy, ShieldCheck, Search, CreditCard, Landmark,
   Smartphone, CheckCircle2, Download, Globe, Banknote, ArrowLeft,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { supabase } from "@/lib/supabase";
 import {
   useStore, semesterSummary, inr, nextReceiptNo,
   validatePaymentFields, referenceHint, type PaymentMethod,
@@ -26,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 export const Route = createFileRoute("/pay")({
   head: () => ({
     meta: [
-      { title: "Make Payment — Northfield College" },
+      { title: "Make Payment — Imperial College Hisar" },
       { name: "description", content: "Collect or make college fee payments online (UPI, card, netbanking) or offline (cash, cheque, DD)." },
     ],
   }),
@@ -37,18 +40,75 @@ type Mode = "online" | "offline";
 type Step = "choose" | "lookup" | "pay" | "done";
 
 function PayPage() {
-  const students = useStore((s) => s.students);
-  const programs = useStore((s) => s.programs);
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
-  const addPayment = useStore((s) => s.addPayment);
+  const queryClient = useQueryClient();
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const [q, setQ] = useState("");
+  const [studentId, setStudentId] = useState<string | null>(null);
+
+  // We fetch ledger data ONLY for the selected student to keep it fast, except for payments 
+  // where we fetch all to calculate the next receipt number globally.
+  const { data: charges = [] } = useQuery({
+    queryKey: ['fee_charges', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_charges').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    },
+    enabled: !!studentId,
+  });
+  
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['fee_adjustments', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_adjustments').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    },
+    enabled: !!studentId,
+  });
+  
+  const { data: payments = [] } = useQuery({
+    queryKey: ['fee_payments'], 
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_payments').select('*');
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        amount: d.amount, method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, voidReason: d.void_reason
+      }));
+    }
+  });
+
   const paymentInfo = useStore((s) => s.paymentInfo);
   const receiptFormat = useStore((s) => s.receiptFormat);
 
   const [mode, setMode] = useState<Mode>("online");
-  const [q, setQ] = useState("");
-  const [studentId, setStudentId] = useState<string | null>(null);
   const [semester, setSemester] = useState<string>("1");
   const [amount, setAmount] = useState("");
   const [payerName, setPayerName] = useState("");
@@ -62,17 +122,17 @@ function PayPage() {
 
   const method: PaymentMethod = mode === "online" ? onlineMethod : offlineMethod;
 
-  const student = useMemo(() => students.find((s) => s.id === studentId) ?? null, [students, studentId]);
-  const program = student ? programs.find((p) => p.id === student.programId) : null;
+  const student = useMemo(() => students.find((s: any) => s.id === studentId) ?? null, [students, studentId]);
+  const program = student ? programs.find((p: any) => p.id === student.program_id) : null;
 
   const matches = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return [];
     return students
-      .filter((s) =>
-        s.admissionNo.toLowerCase().includes(t) ||
-        s.name.toLowerCase().includes(t) ||
-        Object.values(s.rolls).some((r) => r.toLowerCase().includes(t)),
+      .filter((s: any) =>
+        (s.admission_no || "").toLowerCase().includes(t) ||
+        (s.name || "").toLowerCase().includes(t) ||
+        Object.values(s.rolls || {}).some((r: any) => String(r).toLowerCase().includes(t)),
       )
       .slice(0, 6);
   }, [q, students]);
@@ -83,14 +143,14 @@ function PayPage() {
   }, [student, semester, charges, adjustments, payments]);
 
   const pickStudent = (id: string) => {
-    const s = students.find((x) => x.id === id);
+    const s = students.find((x: any) => x.id === id);
     if (!s) return;
     setStudentId(id);
-    setSemester(String(s.currentSemester));
-    const bal = semesterSummary(id, s.currentSemester, { charges, adjustments, payments }).balance;
+    setSemester(String(s.current_semester));
+    const bal = semesterSummary(id, s.current_semester, { charges, adjustments, payments }).balance;
     setAmount(String(Math.max(bal, 0)));
     setPayerName(s.guardian || s.name);
-    setPayerPhone(s.guardianPhone || s.phone || "");
+    setPayerPhone(s.guardian_phone || s.phone || "");
     setReference("");
     setStep("pay");
   };
@@ -111,41 +171,64 @@ function PayPage() {
     [amount, method, reference, payments, paidAtISO],
   );
 
+  const savePaymentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from('fee_payments').insert([{
+        student_id: data.studentId,
+        semester: data.semester,
+        amount: data.amount,
+        method: data.method,
+        reference: data.reference,
+        note: data.note,
+        paid_at: data.paidAt,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: (data, variables) => {
+      toast.success("Payment successful!");
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      setReceipt({
+        ref: variables.reference,
+        amount: variables.amount, method: variables.method,
+        studentName: student.name, semester: variables.semester,
+        paidAt: variables.paidAt,
+      });
+      setStep("done");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const submitPayment = () => {
     if (!student) return;
     setTouched({ amount: true, reference: true, payer: true });
     if (!payerName.trim()) return toast.error("Payer name is required");
     const amt = Number(amount);
+    
     // For online, we auto-generate a reference; for offline the user provides one.
     const ref = mode === "online"
       ? nextReceiptNo(paidAtISO, payments, receiptFormat)
       : reference.trim();
+      
     if (mode === "offline" && (offlineErrors.amount || offlineErrors.reference)) {
       return toast.error(offlineErrors.amount ?? offlineErrors.reference ?? "Fix the highlighted fields");
     }
-    const res = addPayment({
+    
+    savePaymentMutation.mutate({
       studentId: student.id,
       semester: Number(semester),
       amount: amt,
       method,
-      reference: ref || undefined,
+      reference: ref,
       note: `${mode === "online" ? "Online" : "Offline"} (${method.toUpperCase()}) by ${payerName}${payerPhone ? ` · ${payerPhone}` : ""}${note ? ` — ${note}` : ""}`,
       paidAt: paidAtISO,
     });
-    if (!res.ok) return toast.error(res.error);
-    setReceipt({
-      ref: res.reference,
-      amount: amt, method,
-      studentName: student.name, semester: Number(semester),
-      paidAt: paidAtISO,
-    });
-    setStep("done");
   };
 
   const reset = () => {
     setStep("choose"); setStudentId(null); setQ("");
     setAmount(""); setNote(""); setReference(""); setReceipt(null);
   };
+  
   // Live PDF preview URL for the "done" step.
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -153,11 +236,11 @@ function PayPage() {
       setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
       return;
     }
-    const program = programs.find((p) => p.id === student.programId);
+    const program = programs.find((p: any) => p.id === student.program_id);
     const doc = generateReceiptPdf({
       college: paymentInfo,
       payment: { amount: receipt.amount, method: receipt.method, reference: receipt.ref, paidAt: receipt.paidAt },
-      student: { name: student.name, admissionNo: student.admissionNo, rollNo: student.rolls[receipt.semester] },
+      student: { name: student.name, admissionNo: student.admission_no, rollNo: (student.rolls && student.rolls[receipt.semester]) || "" },
       program: program ? { name: program.name, code: program.code } : undefined,
       semester: receipt.semester,
     });
@@ -234,10 +317,12 @@ function PayPage() {
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            {matches.length > 0 && (
+            {loadingStudents ? (
+               <div className="py-4 text-center text-sm text-muted-foreground">Loading...</div>
+            ) : matches.length > 0 && (
               <div className="divide-y divide-border rounded-md border border-border">
-                {matches.map((s) => {
-                  const p = programs.find((x) => x.id === s.programId);
+                {matches.map((s: any) => {
+                  const p = programs.find((x: any) => x.id === s.program_id);
                   return (
                     <button
                       key={s.id}
@@ -247,273 +332,233 @@ function PayPage() {
                       <div>
                         <p className="font-medium">{s.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {s.admissionNo} · {p?.name} · Sem {s.currentSemester}
+                          {s.admission_no} · {p?.name} · Sem {s.current_semester}
                         </p>
                       </div>
-                      <Button size="sm" variant="outline">Continue</Button>
+                      <span className="text-xs text-primary font-medium">Select &rarr;</span>
                     </button>
                   );
                 })}
               </div>
-            )}
-            {q && matches.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No student found. Please check the admission / roll number, or contact the office.
-              </p>
             )}
           </CardContent>
         </Card>
       )}
 
       {step === "pay" && student && sum && (
-        <div className="grid gap-6 lg:grid-cols-5">
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="font-display text-lg">
-                    {mode === "online" ? "Online payment" : "Offline payment"}
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    {student.name} · {student.admissionNo} · {program?.name}
-                  </p>
+        <div className="grid gap-6 md:grid-cols-5">
+          <div className="space-y-6 md:col-span-3">
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="font-display text-lg">Payment details</CardTitle>
+                  <Button variant="ghost" size="sm" onClick={reset}>
+                    <ArrowLeft className="mr-1 h-4 w-4" /> Switch student
+                  </Button>
                 </div>
-                <Badge variant="outline" className="gap-1">
-                  {mode === "online" ? <Globe className="h-3 w-3" /> : <Banknote className="h-3 w-3" />}
-                  {mode === "online" ? "Online" : "Offline"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Semester</Label>
-                  <Select
-                    value={semester}
-                    onValueChange={(v) => {
-                      setSemester(v);
-                      const s = semesterSummary(student.id, Number(v), { charges, adjustments, payments });
-                      setAmount(String(Math.max(s.balance, 0)));
-                    }}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: student.currentSemester }, (_, i) => i + 1).map((n) => (
-                        <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Amount to pay (INR)</Label>
-                  <Input
-                    type="number" min={1} value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
-                    aria-invalid={mode === "offline" && !!(touched.amount && offlineErrors.amount)}
-                  />
-                  {mode === "offline" && touched.amount && offlineErrors.amount && (
-                    <p className="mt-1 text-xs text-destructive">{offlineErrors.amount}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
-                <Row k="Net payable" v={inr(sum.netPayable)} />
-                <Row k="Already paid" v={inr(sum.totalPaid)} tone="success" />
-                <Row k="Outstanding" v={inr(Math.max(sum.balance, 0))} tone={sum.balance > 0 ? "danger" : "success"} bold />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Payer name</Label>
-                  <Input
-                    value={payerName}
-                    onChange={(e) => setPayerName(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, payer: true }))}
-                    aria-invalid={!!(touched.payer && !payerName.trim())}
-                  />
-                  {touched.payer && !payerName.trim() && (
-                    <p className="mt-1 text-xs text-destructive">Payer name is required</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Payer mobile</Label>
-                  <Input value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Note (optional)</Label>
-                  <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any message for the office" />
-                </div>
-              </div>
-
-
-              {mode === "online" ? (
-                <div>
-                  <Label>Choose an online method</Label>
-                  <Tabs value={onlineMethod} onValueChange={(v) => setOnlineMethod(v as typeof onlineMethod)} className="mt-2">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="upi"><Smartphone className="mr-1 h-4 w-4" /> UPI / QR</TabsTrigger>
-                      <TabsTrigger value="card"><CreditCard className="mr-1 h-4 w-4" /> Card</TabsTrigger>
-                      <TabsTrigger value="bank"><Landmark className="mr-1 h-4 w-4" /> Netbanking / NEFT</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="upi" className="pt-3">
-                      <p className="text-sm text-muted-foreground">
-                        Pay via any UPI app (GPay, PhonePe, Paytm, BHIM) to the college UPI ID below.
-                      </p>
-                    </TabsContent>
-                    <TabsContent value="card" className="pt-3">
-                      <p className="text-sm text-muted-foreground">
-                        Debit / Credit card payments are processed securely to the principal's account.
-                      </p>
-                    </TabsContent>
-                    <TabsContent value="bank" className="pt-3">
-                      <p className="text-sm text-muted-foreground">
-                        Transfer through IMPS / NEFT / RTGS using the bank details shown on the right.
-                      </p>
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              ) : (
-                <div className="space-y-3">
+              </CardHeader>
+              <CardContent className="grid gap-6 p-5">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label>Offline method</Label>
-                    <Select value={offlineMethod} onValueChange={(v) => setOfflineMethod(v as typeof offlineMethod)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Student</Label>
+                    <p className="mt-1 font-medium">{student.name}</p>
+                    <p className="text-sm text-muted-foreground">{student.admission_no}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Semester</Label>
+                    <Select value={semester} onValueChange={(v) => { setSemester(v); }}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="cheque">Cheque / DD</SelectItem>
-                        <SelectItem value="bank">Bank deposit slip</SelectItem>
+                        {Array.from({ length: student.current_semester }, (_, i) => i + 1).map(n => (
+                          <SelectItem key={n} value={String(n)}>Sem {n}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label>
-                      Reference / receipt no.
-                      {offlineMethod !== "cash" && <span className="ml-1 text-destructive">*</span>}
-                    </Label>
+                    <Label className={touched.amount && (!amount || Number(amount) <= 0) ? "text-destructive" : ""}>Paying Amount (₹)</Label>
                     <Input
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                      onBlur={() => setTouched((t) => ({ ...t, reference: true }))}
-                      placeholder={offlineMethod === "cheque" ? "Cheque / DD number" : offlineMethod === "bank" ? "Deposit slip / txn ID / UTR" : "Optional receipt no. (auto if blank)"}
-                      aria-invalid={!!(touched.reference && offlineErrors.reference)}
+                      className={`mt-1 font-mono text-lg ${touched.amount && (!amount || Number(amount) <= 0) ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      type="number"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => { setAmount(e.target.value); setTouched({ ...touched, amount: true }); }}
                     />
-                    {touched.reference && offlineErrors.reference ? (
-                      <p className="mt-1 text-xs text-destructive">{offlineErrors.reference}</p>
-                    ) : (
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        {referenceHint(method)} Duplicate references on the same date are blocked.
-                      </p>
-                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Current outstanding: <strong>{inr(sum.balance)}</strong>
+                    </p>
+                  </div>
+                  {mode === "offline" && (
+                    <div>
+                      <Label className={touched.reference && offlineErrors.reference ? "text-destructive" : ""}>Reference / Cheque No.</Label>
+                      <Input
+                        className={`mt-1 ${touched.reference && offlineErrors.reference ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                        placeholder={referenceHint(method)}
+                        value={reference}
+                        onChange={(e) => { setReference(e.target.value); setTouched({ ...touched, reference: true }); }}
+                      />
+                      {touched.reference && offlineErrors.reference ? (
+                        <p className="mt-1 text-xs text-destructive">{offlineErrors.reference}</p>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">Mandatory for cash, cheque or DD.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className={touched.payer && !payerName.trim() ? "text-destructive" : ""}>Payer Name</Label>
+                    <Input
+                      className={`mt-1 ${touched.payer && !payerName.trim() ? "border-destructive" : ""}`}
+                      placeholder="e.g. Ramesh Kumar"
+                      value={payerName}
+                      onChange={(e) => { setPayerName(e.target.value); setTouched({ ...touched, payer: true }); }}
+                    />
+                  </div>
+                  <div>
+                    <Label>Payer Phone (Optional)</Label>
+                    <Input
+                      className="mt-1"
+                      placeholder="e.g. 9876543210"
+                      value={payerPhone}
+                      onChange={(e) => setPayerPhone(e.target.value)}
+                    />
                   </div>
                 </div>
-              )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="ghost" onClick={() => { setStep("lookup"); setStudentId(null); }}>
-                  ← Change student
-                </Button>
-                <Button onClick={submitPayment} size="lg">
-                  {mode === "online" ? "Pay" : "Record"} {amount ? inr(Number(amount)) : ""}
-                </Button>
-              </div>
+                <div>
+                  <Label>Additional Note (Optional)</Label>
+                  <Textarea
+                    className="mt-1 h-16 resize-none"
+                    placeholder="E.g. Paid in cash at counter 2..."
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-              <p className="text-[11px] text-muted-foreground">
-                {mode === "online"
-                  ? "Demo portal · this records the transaction against the student's ledger. In production this button launches the selected payment gateway."
-                  : "Records an offline payment received at the office against the student's ledger."}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2 h-fit">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">Beneficiary details</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Payments credit directly to the Principal's college account.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <BankField label="Account name" value={paymentInfo.accountName} onCopy={copy} />
-              <BankField label="Account number" value={paymentInfo.accountNumber} onCopy={copy} mono />
-              <BankField label="IFSC" value={paymentInfo.ifsc} onCopy={copy} mono />
-              <BankField label="Bank" value={paymentInfo.bankName} onCopy={copy} />
-              <BankField label="Branch" value={paymentInfo.branch} onCopy={copy} />
-              <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
-                <p className="text-[11px] uppercase tracking-widest text-primary">UPI</p>
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm">{paymentInfo.upiId}</span>
-                  <Button size="sm" variant="outline" onClick={() => copy(paymentInfo.upiId, "UPI ID")}>
-                    <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+          <div className="md:col-span-2">
+            <Card className="sticky top-6">
+              <CardHeader className="bg-muted/50 pb-4">
+                <CardTitle className="font-display text-lg">Checkout</CardTitle>
+                <p className="text-xs text-muted-foreground">Amount: <strong className="text-foreground">{inr(Number(amount) || 0)}</strong></p>
+              </CardHeader>
+              <CardContent className="p-0">
+                {mode === "online" ? (
+                  <Tabs value={onlineMethod} onValueChange={(v) => setOnlineMethod(v as any)} className="w-full">
+                    <TabsList className="w-full rounded-none border-b border-border bg-transparent p-0">
+                      <TabsTrigger value="upi" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">UPI</TabsTrigger>
+                      <TabsTrigger value="card" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">Card</TabsTrigger>
+                      <TabsTrigger value="bank" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">Netbanking</TabsTrigger>
+                    </TabsList>
+                    <div className="p-5 text-center">
+                      {onlineMethod === "upi" && (
+                        <div className="space-y-4">
+                          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30">
+                            <Smartphone className="h-12 w-12 text-muted-foreground/50" />
+                            <span className="sr-only">QR Code Placeholder</span>
+                          </div>
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="font-mono text-sm">{paymentInfo.upiId}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copy(paymentInfo.upiId, "UPI ID")}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {onlineMethod === "card" && (
+                        <div className="space-y-4">
+                          <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                          <p className="text-sm text-muted-foreground">In a real app, a secure card input or payment gateway iframe (like Razorpay or Stripe) would appear here.</p>
+                        </div>
+                      )}
+                      {onlineMethod === "bank" && (
+                        <div className="space-y-4 text-left">
+                          <Landmark className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between border-b border-border pb-1">
+                              <span className="text-muted-foreground">Account</span>
+                              <span className="font-medium">{paymentInfo.accountNumber}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-border pb-1">
+                              <span className="text-muted-foreground">IFSC</span>
+                              <span className="font-medium">{paymentInfo.ifsc}</span>
+                            </div>
+                            <div className="flex justify-between pb-1">
+                              <span className="text-muted-foreground">Name</span>
+                              <span className="font-medium">{paymentInfo.accountName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Tabs>
+                ) : (
+                  <Tabs value={offlineMethod} onValueChange={(v) => setOfflineMethod(v as any)} className="w-full">
+                    <TabsList className="w-full rounded-none border-b border-border bg-transparent p-0">
+                      <TabsTrigger value="cash" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">Cash</TabsTrigger>
+                      <TabsTrigger value="cheque" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">Cheque/DD</TabsTrigger>
+                      <TabsTrigger value="bank" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">NEFT/RTGS</TabsTrigger>
+                    </TabsList>
+                    <div className="p-5 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        Ensure you have physically collected the {offlineMethod} and provided a valid reference number before confirming.
+                      </p>
+                    </div>
+                  </Tabs>
+                )}
+                
+                <div className="border-t border-border p-5">
+                  <Button className="w-full" size="lg" onClick={submitPayment} disabled={savePaymentMutation.isPending || !amount || Number(amount) <= 0}>
+                    {savePaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirm & Generate Receipt
                   </Button>
                 </div>
-              </div>
-              <p className="pt-2 text-[11px] text-muted-foreground">
-                Support: {paymentInfo.supportEmail} · {paymentInfo.supportPhone}
-              </p>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
       {step === "done" && receipt && (
-        <Card>
-          <CardContent className="space-y-4 p-8 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
+        <Card className="mx-auto max-w-xl text-center">
+          <CardContent className="flex flex-col items-center py-12">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success/20 text-success">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <div>
-              <h2 className="font-display text-2xl font-semibold">Payment recorded</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                A receipt has been generated for your records.
-              </p>
-            </div>
-            <div className="mx-auto max-w-md rounded-md border border-border bg-muted/40 p-4 text-left text-sm">
-              <Row k="Student" v={receipt.studentName} />
-              <Row k="Semester" v={`Sem ${receipt.semester}`} />
-              <Row k="Amount" v={inr(receipt.amount)} bold />
-              <Row k="Method" v={receipt.method.toUpperCase()} />
-              <Row k="Reference" v={receipt.ref} mono />
-              <Row k="Date" v={new Date(receipt.paidAt).toLocaleString()} />
-            </div>
-
-            {previewUrl && (
-              <div className="mx-auto max-w-2xl overflow-hidden rounded-md border border-border bg-background">
-                <div className="border-b border-border bg-muted/40 px-3 py-1.5 text-left text-[11px] uppercase tracking-widest text-muted-foreground">
-                  Receipt preview
-                </div>
-                <iframe title="Receipt preview" src={previewUrl} className="h-[520px] w-full" />
+            <h2 className="font-display text-2xl font-semibold">Payment Successful!</h2>
+            <p className="mt-2 text-muted-foreground">
+              {inr(receipt.amount)} collected via {METHOD_LABEL[receipt.method]}.
+            </p>
+            
+            <div className="mt-8 w-full max-w-sm space-y-3 rounded-md bg-muted/40 p-4 text-left text-sm">
+              <div className="flex justify-between border-b border-border pb-2">
+                <span className="text-muted-foreground">Receipt No.</span>
+                <span className="font-medium font-mono">{receipt.ref}</span>
               </div>
-            )}
+              <div className="flex justify-between border-b border-border pb-2">
+                <span className="text-muted-foreground">Student</span>
+                <span className="font-medium">{receipt.studentName}</span>
+              </div>
+              <div className="flex justify-between pb-1">
+                <span className="text-muted-foreground">Semester</span>
+                <span className="font-medium">{receipt.semester}</span>
+              </div>
+            </div>
 
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button
-                onClick={() => {
-                  if (!student) return;
-                  const program = programs.find((p) => p.id === student.programId);
-                  downloadReceiptPdf({
-                    college: paymentInfo,
-                    payment: {
-                      amount: receipt.amount,
-                      method: receipt.method,
-                      reference: receipt.ref,
-                      paidAt: receipt.paidAt,
-                    },
-                    student: {
-                      name: student.name,
-                      admissionNo: student.admissionNo,
-                      rollNo: student.rolls[receipt.semester],
-                    },
-                    program: program ? { name: program.name, code: program.code } : undefined,
-                    semester: receipt.semester,
-                  });
-                }}
-              >
-                <Download className="mr-1 h-4 w-4" /> Download PDF receipt
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <Button onClick={() => window.open(previewUrl || "", "_blank")} variant="default">
+                <Download className="mr-2 h-4 w-4" /> Download PDF Receipt
               </Button>
-              <Button variant="outline" onClick={() => window.print()}>Print</Button>
-              <Button variant="ghost" onClick={reset}>Make another payment</Button>
+              <Button variant="outline" onClick={reset}>
+                Record another payment
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -522,51 +567,15 @@ function PayPage() {
   );
 }
 
-function ModeCard({
-  icon, title, desc, onClick,
-}: { icon: React.ReactNode; title: string; desc: string; onClick: () => void }) {
+function ModeCard({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-start gap-3 rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary hover:bg-accent/30"
+      className="flex flex-col items-start rounded-xl border border-border bg-card p-6 text-left shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground">
-        {icon}
-      </div>
-      <div>
-        <h3 className="font-display text-lg font-semibold text-foreground">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
-      </div>
+      <div className="mb-4 rounded-full bg-primary/10 p-3 text-primary">{icon}</div>
+      <h3 className="font-display text-lg font-semibold">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
     </button>
-  );
-}
-
-function Row({
-  k, v, tone, bold, mono,
-}: { k: string; v: string; tone?: "success" | "danger"; bold?: boolean; mono?: boolean }) {
-  const cls =
-    (tone === "success" ? "text-success " : tone === "danger" ? "text-destructive " : "text-foreground ") +
-    (bold ? "font-semibold " : "") + (mono ? "font-mono text-xs " : "");
-  return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-muted-foreground">{k}</span>
-      <span className={cls}>{v}</span>
-    </div>
-  );
-}
-
-function BankField({
-  label, value, onCopy, mono,
-}: { label: string; value: string; onCopy: (t: string, l: string) => void; mono?: boolean }) {
-  return (
-    <div>
-      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <div className="mt-0.5 flex items-center justify-between gap-2">
-        <span className={mono ? "font-mono text-sm" : "text-sm"}>{value}</span>
-        <Button size="icon" variant="ghost" onClick={() => onCopy(value, label)} className="h-7 w-7">
-          <Copy className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </div>
   );
 }

@@ -1,7 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2 } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 import { useStore, semesterSummary, studentTotals, inr, FEE_HEADS, type FeeHead, type FeePayment } from "@/lib/store";
 import { downloadReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
@@ -22,7 +25,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/students/$studentId")({
   head: () => ({
-    meta: [{ title: "Student profile — Northfield CMS" }],
+    meta: [{ title: "Student profile — Imperial CMS" }],
   }),
   component: StudentDetail,
   notFoundComponent: () => (
@@ -32,21 +35,119 @@ export const Route = createFileRoute("/students/$studentId")({
 
 function StudentDetail() {
   const { studentId } = Route.useParams();
-  const student = useStore((s) => s.students.find((x) => x.id === studentId));
-  const programs = useStore((s) => s.programs);
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
-  const setRoll = useStore((s) => s.setRoll);
-  const updateStudent = useStore((s) => s.updateStudent);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
+  const { data: canEditPayments } = useQuery({
+    queryKey: ['canEditPayments', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.from('user_roles').select('role, permissions').eq('id', user.id).single();
+      if (error || !data) return false;
+      if (data.role === 'admin') return true;
+      return !!data.permissions?.payments?.edit;
+    },
+    enabled: !!user,
+  });
+
+  const { data: canEditStudents } = useQuery({
+    queryKey: ['canEditStudents', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.from('user_roles').select('role, permissions').eq('id', user.id).single();
+      if (error || !data) return false;
+      if (data.role === 'admin') return true;
+      return !!data.permissions?.students?.edit;
+    },
+    enabled: !!user,
+  });
+
+  const { data: student, isLoading: loadingStudent } = useQuery({
+    queryKey: ['student', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*').eq('id', studentId).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: charges = [] } = useQuery({
+    queryKey: ['fee_charges', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_charges').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    },
+    enabled: !!studentId,
+  });
+  
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['fee_adjustments', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_adjustments').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
+      }));
+    },
+    enabled: !!studentId,
+  });
+  
+  const { data: payments = [] } = useQuery({
+    queryKey: ['fee_payments', studentId], // Only this student's payments
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_payments').select('*').eq('student_id', studentId);
+      if (error) throw error;
+      return data.map((d: any) => ({
+        id: d.id, studentId: d.student_id, semester: d.semester,
+        amount: d.amount, method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, voidReason: d.void_reason
+      }));
+    },
+    enabled: !!studentId,
+  });
+
+  const updateStudentMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const { error } = await supabase.from('students').update(updates).eq('id', studentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', studentId] });
+      toast.success("Student updated");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const [activeSem, setActiveSem] = useState<string | null>(null);
+
+  if (loadingStudent) {
+    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
+  
   if (!student) throw notFound();
 
-  const program = programs.find((p) => p.id === student.programId);
-  const totals = studentTotals(student.id, student.currentSemester, { charges, adjustments, payments });
-  const [activeSem, setActiveSem] = useState(String(student.currentSemester));
+  const program = programs.find((p: any) => p.id === student.program_id);
+  const currentSemester = student.current_semester;
+  const totals = studentTotals(student.id, currentSemester, { charges, adjustments, payments });
+  const activeSemValue = activeSem ?? String(currentSemester);
 
-  const semesters = Array.from({ length: program?.totalSemesters ?? 6 }, (_, i) => i + 1);
+  const semesters = Array.from({ length: program?.total_semesters ?? 6 }, (_, i) => i + 1);
+  const rolls = student.rolls || {};
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -61,24 +162,24 @@ function StudentDetail() {
           <CardContent className="flex flex-wrap items-start justify-between gap-6 p-6">
             <div className="flex items-start gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-display text-xl font-semibold text-primary">
-                {student.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                {student.name.split(" ").map((p: string) => p[0]).slice(0, 2).join("")}
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {program?.name} · Joined {student.joinedYear}
+                  {program?.name} · Joined {student.joined_year}
                 </p>
                 <h1 className="font-display text-2xl font-semibold text-foreground">{student.name}</h1>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">{student.admissionNo}</p>
+                <p className="mt-1 font-mono text-xs text-muted-foreground">{student.admission_no}</p>
                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   {student.gender && <span className="capitalize">{student.gender}</span>}
                   {student.dob && <span>· DOB {new Date(student.dob).toLocaleDateString()}</span>}
                   {student.category && <span>· {student.category}</span>}
-                  {student.bloodGroup && <span>· Blood {student.bloodGroup}</span>}
+                  {student.blood_group && <span>· Blood {student.blood_group}</span>}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   {student.phone && <span>📱 {student.phone}</span>}
                   {student.email && <span>· ✉ {student.email}</span>}
-                  {student.guardian && <span>· Guardian: {student.guardian}{student.guardianPhone ? ` (${student.guardianPhone})` : ""}</span>}
+                  {student.guardian && <span>· Guardian: {student.guardian}{student.guardian_phone ? ` (${student.guardian_phone})` : ""}</span>}
                 </div>
                 {(student.address || student.city || student.state || student.pincode) && (
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -92,20 +193,24 @@ function StudentDetail() {
               <Badge variant={student.status === "active" ? "default" : "secondary"}>
                 {student.status}
               </Badge>
-              <Select
-                value={String(student.currentSemester)}
-                onValueChange={(v) => {
-                  updateStudent(student.id, { currentSemester: Number(v) });
-                  setActiveSem(v);
-                }}
-              >
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {semesters.map((n) => (
-                    <SelectItem key={n} value={String(n)}>Current: Sem {n}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {canEditStudents ? (
+                <Select
+                  value={String(currentSemester)}
+                  onValueChange={(v) => {
+                    updateStudentMutation.mutate({ current_semester: Number(v) });
+                    setActiveSem(v);
+                  }}
+                >
+                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {semesters.map((n) => (
+                      <SelectItem key={n} value={String(n)}>Current: Sem {n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-sm font-medium">Current: Sem {currentSemester}</div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -131,8 +236,12 @@ function StudentDetail() {
                 <Input
                   className="mt-2 font-mono text-sm"
                   placeholder="Roll no."
-                  value={student.rolls[n] ?? ""}
-                  onChange={(e) => setRoll(student.id, n, e.target.value)}
+                  value={rolls[n] ?? ""}
+                  disabled={!canEditStudents}
+                  onChange={(e) => {
+                    const newRolls = { ...rolls, [n]: e.target.value };
+                    updateStudentMutation.mutate({ rolls: newRolls });
+                  }}
                 />
               </div>
             ))}
@@ -148,7 +257,7 @@ function StudentDetail() {
           </p>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeSem} onValueChange={setActiveSem}>
+          <Tabs value={activeSemValue} onValueChange={setActiveSem}>
             <TabsList className="flex flex-wrap">
               {semesters.map((n) => (
                 <TabsTrigger key={n} value={String(n)}>Sem {n}</TabsTrigger>
@@ -156,14 +265,26 @@ function StudentDetail() {
             </TabsList>
             {semesters.map((n) => (
               <TabsContent key={n} value={String(n)} className="pt-4">
-                <SemesterLedger studentId={student.id} semester={n} />
+                <SemesterLedger 
+                  studentId={student.id} 
+                  semester={n} 
+                  charges={charges} 
+                  adjustments={adjustments} 
+                  payments={payments}
+                  canEditPayments={canEditPayments ?? false} 
+                />
               </TabsContent>
             ))}
           </Tabs>
         </CardContent>
       </Card>
 
-      <PaymentHistory studentId={student.id} />
+      <PaymentHistory 
+        student={student} 
+        program={program}
+        payments={payments} 
+        canEditPayments={canEditPayments ?? false}
+      />
     </div>
 
   );
@@ -181,13 +302,51 @@ function TotalPill({
   );
 }
 
-function SemesterLedger({ studentId, semester }: { studentId: string; semester: number }) {
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
-  const removeCharge = useStore((s) => s.removeCharge);
-  const removeAdjustment = useStore((s) => s.removeAdjustment);
-  const removePayment = useStore((s) => s.removePayment);
+function SemesterLedger({ 
+  studentId, semester, charges, adjustments, payments, canEditPayments 
+}: { 
+  studentId: string; semester: number; 
+  charges: any[]; adjustments: any[]; payments: any[];
+  canEditPayments: boolean;
+}) {
+  const queryClient = useQueryClient();
+
+  const removeChargeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('fee_charges').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_charges', studentId] });
+      toast.success("Charge removed");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const removeAdjustmentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('fee_adjustments').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_adjustments', studentId] });
+      toast.success("Adjustment removed");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const removePaymentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('fee_payments').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_payments', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      toast.success("Payment removed");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const sum = useMemo(
     () => semesterSummary(studentId, semester, { charges, adjustments, payments }),
@@ -201,39 +360,39 @@ function SemesterLedger({ studentId, semester }: { studentId: string; semester: 
       <div className="lg:col-span-2 space-y-4">
         <LedgerBlock
           title="Charges"
-          addBtn={<AddChargeDialog studentId={studentId} semester={semester} />}
+          addBtn={canEditPayments ? <AddChargeDialog studentId={studentId} semester={semester} /> : <></>}
           rows={sum.charges.map((c) => ({
             id: c.id,
             main: FEE_HEADS.find((h) => h.key === c.head)?.label ?? c.head,
             sub: c.label,
             right: inr(c.amount),
-            onDelete: () => removeCharge(c.id),
+            onDelete: canEditPayments ? () => removeChargeMutation.mutate(c.id) : undefined,
           }))}
           empty="No charges added for this semester yet."
         />
         <LedgerBlock
           title="Concessions & scholarships"
-          addBtn={<AddAdjustmentDialog studentId={studentId} semester={semester} />}
+          addBtn={canEditPayments ? <AddAdjustmentDialog studentId={studentId} semester={semester} /> : <></>}
           rows={sum.adjustments.map((a) => ({
             id: a.id,
             main: a.type === "concession" ? "Concession" : "Scholarship",
             sub: a.label,
             right: `− ${inr(a.amount)}`,
             rightClass: "text-warning",
-            onDelete: () => removeAdjustment(a.id),
+            onDelete: canEditPayments ? () => removeAdjustmentMutation.mutate(a.id) : undefined,
           }))}
           empty="No concessions or scholarships applied."
         />
         <LedgerBlock
           title="Payments"
-          addBtn={<AddPaymentDialog studentId={studentId} semester={semester} defaultAmount={Math.max(sum.balance, 0)} />}
+          addBtn={canEditPayments ? <AddPaymentDialog studentId={studentId} semester={semester} defaultAmount={Math.max(sum.balance, 0)} /> : <></>}
           rows={sum.payments.map((p) => ({
             id: p.id,
             main: `${p.method.toUpperCase()}${p.voided ? " · VOID" : ""}`,
             sub: `${new Date(p.paidAt).toLocaleDateString()} · ${p.reference ?? "—"}${p.voided && p.voidReason ? ` — ${p.voidReason}` : ""}`,
             right: inr(p.amount),
             rightClass: p.voided ? "text-muted-foreground line-through" : "text-success",
-            onDelete: () => removePayment(p.id),
+            onDelete: canEditPayments ? () => removePaymentMutation.mutate(p.id) : undefined,
           }))}
           empty="No payments recorded."
         />
@@ -278,7 +437,7 @@ function LedgerBlock({
 }: {
   title: string;
   addBtn: React.ReactNode;
-  rows: { id: string; main: string; sub?: string; right: string; rightClass?: string; onDelete: () => void }[];
+  rows: { id: string; main: string; sub?: string; right: string; rightClass?: string; onDelete?: () => void }[];
   empty: string;
 }) {
   return (
@@ -297,9 +456,11 @@ function LedgerBlock({
             </div>
             <div className="flex items-center gap-2">
               <span className={r.rightClass ?? "text-foreground"}>{r.right}</span>
-              <Button variant="ghost" size="icon" onClick={r.onDelete}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              {r.onDelete && (
+                <Button variant="ghost" size="icon" onClick={r.onDelete}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
@@ -309,7 +470,26 @@ function LedgerBlock({
 }
 
 function AddChargeDialog({ studentId, semester }: { studentId: string; semester: number }) {
-  const addCharge = useStore((s) => s.addCharge);
+  const queryClient = useQueryClient();
+  const addChargeMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from('fee_charges').insert([{
+        student_id: data.studentId,
+        semester: data.semester,
+        head: data.head,
+        amount: data.amount,
+        label: data.label,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_charges', studentId] });
+      toast.success("Charge added");
+      setOpen(false); setAmount(""); setLabel("");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const [open, setOpen] = useState(false);
   const [head, setHead] = useState<FeeHead>("tuition");
   const [amount, setAmount] = useState("");
@@ -346,14 +526,16 @@ function AddChargeDialog({ studentId, semester }: { studentId: string; semester:
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
           <Button
+            disabled={addChargeMutation.isPending}
             onClick={() => {
               const amt = Number(amount);
               if (!amt || amt <= 0) return toast.error("Enter a valid amount");
-              addCharge({ studentId, semester, head, amount: amt, label: label || undefined });
-              toast.success("Charge added");
-              setOpen(false); setAmount(""); setLabel("");
+              addChargeMutation.mutate({ studentId, semester, head, amount: amt, label: label || undefined });
             }}
-          >Add</Button>
+          >
+            {addChargeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Add
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -361,7 +543,26 @@ function AddChargeDialog({ studentId, semester }: { studentId: string; semester:
 }
 
 function AddAdjustmentDialog({ studentId, semester }: { studentId: string; semester: number }) {
-  const addAdjustment = useStore((s) => s.addAdjustment);
+  const queryClient = useQueryClient();
+  const addAdjustmentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from('fee_adjustments').insert([{
+        student_id: data.studentId,
+        semester: data.semester,
+        type: data.type,
+        amount: data.amount,
+        label: data.label,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_adjustments', studentId] });
+      toast.success("Adjustment added");
+      setOpen(false); setAmount(""); setLabel("");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"concession" | "scholarship">("concession");
   const [amount, setAmount] = useState("");
@@ -397,14 +598,16 @@ function AddAdjustmentDialog({ studentId, semester }: { studentId: string; semes
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
           <Button
+            disabled={addAdjustmentMutation.isPending}
             onClick={() => {
               const amt = Number(amount);
               if (!amt || amt <= 0) return toast.error("Enter a valid amount");
-              addAdjustment({ studentId, semester, type, amount: amt, label: label || undefined });
-              toast.success("Adjustment added");
-              setOpen(false); setAmount(""); setLabel("");
+              addAdjustmentMutation.mutate({ studentId, semester, type, amount: amt, label: label || undefined });
             }}
-          >Add</Button>
+          >
+            {addAdjustmentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Add
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -414,7 +617,28 @@ function AddAdjustmentDialog({ studentId, semester }: { studentId: string; semes
 function AddPaymentDialog({
   studentId, semester, defaultAmount,
 }: { studentId: string; semester: number; defaultAmount: number }) {
-  const addPayment = useStore((s) => s.addPayment);
+  const queryClient = useQueryClient();
+  const addPaymentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from('fee_payments').insert([{
+        student_id: data.studentId,
+        semester: data.semester,
+        amount: data.amount,
+        method: data.method,
+        reference: data.reference,
+        paid_at: new Date().toISOString(),
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_payments', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      toast.success("Payment recorded");
+      setOpen(false); setReference("");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(String(defaultAmount || ""));
   const [method, setMethod] = useState<"cash" | "upi" | "card" | "bank" | "cheque">("upi");
@@ -451,14 +675,16 @@ function AddPaymentDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
           <Button
+            disabled={addPaymentMutation.isPending}
             onClick={() => {
               const amt = Number(amount);
-              const res = addPayment({ studentId, semester, amount: amt, method, reference: reference.trim() || undefined });
-              if (!res.ok) return toast.error(res.error);
-              toast.success("Payment recorded");
-              setOpen(false); setReference("");
+              if (!amt || amt <= 0) return toast.error("Enter a valid amount");
+              addPaymentMutation.mutate({ studentId, semester, amount: amt, method, reference: reference.trim() || undefined });
             }}
-          >Save</Button>
+          >
+            {addPaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -467,15 +693,10 @@ function AddPaymentDialog({
 
 // ---------- Payment history with filters + void ----------
 
-function PaymentHistory({ studentId }: { studentId: string }) {
-  const student = useStore((s) => s.students.find((x) => x.id === studentId))!;
-  const programs = useStore((s) => s.programs);
-  const payments = useStore((s) => s.payments);
+function PaymentHistory({ student, program, payments, canEditPayments }: { student: any, program: any, payments: any[], canEditPayments: boolean }) {
+  const queryClient = useQueryClient();
   const paymentInfo = useStore((s) => s.paymentInfo);
-  const voidPayment = useStore((s) => s.voidPayment);
-  const unvoidPayment = useStore((s) => s.unvoidPayment);
-  const role = useStore((s) => s.role);
-  const isAdmin = role === "admin";
+  const isAdmin = canEditPayments;
 
   const [semFilter, setSemFilter] = useState<string>("all");
   const [methodFilter, setMethodFilter] = useState<string>("all");
@@ -483,7 +704,6 @@ function PaymentHistory({ studentId }: { studentId: string }) {
 
   const rows = useMemo(() => {
     return payments
-      .filter((p) => p.studentId === studentId)
       .filter((p) => (semFilter === "all" ? true : p.semester === Number(semFilter)))
       .filter((p) => (methodFilter === "all" ? true : p.method === methodFilter))
       .filter((p) =>
@@ -494,23 +714,22 @@ function PaymentHistory({ studentId }: { studentId: string }) {
           : !p.voided,
       )
       .sort((a, b) => +new Date(b.paidAt) - +new Date(a.paidAt));
-  }, [payments, studentId, semFilter, methodFilter, statusFilter]);
+  }, [payments, semFilter, methodFilter, statusFilter]);
 
   const totalReceived = rows.filter((p) => !p.voided).reduce((s, p) => s + p.amount, 0);
   const totalVoided = rows.filter((p) => p.voided).reduce((s, p) => s + p.amount, 0);
 
-  const program = programs.find((p) => p.id === student.programId);
-
-  const semList = Array.from({ length: student.currentSemester }, (_, i) => i + 1);
+  const semList = Array.from({ length: student.current_semester }, (_, i) => i + 1);
 
   const downloadReceipt = (p: FeePayment) => {
+    const rolls = student.rolls || {};
     downloadReceiptPdf({
       college: paymentInfo,
       payment: p,
       student: {
         name: student.name,
-        admissionNo: student.admissionNo,
-        rollNo: student.rolls[p.semester],
+        admissionNo: student.admission_no,
+        rollNo: rolls[p.semester] || "",
       },
       program: program ? { name: program.name, code: program.code } : undefined,
       semester: p.semester,
@@ -527,10 +746,11 @@ function PaymentHistory({ studentId }: { studentId: string }) {
       "Date", "Semester", "Roll", "Method", "Reference",
       "Amount", "Status", "Voided at", "Void reason", "Note",
     ];
+    const rolls = student.rolls || {};
     const lines = rows.map((p) => [
       new Date(p.paidAt).toISOString(),
       `Sem ${p.semester}`,
-      student.rolls[p.semester] ?? "",
+      rolls[p.semester] ?? "",
       p.method.toUpperCase(),
       p.reference ?? "",
       p.amount,
@@ -544,7 +764,7 @@ function PaymentHistory({ studentId }: { studentId: string }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     const parts = [
-      student.admissionNo,
+      student.admission_no,
       semFilter !== "all" ? `sem${semFilter}` : "all-sem",
       methodFilter !== "all" ? methodFilter : "all-methods",
       statusFilter !== "all" ? statusFilter : "all-status",
@@ -555,6 +775,40 @@ function PaymentHistory({ studentId }: { studentId: string }) {
     URL.revokeObjectURL(url);
     toast.success(`Exported ${rows.length} row(s)`);
   };
+
+  const voidPaymentMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string, reason?: string }) => {
+      const { error } = await supabase.from('fee_payments').update({
+        voided: true,
+        voided_at: new Date().toISOString(),
+        void_reason: reason,
+      }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_payments', student.id] });
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      toast.success("Payment voided");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const unvoidPaymentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('fee_payments').update({
+        voided: false,
+        voided_at: null,
+        void_reason: null,
+      }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee_payments', student.id] });
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      toast.success("Payment reinstated");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   return (
     <Card>
@@ -667,16 +921,20 @@ function PaymentHistory({ studentId }: { studentId: string }) {
                           size="icon"
                           variant="ghost"
                           title={isAdmin ? "Un-void" : "Admin only"}
-                          disabled={!isAdmin}
+                          disabled={!isAdmin || unvoidPaymentMutation.isPending}
                           onClick={() => {
-                            unvoidPayment(p.id);
-                            toast.success("Payment reinstated");
+                            unvoidPaymentMutation.mutate(p.id);
                           }}
                         >
                           {isAdmin ? <Undo2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                         </Button>
                       ) : (
-                        <VoidPaymentDialog paymentId={p.id} voidPayment={voidPayment} isAdmin={isAdmin} />
+                        <VoidPaymentDialog 
+                          paymentId={p.id} 
+                          voidPayment={(id, reason) => voidPaymentMutation.mutate({ id, reason })} 
+                          isAdmin={isAdmin}
+                          isPending={voidPaymentMutation.isPending}
+                        />
                       )}
                     </div>
                   </td>
@@ -701,11 +959,12 @@ function PaymentHistory({ studentId }: { studentId: string }) {
 }
 
 function VoidPaymentDialog({
-  paymentId, voidPayment, isAdmin,
+  paymentId, voidPayment, isAdmin, isPending
 }: {
   paymentId: string;
-  voidPayment: (id: string, reason?: string) => { ok: boolean; error?: string };
+  voidPayment: (id: string, reason?: string) => void;
   isAdmin: boolean;
+  isPending: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -734,13 +993,13 @@ function VoidPaymentDialog({
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
           <Button
             variant="destructive"
+            disabled={isPending}
             onClick={() => {
-              const res = voidPayment(paymentId, reason || undefined);
-              if (!res.ok) return toast.error(res.error ?? "Failed");
-              toast.success("Payment voided");
+              voidPayment(paymentId, reason || undefined);
               setOpen(false); setReason("");
             }}
           >
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Void payment
           </Button>
         </DialogFooter>
@@ -748,5 +1007,3 @@ function VoidPaymentDialog({
     </Dialog>
   );
 }
-
-

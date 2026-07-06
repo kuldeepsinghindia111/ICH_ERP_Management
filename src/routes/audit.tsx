@@ -22,7 +22,7 @@ import {
 export const Route = createFileRoute("/audit")({
   head: () => ({
     meta: [
-      { title: "Audit Log — Northfield CMS" },
+      { title: "Audit Log — Imperial CMS" },
       { name: "description", content: "Chronological audit trail of payments, user changes, permission grants and payment settings." },
     ],
   }),

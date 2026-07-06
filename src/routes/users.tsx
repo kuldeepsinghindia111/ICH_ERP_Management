@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 export const Route = createFileRoute("/users")({
   head: () => ({
     meta: [
-      { title: "Users & Roles — Northfield CMS" },
+      { title: "Users & Roles — Imperial CMS" },
       { name: "description", content: "Provision Admin, Accountant and Faculty accounts and grant per-section view / edit permissions." },
     ],
   }),

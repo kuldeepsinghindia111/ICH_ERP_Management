@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Northfield CMS" },
+      { title: "Dashboard — Imperial CMS" },
       { name: "description", content: "Overview of students, fees collected, and pending dues." },
     ],
   }),

@@ -80,13 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Northfield CMS — College Management System" },
+      { title: "Imperial CMS — College Management System" },
       {
         name: "description",
         content:
           "Manage students, semester-wise rolls, semester fees, concessions, scholarships, and pending dues from one clean academic dashboard.",
       },
-      { property: "og:title", content: "Northfield CMS — College Management System" },
+      { property: "og:title", content: "Imperial CMS — College Management System" },
       {
         property: "og:description",
         content: "Students, semester rolls, and semester-wise fees management in one dashboard.",

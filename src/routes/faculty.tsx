@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -15,7 +17,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/faculty")({
   head: () => ({
     meta: [
-      { title: "Faculty — Northfield CMS" },
+      { title: "Faculty — Imperial CMS" },
       { name: "description", content: "Faculty and staff directory." },
     ],
   }),
@@ -23,8 +25,31 @@ export const Route = createFileRoute("/faculty")({
 });
 
 function FacultyPage() {
-  const faculty = useStore((s) => s.faculty);
-  const removeFaculty = useStore((s) => s.removeFaculty);
+  const queryClient = useQueryClient();
+  const canEdit = useStore((s) => s.can("faculty", "edit"));
+
+  const { data: faculty = [], isLoading } = useQuery({
+    queryKey: ["faculty"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("faculty").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const removeFaculty = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("faculty").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["faculty"] });
+      toast.success("Removed");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading faculty...</div>;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -34,25 +59,25 @@ function FacultyPage() {
           <h1 className="font-display text-3xl font-semibold text-foreground">Faculty</h1>
           <p className="mt-1 text-sm text-muted-foreground">{faculty.length} members across departments.</p>
         </div>
-        <AddFacultyDialog />
+        {canEdit && <AddFacultyDialog />}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {faculty.map((f) => (
+        {faculty.map((f: any) => (
           <Card key={f.id}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {f.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                    {f.name.split(" ").map((p: string) => p[0]).slice(0, 2).join("")}
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{f.name}</p>
                     <p className="text-xs text-muted-foreground">{f.designation}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => {
-                  if (confirm(`Remove ${f.name}?`)) { removeFaculty(f.id); toast.success("Removed"); }
+                <Button variant="ghost" size="icon" disabled={!canEdit || removeFaculty.isPending} onClick={() => {
+                  if (confirm(`Remove ${f.name}?`)) { removeFaculty.mutate(f.id); }
                 }}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
@@ -65,15 +90,32 @@ function FacultyPage() {
             </CardContent>
           </Card>
         ))}
+        {faculty.length === 0 && (
+          <p className="col-span-full text-muted-foreground text-sm">No faculty members found.</p>
+        )}
       </div>
     </div>
   );
 }
 
 function AddFacultyDialog() {
-  const addFaculty = useStore((s) => s.addFaculty);
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ name: "", email: "", department: "", designation: "", phone: "" });
+
+  const addFaculty = useMutation({
+    mutationFn: async (fac: any) => {
+      const { error } = await supabase.from("faculty").insert([fac]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["faculty"] });
+      toast.success("Faculty added");
+      setOpen(false);
+      setF({ name: "", email: "", department: "", designation: "", phone: "" });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -91,10 +133,9 @@ function AddFacultyDialog() {
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={() => {
+          <Button disabled={addFaculty.isPending} onClick={() => {
             if (!f.name.trim()) return toast.error("Name required");
-            addFaculty(f); toast.success("Faculty added"); setOpen(false);
-            setF({ name: "", email: "", department: "", designation: "", phone: "" });
+            addFaculty.mutate(f);
           }}>Save</Button>
         </DialogFooter>
       </DialogContent>

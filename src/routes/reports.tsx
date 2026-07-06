@@ -17,7 +17,7 @@ import {
 export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
-      { title: "Reports — Northfield CMS" },
+      { title: "Reports — Imperial CMS" },
       { name: "description", content: "Filter receipts by date, class, semester, month, year or session. Export CSV or print." },
     ],
   }),

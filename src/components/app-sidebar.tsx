@@ -63,7 +63,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="font-display text-base font-semibold text-sidebar-foreground">
-              Northfield College
+              Imperial College Hisar
             </span>
             <span className="text-[11px] uppercase tracking-widest text-sidebar-foreground/60">
               Management Suite

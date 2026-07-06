@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/students")({
   head: () => ({
     meta: [
-      { title: "Students — Northfield CMS" },
+      { title: "Students — Imperial CMS" },
       { name: "description", content: "Directory of enrolled students with class and semester rolls." },
     ],
   }),
