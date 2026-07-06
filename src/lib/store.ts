@@ -395,26 +395,11 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const now = () => new Date().toISOString();
 
 // ---------- Seed ----------
-const seedPrograms: Program[] = [
-  { id: "p_bcom", name: "B.Com", code: "BCOM", totalSemesters: 6 },
-  { id: "p_bca", name: "BCA", code: "BCA", totalSemesters: 6 },
-  { id: "p_bba", name: "BBA", code: "BBA", totalSemesters: 6 },
-];
+const seedPrograms: Program[] = [];
 
-const seedCourses: Course[] = [
-  { id: uid(), programId: "p_bcom", semester: 1, code: "BC101", title: "Financial Accounting I", credits: 4 },
-  { id: uid(), programId: "p_bcom", semester: 1, code: "BC102", title: "Business Economics", credits: 4 },
-  { id: uid(), programId: "p_bcom", semester: 2, code: "BC201", title: "Corporate Accounting", credits: 4 },
-  { id: uid(), programId: "p_bca", semester: 1, code: "CA101", title: "Programming in C", credits: 4 },
-  { id: uid(), programId: "p_bca", semester: 2, code: "CA201", title: "Data Structures", credits: 4 },
-  { id: uid(), programId: "p_bba", semester: 1, code: "BA101", title: "Principles of Management", credits: 4 },
-];
+const seedCourses: Course[] = [];
 
-const seedFaculty: Faculty[] = [
-  { id: uid(), name: "Dr. Anjali Verma", email: "anjali.verma@college.edu", department: "Commerce", designation: "HOD", phone: "+91 98100 12345" },
-  { id: uid(), name: "Prof. Rahul Menon", email: "rahul.menon@college.edu", department: "Computer Applications", designation: "Assistant Professor", phone: "+91 98110 22334" },
-  { id: uid(), name: "Dr. Kavita Rao", email: "kavita.rao@college.edu", department: "Management", designation: "Associate Professor", phone: "+91 98220 44556" },
-];
+const seedFaculty: Faculty[] = [];
 
 function makeStudent(admissionNo: string, name: string, programId: string, currentSemester: number, joinedYear: number, rollPrefix: string): Student {
   const rolls: Record<number, string> = {};
@@ -428,14 +413,7 @@ function makeStudent(admissionNo: string, name: string, programId: string, curre
   };
 }
 
-const seedStudents: Student[] = [
-  makeStudent("ADM-2023-001", "Aarav Sharma", "p_bcom", 3, 2023, "BC23-01-"),
-  makeStudent("ADM-2023-002", "Diya Patel", "p_bcom", 3, 2023, "BC23-02-"),
-  makeStudent("ADM-2024-011", "Kabir Singh", "p_bca", 2, 2024, "CA24-11-"),
-  makeStudent("ADM-2024-012", "Meera Nair", "p_bca", 2, 2024, "CA24-12-"),
-  makeStudent("ADM-2025-021", "Riya Kapoor", "p_bba", 1, 2025, "BA25-21-"),
-  makeStudent("ADM-2025-022", "Arjun Iyer", "p_bba", 1, 2025, "BA25-22-"),
-];
+const seedStudents: Student[] = [];
 
 function seedFees() {
   const charges: FeeCharge[] = [];
@@ -470,14 +448,7 @@ function seedFees() {
 
 const initialFees = seedFees();
 
-function seedUsers(): AppUser[] {
-  const t = now();
-  return [
-    { id: uid(), userCode: "ADM-001", name: "Principal (Admin)", email: "principal@northfield.edu", role: "admin", permissions: defaultPermissionsFor("admin"), createdAt: t },
-    { id: uid(), userCode: "ACC-001", name: "Sunita Rao", email: "sunita.rao@northfield.edu", role: "accountant", permissions: defaultPermissionsFor("accountant"), createdAt: t },
-    { id: uid(), userCode: "FAC-001", name: "Prof. Rahul Menon", email: "rahul.menon@northfield.edu", role: "faculty", permissions: defaultPermissionsFor("faculty"), createdAt: t },
-  ];
-}
+function seedUsers(): AppUser[] { return []; }
 const initialUsers = seedUsers();
 
 function nextCode(role: UserRole, users: AppUser[]): string {

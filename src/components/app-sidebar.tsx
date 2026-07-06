@@ -25,7 +25,8 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { useStore, type Section } from "@/lib/store";
+import { type Section } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
 
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -45,10 +46,7 @@ const admin: { title: string; url: string; icon: typeof Users; section: Section 
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const users = useStore((s) => s.users);
-  const currentUserId = useStore((s) => s.currentUserId);
-  const can = useStore((s) => s.can);
-  const current = users.find((u) => u.id === currentUserId);
+  const { can, profile } = useAuth();
   const isActive = (p: string) => (p === "/" ? pathname === "/" : pathname.startsWith(p));
 
   const visibleNav = nav.filter((n) => !n.section || can(n.section, "view"));
@@ -114,9 +112,9 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <div className="px-3 py-2 text-[11px] text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
-          Signed in as <span className="text-sidebar-foreground">{current?.name ?? "—"}</span>
-          <span className="ml-1 capitalize">({current?.role})</span>
-          <div className="mt-0.5 font-mono text-[10px]">{current?.userCode}</div>
+          Signed in as <span className="text-sidebar-foreground">{profile?.name ?? "—"}</span>
+          <span className="ml-1 capitalize">({profile?.role})</span>
+          {/* <div className="mt-0.5 font-mono text-[10px]">{profile?.userCode}</div> */}
         </div>
       </SidebarFooter>
     </Sidebar>

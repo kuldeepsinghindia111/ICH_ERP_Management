@@ -2,7 +2,7 @@
 CREATE TYPE user_role AS ENUM ('admin', 'management', 'accountant', 'faculty');
 
 -- Create a table to store user roles and permissions
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     role user_role NOT NULL DEFAULT 'faculty',
@@ -11,6 +11,77 @@ CREATE TABLE public.user_roles (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Function to check if the current user has a specific permission
+CREATE OR REPLACE FUNCTION public.has_permission(section_key text, access_type text)
+RETURNS boolean AS $$
+DECLARE
+    user_role_val text;
+    user_permissions jsonb;
+    has_perm boolean;
+BEGIN
+    SELECT role::text, permissions 
+    INTO user_role_val, user_permissions
+    FROM public.user_roles 
+    WHERE id = auth.uid();
+
+    IF user_role_val IS NULL THEN
+        RETURN false;
+    END IF;
+
+    IF user_role_val = 'admin' THEN
+        RETURN true;
+    END IF;
+
+    has_perm := (user_permissions #>> ARRAY[section_key, access_type])::boolean;
+    RETURN COALESCE(has_perm, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 1. Create Programs Table
+CREATE TABLE IF NOT EXISTS public.programs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    code TEXT NOT NULL,
+    total_semesters INTEGER NOT NULL
+);
+
+ALTER TABLE public.programs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users with courses view permission can read programs" ON public.programs
+    FOR SELECT TO authenticated USING (public.has_permission('courses', 'view'));
+CREATE POLICY "Users with courses edit permission can edit programs" ON public.programs
+    FOR ALL TO authenticated USING (public.has_permission('courses', 'edit'));
+
+-- 2. Create Students Table
+CREATE TABLE IF NOT EXISTS public.students (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admission_no TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    program_id UUID NOT NULL REFERENCES public.programs(id),
+    current_semester INTEGER NOT NULL,
+    rolls JSONB NOT NULL DEFAULT '{}'::jsonb,
+    email TEXT,
+    phone TEXT,
+    guardian TEXT,
+    guardian_phone TEXT,
+    joined_year INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    gender TEXT,
+    dob DATE,
+    address TEXT,
+    city TEXT,
+    state TEXT,
+    pincode TEXT,
+    category TEXT,
+    blood_group TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users with students view permission can read students" ON public.students
+    FOR SELECT TO authenticated USING (public.has_permission('students', 'view'));
+CREATE POLICY "Users with students edit permission can edit students" ON public.students
+    FOR ALL TO authenticated USING (public.has_permission('students', 'edit'));
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
@@ -41,11 +112,21 @@ CREATE POLICY "Admins can delete user roles" ON public.user_roles
 -- Create a trigger to automatically create a user_roles entry when a new auth user is created
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS trigger AS $$
+DECLARE
+  is_first_user boolean;
 BEGIN
-  -- We set the owner as 'admin' and 'active' immediately
-  INSERT INTO public.user_roles (id, email, role, status)
-  VALUES (new.id, new.email, 'admin', 'active'); 
-  -- NOTE: Any future invites will be handled by the Edge Function which will override these values
+  SELECT COUNT(*) = 0 INTO is_first_user FROM public.user_roles;
+  
+  IF is_first_user THEN
+    INSERT INTO public.user_roles (id, email, role, status, permissions)
+    VALUES (new.id, new.email, 'admin', 'active', '{"users": {"view": true, "edit": true}, "settings": {"view": true, "edit": true}, "audit": {"view": true, "edit": true}, "faculty": {"view": true, "edit": true}, "courses": {"view": true, "edit": true}, "students": {"view": true, "edit": true}, "fees": {"view": true, "edit": true}, "payments": {"view": true, "edit": true}, "reports": {"view": true, "edit": true}}'::jsonb)
+    ON CONFLICT (id) DO NOTHING;
+  ELSE
+    INSERT INTO public.user_roles (id, email, role, status, permissions)
+    VALUES (new.id, new.email, 'faculty', 'pending', '{}'::jsonb)
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+  
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -70,7 +151,7 @@ CREATE TRIGGER on_auth_user_login
   FOR EACH ROW EXECUTE PROCEDURE public.handle_user_login();
 
 -- 4. Create Fee Charges Table
-CREATE TABLE public.fee_charges (
+CREATE TABLE IF NOT EXISTS public.fee_charges (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
     semester INTEGER NOT NULL,
@@ -81,7 +162,7 @@ CREATE TABLE public.fee_charges (
 );
 
 -- 5. Create Fee Adjustments Table
-CREATE TABLE public.fee_adjustments (
+CREATE TABLE IF NOT EXISTS public.fee_adjustments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
     semester INTEGER NOT NULL,
@@ -92,7 +173,7 @@ CREATE TABLE public.fee_adjustments (
 );
 
 -- 6. Create Fee Payments Table
-CREATE TABLE public.fee_payments (
+CREATE TABLE IF NOT EXISTS public.fee_payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
     semester INTEGER NOT NULL,
@@ -154,7 +235,7 @@ CREATE POLICY "Users with payments edit permission can delete fee_payments" ON p
 
 
 -- 7. Create Courses Table
-CREATE TABLE public.courses (
+CREATE TABLE IF NOT EXISTS public.courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     program_id UUID NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
     semester INTEGER NOT NULL,
@@ -164,7 +245,7 @@ CREATE TABLE public.courses (
 );
 
 -- 8. Create Faculty Table
-CREATE TABLE public.faculty (
+CREATE TABLE IF NOT EXISTS public.faculty (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
@@ -174,7 +255,7 @@ CREATE TABLE public.faculty (
 );
 
 -- 9. Create Sessions Table
-CREATE TABLE public.sessions (
+CREATE TABLE IF NOT EXISTS public.sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     start_date DATE NOT NULL,
@@ -182,7 +263,7 @@ CREATE TABLE public.sessions (
 );
 
 -- 10. Create College Settings Table
-CREATE TABLE public.college_settings (
+CREATE TABLE IF NOT EXISTS public.college_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     college_name TEXT NOT NULL,
     account_name TEXT NOT NULL,
@@ -200,7 +281,7 @@ CREATE TABLE public.college_settings (
 );
 
 -- 11. Create Fee Structures Table
-CREATE TABLE public.fee_structures (
+CREATE TABLE IF NOT EXISTS public.fee_structures (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     program_id UUID NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
     semester INTEGER NOT NULL,
@@ -295,7 +376,7 @@ INSERT INTO public.courses (program_id, semester, code, title, credits)
 SELECT id, 2, 'CA201', 'Data Structures', 4 FROM public.programs WHERE name = 'BCA';
 
 -- 12. Create Audit Logs Table
-CREATE TABLE public.audit_logs (
+CREATE TABLE IF NOT EXISTS public.audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     actor_user_id UUID REFERENCES public.user_roles(id) ON DELETE SET NULL,
@@ -319,4 +400,6 @@ CREATE POLICY "Admins can delete audit logs" ON public.audit_logs
     FOR DELETE TO authenticated USING (
         (SELECT role FROM public.user_roles WHERE id = auth.uid()) = 'admin'
     );
+
+
 
