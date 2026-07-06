@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
@@ -121,9 +121,12 @@ function CoursesPage() {
                           <td className="px-5 py-3 font-medium">{c.title}</td>
                           <td className="px-5 py-3 text-right text-muted-foreground">{c.credits} cr.</td>
                           <td className="px-5 py-3 text-right">
-                            <Button variant="ghost" size="icon" disabled={!canEdit || removeCourse.isPending} onClick={() => removeCourse.mutate(c.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex justify-end gap-1">
+                              <EditCourseDialog course={c} programs={programs} canEdit={canEdit} />
+                              <Button variant="ghost" size="icon" disabled={!canEdit || removeCourse.isPending} onClick={() => removeCourse.mutate(c.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -203,3 +206,72 @@ function AddCourseDialog({ programs }: { programs: any[] }) {
     </Dialog>
   );
 }
+
+function EditCourseDialog({ course, programs, canEdit }: { course: any, programs: any[], canEdit: boolean }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [c, setC] = useState({ ...course });
+
+  const editCourse = useMutation({
+    mutationFn: async (updatedCourse: any) => {
+      const { id, ...updates } = updatedCourse;
+      const { error } = await supabase.from("courses").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      toast.success("Course updated");
+      setOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const p = programs.find((prog) => prog.id === c.program_id);
+  const maxSemesters = p ? p.total_semesters : 8;
+  const semOptions = Array.from({ length: maxSemesters }, (_, i) => i + 1);
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      if (o) setC({ ...course });
+    }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" disabled={!canEdit}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle className="font-display">Edit course</DialogTitle></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label>Program</Label>
+            <Select value={c.program_id} onValueChange={(v) => {
+              setC({ ...c, program_id: v, semester: 1 });
+            }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Semester</Label>
+            <Select value={String(c.semester)} onValueChange={(v) => setC({ ...c, semester: Number(v) })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Course code</Label><Input value={c.code} onChange={(e) => setC({ ...c, code: e.target.value })} /></div>
+          <div><Label>Credits</Label><Input type="number" min={1} value={c.credits} onChange={(e) => setC({ ...c, credits: Number(e.target.value) })} /></div>
+          <div className="sm:col-span-2"><Label>Title</Label><Input value={c.title} onChange={(e) => setC({ ...c, title: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button disabled={editCourse.isPending} onClick={() => {
+            if (!c.title.trim() || !c.code.trim()) return toast.error("Code and title required");
+            editCourse.mutate(c);
+          }}>Save changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

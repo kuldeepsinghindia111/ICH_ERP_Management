@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
@@ -76,11 +76,14 @@ function FacultyPage() {
                     <p className="text-xs text-muted-foreground">{f.designation}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" disabled={!canEdit || removeFaculty.isPending} onClick={() => {
-                  if (confirm(`Remove ${f.name}?`)) { removeFaculty.mutate(f.id); }
-                }}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <EditFacultyDialog faculty={f} canEdit={canEdit} />
+                  <Button variant="ghost" size="icon" disabled={!canEdit || removeFaculty.isPending} onClick={() => {
+                    if (confirm(`Remove ${f.name}?`)) { removeFaculty.mutate(f.id); }
+                  }}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
               <div className="mt-4 space-y-1 text-xs text-muted-foreground">
                 <p><span className="text-foreground">Dept:</span> {f.department}</p>
@@ -142,3 +145,54 @@ function AddFacultyDialog() {
     </Dialog>
   );
 }
+
+function EditFacultyDialog({ faculty, canEdit }: { faculty: any, canEdit: boolean }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ ...faculty });
+
+  const editFaculty = useMutation({
+    mutationFn: async (fac: any) => {
+      const { id, ...updates } = fac;
+      const { error } = await supabase.from("faculty").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["faculty"] });
+      toast.success("Faculty updated");
+      setOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      if (o) setF({ ...faculty }); // Reset to current data on open
+    }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" disabled={!canEdit}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle className="font-display">Edit faculty</DialogTitle></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2"><Label>Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div><Label>Department</Label><Input value={f.department} onChange={(e) => setF({ ...f, department: e.target.value })} /></div>
+          <div><Label>Designation</Label><Input value={f.designation} onChange={(e) => setF({ ...f, designation: e.target.value })} /></div>
+          <div><Label>Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+          <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button disabled={editFaculty.isPending} onClick={() => {
+            if (!f.name.trim()) return toast.error("Name required");
+            editFaculty.mutate(f);
+          }}>Save changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
