@@ -161,15 +161,22 @@ function UsersPage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {users.filter(u => u.status === 'active').map((u) => {
-            const isSelf = u.id === user?.id;
-            const isAdminRow = u.role === "admin";
-            // Check if name exists, otherwise default to part of email
-            const displayName = u.name || u.email.split('@')[0];
-            const displayCode = u.id.split('-')[0].toUpperCase();
+          {users.filter(u => u.status === 'active').map((u) => (
+            <UserRow key={u.id} u={u} user={user} updateUserMutation={updateUserMutation} resetPermissionsMutation={resetPermissionsMutation} removeUserMutation={removeUserMutation} setPermissionMutation={setPermissionMutation} />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-            // Default permissions just in case
-            const userPerms = u.permissions || defaultPermissionsFor(u.role);
+function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, removeUserMutation, setPermissionMutation }: any) {
+  const [showPermissions, setShowPermissions] = useState(false);
+  const isSelf = u.id === user?.id;
+  const isAdminRow = u.role === "admin";
+  const displayName = u.name || u.email.split('@')[0];
+  const displayCode = u.id.split('-')[0].toUpperCase();
+  const userPerms = u.permissions || defaultPermissionsFor(u.role);
 
             return (
               <div key={u.id} className="rounded-lg border border-border">
@@ -204,7 +211,18 @@ function UsersPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <EditUserDialog user={u} onSave={(patch) => updateUserMutation.mutate({ id: u.id, patch })} isPending={updateUserMutation.isPending} />
+                    <EditUserDialog 
+                      user={u} 
+                      onSave={(patch) => updateUserMutation.mutate({ id: u.id, patch })} 
+                      isPending={updateUserMutation.isPending} 
+                      onDelete={() => {
+                        if (confirm("Are you sure you want to remove this user?")) {
+                           removeUserMutation.mutate(u.id);
+                        }
+                      }}
+                      isDeleting={removeUserMutation.isPending}
+                      canDelete={!isSelf && !isAdminRow}
+                    />
 
                     <Button
                       size="sm" variant="ghost"
@@ -215,20 +233,18 @@ function UsersPage() {
                       <RotateCcw className="h-4 w-4" />
                     </Button>
                     <Button
-                      size="sm" variant="ghost"
-                      onClick={() => {
-                        if (confirm("Are you sure you want to remove this user?")) {
-                           removeUserMutation.mutate(u.id);
-                        }
-                      }}
-                      disabled={isSelf || removeUserMutation.isPending}
+                      size="sm" variant="outline"
+                      onClick={() => setShowPermissions(!showPermissions)}
+                      title="Toggle permissions"
+                      className="ml-2"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      {showPermissions ? "Hide Permissions" : "View Permissions"}
                     </Button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {showPermissions && (
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
                       <tr>
@@ -265,12 +281,8 @@ function UsersPage() {
                     </tbody>
                   </table>
                 </div>
+                )}
               </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-    </div>
   );
 }
 
@@ -410,7 +422,7 @@ function AddUserDialog() {
   );
 }
 
-function EditUserDialog({ user, onSave, isPending }: { user: any, onSave: (patch: any) => void, isPending: boolean }) {
+function EditUserDialog({ user, onSave, isPending, onDelete, isDeleting, canDelete }: { user: any, onSave: (patch: any) => void, isPending: boolean, onDelete: () => void, isDeleting: boolean, canDelete: boolean }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -460,18 +472,27 @@ function EditUserDialog({ user, onSave, isPending }: { user: any, onSave: (patch
             </p>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button
-            disabled={isPending}
-            onClick={() => {
-              if (!name.trim()) return toast.error("Name is required");
-              onSave({ name: name.trim(), role });
-              setOpen(false);
-            }}
+        <DialogFooter className="sm:justify-between">
+          <Button 
+            variant="destructive" 
+            onClick={() => { onDelete(); setOpen(false); }} 
+            disabled={!canDelete || isDeleting}
           >
-            Save changes
+            Delete
           </Button>
+          <div className="flex justify-end gap-2 mt-2 sm:mt-0">
+            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              disabled={isPending}
+              onClick={() => {
+                if (!name.trim()) return toast.error("Name is required");
+                onSave({ name: name.trim(), role });
+                setOpen(false);
+              }}
+            >
+              Save changes
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

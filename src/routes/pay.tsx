@@ -13,6 +13,7 @@ import {
   useStore, semesterSummary, inr, nextReceiptNo,
   validatePaymentFields, referenceHint, type PaymentMethod,
 } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
 import { downloadReceiptPdf, generateReceiptPdf } from "@/lib/receipt";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,8 +40,27 @@ export const Route = createFileRoute("/pay")({
 type Mode = "online" | "offline";
 type Step = "choose" | "lookup" | "pay" | "done";
 
+const METHOD_LABEL: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  upi: "UPI",
+  card: "Debit / Credit card",
+  bank: "Bank transfer / NEFT",
+  cheque: "Cheque / DD",
+};
+
 function PayPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from('user_roles').select('*').eq('id', user.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
@@ -183,6 +203,18 @@ function PayPage() {
         paid_at: data.paidAt,
       }]);
       if (error) throw error;
+      
+      if (userRole && student) {
+        await supabase.from('audit_logs').insert([{
+          actor_user_id: userRole.id,
+          actor_name: userRole.name,
+          actor_code: userRole.user_code,
+          actor_role: userRole.role,
+          event: 'payment.collected',
+          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`,
+          student_id: data.studentId,
+        }]);
+      }
     },
     onSuccess: (data, variables) => {
       toast.success("Payment successful!");

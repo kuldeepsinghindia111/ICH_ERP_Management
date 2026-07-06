@@ -4,7 +4,10 @@ import { CalendarRange, Printer } from "lucide-react";
 
 import {
   useStore, semesterSummary, studentTotals, inr, FEE_HEADS,
+  type Student, type Program, type FeeCharge, type FeeAdjustment, type FeePayment
 } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,21 +28,99 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
-  const students = useStore((s) => s.students);
-  const programs = useStore((s) => s.programs);
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
-  const sessions = useStore((s) => s.sessions);
-  const activeSessionId = useStore((s) => s.activeSessionId);
-  const paymentInfo = useStore((s) => s.paymentInfo);
   const can = useStore((s) => s.can);
   const canExport = can("reports", "edit");
+  const paymentInfo = useStore((s) => s.paymentInfo);
 
+  const { data: students = [] } = useQuery({
+    queryKey: ['students'],
+    queryFn: async () => {
+      const { data } = await supabase.from('students').select('*');
+      return (data || []).map(s => ({
+        ...s,
+        programId: s.program_id,
+        currentSemester: s.current_semester,
+        joinedYear: s.joined_year,
+        bloodGroup: s.blood_group,
+      })) as Student[];
+    }
+  });
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data } = await supabase.from('programs').select('*');
+      return (data || []).map(p => ({
+        ...p,
+        totalSemesters: p.total_semesters,
+      })) as Program[];
+    }
+  });
+
+  const { data: charges = [] } = useQuery({
+    queryKey: ['fee_charges'],
+    queryFn: async () => {
+      const { data } = await supabase.from('fee_charges').select('*');
+      return (data || []).map(c => ({
+        ...c,
+        studentId: c.student_id,
+        createdAt: c.created_at,
+      })) as FeeCharge[];
+    }
+  });
+
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['fee_adjustments'],
+    queryFn: async () => {
+      const { data } = await supabase.from('fee_adjustments').select('*');
+      return (data || []).map(a => ({
+        ...a,
+        studentId: a.student_id,
+        createdAt: a.created_at,
+      })) as FeeAdjustment[];
+    }
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ['fee_payments'],
+    queryFn: async () => {
+      const { data } = await supabase.from('fee_payments').select('*');
+      return (data || []).map(p => ({
+        ...p,
+        studentId: p.student_id,
+        paidAt: p.paid_at,
+        voidReason: p.void_reason,
+        voidedAt: p.voided_at,
+      })) as FeePayment[];
+    }
+  });
+
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: async () => {
+      const { data } = await supabase.from('sessions').select('*');
+      return (data || []).map(s => ({
+        ...s,
+        startDate: s.start_date,
+        endDate: s.end_date,
+      }));
+    }
+  });
+
+  const { data: collegeSettings } = useQuery({
+    queryKey: ['collegeSettings'],
+    queryFn: async () => {
+      const { data } = await supabase.from('college_settings').select('*').single();
+      return data;
+    }
+  });
+  
+  const activeSessionId = collegeSettings?.active_session_id || "all";
 
   const [program, setProgram] = useState("all");
   const [sem, setSem] = useState("all");
-  const [sessionId, setSessionId] = useState<string>(activeSessionId);
+  const [selectedSessionId, setSessionId] = useState<string | null>(null);
+  const sessionId = selectedSessionId !== null ? selectedSessionId : activeSessionId;
   const [month, setMonth] = useState<string>("all"); // 1-12
   const [year, setYear] = useState<string>("all");
   const [from, setFrom] = useState<string>("");

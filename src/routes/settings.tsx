@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { useStore, formatReceiptDate, DEFAULT_RECEIPT_FORMAT, type ReceiptFormat } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,21 @@ const FIELDS = [
 ];
 
 function SettingsPage() {
-  const canEdit = useStore((s) => s.can("settings", "edit"));
+  const { user } = useAuth();
+  
+  const { data: canEdit } = useQuery({
+    queryKey: ['canEditSettings', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.from('user_roles').select('role, permissions').eq('id', user.id).single();
+      if (error || !data) return false;
+      if (data.role === 'admin') return true;
+      return !!data.permissions?.settings?.edit;
+    },
+    enabled: !!user,
+  });
+
+  const canEditBool = canEdit ?? false;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-6 py-8">
@@ -53,22 +68,22 @@ function SettingsPage() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Configuration</p>
           <h1 className="font-display text-2xl font-semibold text-foreground">College Payment Settings</h1>
         </div>
-        {!canEdit && (
+        {!canEditBool && (
           <Badge variant="secondary" className="gap-1">
             <Lock className="h-3.5 w-3.5" /> Read-only
           </Badge>
         )}
       </header>
 
-      {!canEdit && (
+      {!canEditBool && (
         <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
           You don't have permission to edit settings. Ask an admin to grant "settings" edit access.
         </div>
       )}
 
-      <CollegeSettingsCard canEdit={canEdit} />
-      <SessionsCard canEdit={canEdit} />
-      <FeeStructuresCard canEdit={canEdit} />
+      <FeeStructuresCard canEdit={canEditBool} />
+      <SessionsCard canEdit={canEditBool} />
+      <CollegeSettingsCard canEdit={canEditBool} />
     </div>
   );
 }
@@ -464,7 +479,7 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
               <SelectTrigger><SelectValue placeholder="Choose program" /></SelectTrigger>
               <SelectContent>
                 {programs?.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name} ({p.code})</SelectItem>
+                  <SelectItem key={p.id} value={p.id}>{p.name === p.code ? p.name : `${p.name} (${p.code})`}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

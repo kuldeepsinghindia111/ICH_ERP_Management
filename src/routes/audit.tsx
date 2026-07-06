@@ -4,6 +4,8 @@ import { ScrollText, FileSpreadsheet, Trash2, ShieldAlert, Check, X } from "luci
 import { toast } from "sonner";
 
 import { useStore, type AuditEvent } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -52,11 +54,32 @@ const EVENT_TONE: Record<AuditEvent, string> = {
 };
 
 function AuditPage() {
-  const logs = useStore((s) => s.auditLog);
-  const clearAuditLog = useStore((s) => s.clearAuditLog);
   const can = useStore((s) => s.can);
   const isAdmin = useStore((s) => s.role) === "admin";
   const canView = can("audit", "view");
+  const queryClient = useQueryClient();
+
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ['auditLogs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(500);
+      if (error) throw error;
+      return data;
+    },
+    enabled: canView
+  });
+
+  const clearAuditLogMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
+      toast.success("Audit log cleared");
+    },
+    onError: (e: any) => toast.error(e.message)
+  });
 
   const [event, setEvent] = useState<string>("all");
   const [q, setQ] = useState("");
@@ -77,9 +100,9 @@ function AuditPage() {
     const t = debouncedQ.trim().toLowerCase();
     return logs
       .filter((l) => (event === "all" ? true : l.event === event))
-      .filter((l) => (userId === "all" ? true : l.actorUserId === userId))
-      .filter((l) => (!studentId ? true : l.studentId === studentId))
-      .filter((l) => (!t ? true : l.summary.toLowerCase().includes(t) || (l.actorName ?? "").toLowerCase().includes(t) || (l.actorCode ?? "").toLowerCase().includes(t)));
+      .filter((l) => (userId === "all" ? true : l.actor_user_id === userId))
+      .filter((l) => (!studentId ? true : l.student_id === studentId))
+      .filter((l) => (!t ? true : l.summary.toLowerCase().includes(t) || (l.actor_name ?? "").toLowerCase().includes(t) || (l.actor_code ?? "").toLowerCase().includes(t)));
   }, [logs, event, userId, studentId, debouncedQ]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -92,11 +115,11 @@ function AuditPage() {
     const header = ["Timestamp", "User ID", "User", "Role", "Event", "Summary"];
     const lines = rows.map((l) =>
       [
-        new Date(l.at).toISOString(),
-        l.actorCode ?? "",
-        l.actorName ?? l.actor,
-        l.actor,
-        EVENT_LABEL[l.event],
+        new Date(l.created_at).toISOString(),
+        l.actor_code ?? "",
+        l.actor_name ?? l.actor_role,
+        l.actor_role,
+        EVENT_LABEL[l.event as AuditEvent],
         l.summary,
       ].map(escape).join(","),
     );
@@ -150,7 +173,10 @@ function AuditPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { clearAuditLog(); toast.success("Audit log cleared"); }}>
+                <AlertDialogAction disabled={clearAuditLogMutation.isPending} onClick={(e) => { 
+                  e.preventDefault(); 
+                  clearAuditLogMutation.mutate(undefined, { onSuccess: () => setPage(1) }); 
+                }}>
                   Clear log
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -232,21 +258,25 @@ function AuditPage() {
                 )}
                 {pageRows.map((l) => (
                   <tr key={l.id}>
-                    <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">
-                      {new Date(l.at).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2">
-                      <p className="text-sm">{l.actorName ?? "—"}</p>
-                      <p className="font-mono text-[10px] text-muted-foreground">{l.actorCode ?? l.actorUserId ?? ""}</p>
-                    </td>
-                    <td className="px-3 py-2">
-                      <Badge variant="outline" className="capitalize">{l.actor}</Badge>
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-block rounded-md px-2 py-0.5 text-[11px] ${EVENT_TONE[l.event]}`}>
-                        {EVENT_LABEL[l.event]}
-                      </span>
-                    </td>
+                      <td className="px-4 py-3 align-top whitespace-nowrap text-muted-foreground">
+                        {new Date(l.created_at).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary uppercase">
+                            {((l.actor_name || l.actor_role) as string).substring(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{l.actor_name || "Unknown"}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase">{l.actor_code} · {l.actor_role}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <Badge variant="outline" className={`border-0 ${EVENT_TONE[l.event as AuditEvent] || ""}`}>
+                          {EVENT_LABEL[l.event as AuditEvent] || l.event}
+                        </Badge>
+                      </td>
                     <td className="px-3 py-2 text-sm text-foreground">{l.summary}</td>
                   </tr>
                 ))}

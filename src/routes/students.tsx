@@ -4,7 +4,7 @@ import { Plus, Search, Trash2, Loader2, Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { useStore, studentTotals, inr } from "@/lib/store";
+import { useStore, studentTotals, inr, type FeeCharge, type FeeAdjustment, type FeePayment } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -29,10 +29,43 @@ export const Route = createFileRoute("/students")({
 function StudentsPage() {
   const { user } = useAuth();
   
-  // Legacy data used for temporary balance calc (to be migrated later)
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
+  const { data: charges = [] } = useQuery({
+    queryKey: ['fee_charges'],
+    queryFn: async () => {
+      const { data } = await supabase.from('fee_charges').select('*');
+      return (data || []).map(c => ({
+        ...c,
+        studentId: c.student_id,
+        createdAt: c.created_at,
+      })) as FeeCharge[];
+    }
+  });
+
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['fee_adjustments'],
+    queryFn: async () => {
+      const { data } = await supabase.from('fee_adjustments').select('*');
+      return (data || []).map(a => ({
+        ...a,
+        studentId: a.student_id,
+        createdAt: a.created_at,
+      })) as FeeAdjustment[];
+    }
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ['fee_payments'],
+    queryFn: async () => {
+      const { data } = await supabase.from('fee_payments').select('*');
+      return (data || []).map(p => ({
+        ...p,
+        studentId: p.student_id,
+        paidAt: p.paid_at,
+        voidReason: p.void_reason,
+        voidedAt: p.voided_at,
+      })) as FeePayment[];
+    }
+  });
 
   // Get user's permissions
   const { data: canEdit } = useQuery({

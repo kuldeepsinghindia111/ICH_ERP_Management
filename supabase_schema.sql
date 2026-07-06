@@ -293,3 +293,30 @@ SELECT id, 1, 'CA101', 'Programming in C', 4 FROM public.programs WHERE name = '
 
 INSERT INTO public.courses (program_id, semester, code, title, credits)
 SELECT id, 2, 'CA201', 'Data Structures', 4 FROM public.programs WHERE name = 'BCA';
+
+-- 12. Create Audit Logs Table
+CREATE TABLE public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    actor_user_id UUID REFERENCES public.user_roles(id) ON DELETE SET NULL,
+    actor_name TEXT NOT NULL,
+    actor_code TEXT,
+    actor_role TEXT NOT NULL,
+    event TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    student_id UUID REFERENCES public.students(id) ON DELETE CASCADE
+);
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users with audit view permission can read audit_logs" ON public.audit_logs
+    FOR SELECT TO authenticated USING (public.has_permission('audit', 'view'));
+
+CREATE POLICY "Users can insert into audit_logs" ON public.audit_logs
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = actor_user_id);
+
+CREATE POLICY "Admins can delete audit logs" ON public.audit_logs
+    FOR DELETE TO authenticated USING (
+        (SELECT role FROM public.user_roles WHERE id = auth.uid()) = 'admin'
+    );
+

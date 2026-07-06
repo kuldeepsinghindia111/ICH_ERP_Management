@@ -51,6 +51,16 @@ export function CollectPaymentDialog({
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from('user_roles').select('*').eq('id', user.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: canEditPayments } = useQuery({
     queryKey: ['canEditPayments', user?.id],
     queryFn: async () => {
@@ -205,6 +215,18 @@ export function CollectPaymentDialog({
         paid_at: data.paidAt,
       }]);
       if (error) throw error;
+      
+      if (userRole && student) {
+        await supabase.from('audit_logs').insert([{
+          actor_user_id: userRole.id,
+          actor_name: userRole.name,
+          actor_code: userRole.user_code,
+          actor_role: userRole.role,
+          event: 'payment.collected',
+          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`,
+          student_id: data.studentId,
+        }]);
+      }
     },
     onSuccess: () => {
       toast.success("Payment recorded successfully");

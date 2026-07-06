@@ -38,6 +38,16 @@ function StudentDetail() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from('user_roles').select('*').eq('id', user.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: canEditPayments } = useQuery({
     queryKey: ['canEditPayments', user?.id],
     queryFn: async () => {
@@ -266,12 +276,13 @@ function StudentDetail() {
             {semesters.map((n) => (
               <TabsContent key={n} value={String(n)} className="pt-4">
                 <SemesterLedger 
-                  studentId={student.id} 
+                  student={student} 
                   semester={n} 
                   charges={charges} 
                   adjustments={adjustments} 
                   payments={payments}
                   canEditPayments={canEditPayments ?? false} 
+                  userRole={userRole}
                 />
               </TabsContent>
             ))}
@@ -284,6 +295,7 @@ function StudentDetail() {
         program={program}
         payments={payments} 
         canEditPayments={canEditPayments ?? false}
+        userRole={userRole}
       />
     </div>
 
@@ -303,12 +315,14 @@ function TotalPill({
 }
 
 function SemesterLedger({ 
-  studentId, semester, charges, adjustments, payments, canEditPayments 
+  student, semester, charges, adjustments, payments, canEditPayments, userRole 
 }: { 
-  studentId: string; semester: number; 
+  student: any; semester: number; 
   charges: any[]; adjustments: any[]; payments: any[];
   canEditPayments: boolean;
+  userRole?: any;
 }) {
+  const studentId = student.id;
   const queryClient = useQueryClient();
 
   const removeChargeMutation = useMutation({
@@ -385,7 +399,7 @@ function SemesterLedger({
         />
         <LedgerBlock
           title="Payments"
-          addBtn={canEditPayments ? <AddPaymentDialog studentId={studentId} semester={semester} defaultAmount={Math.max(sum.balance, 0)} /> : <></>}
+          addBtn={canEditPayments ? <AddPaymentDialog student={student} semester={semester} defaultAmount={Math.max(sum.balance, 0)} userRole={userRole} /> : <></>}
           rows={sum.payments.map((p) => ({
             id: p.id,
             main: `${p.method.toUpperCase()}${p.voided ? " · VOID" : ""}`,
@@ -615,8 +629,8 @@ function AddAdjustmentDialog({ studentId, semester }: { studentId: string; semes
 }
 
 function AddPaymentDialog({
-  studentId, semester, defaultAmount,
-}: { studentId: string; semester: number; defaultAmount: number }) {
+  student, semester, defaultAmount, userRole
+}: { student: any; semester: number; defaultAmount: number; userRole?: any }) {
   const queryClient = useQueryClient();
   const addPaymentMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -629,9 +643,21 @@ function AddPaymentDialog({
         paid_at: new Date().toISOString(),
       }]);
       if (error) throw error;
+      
+      if (userRole) {
+        await supabase.from('audit_logs').insert([{
+          actor_user_id: userRole.id,
+          actor_name: userRole.name,
+          actor_code: userRole.user_code,
+          actor_role: userRole.role,
+          event: 'payment.collected',
+          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`,
+          student_id: data.studentId,
+        }]);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fee_payments', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['fee_payments', student.id] });
       queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
       toast.success("Payment recorded");
       setOpen(false); setReference("");
@@ -679,7 +705,7 @@ function AddPaymentDialog({
             onClick={() => {
               const amt = Number(amount);
               if (!amt || amt <= 0) return toast.error("Enter a valid amount");
-              addPaymentMutation.mutate({ studentId, semester, amount: amt, method, reference: reference.trim() || undefined });
+              addPaymentMutation.mutate({ studentId: student.id, semester, amount: amt, method, reference: reference.trim() || undefined });
             }}
           >
             {addPaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -693,7 +719,7 @@ function AddPaymentDialog({
 
 // ---------- Payment history with filters + void ----------
 
-function PaymentHistory({ student, program, payments, canEditPayments }: { student: any, program: any, payments: any[], canEditPayments: boolean }) {
+function PaymentHistory({ student, program, payments, canEditPayments, userRole }: { student: any, program: any, payments: any[], canEditPayments: boolean, userRole?: any }) {
   const queryClient = useQueryClient();
   const paymentInfo = useStore((s) => s.paymentInfo);
   const isAdmin = canEditPayments;
@@ -777,13 +803,25 @@ function PaymentHistory({ student, program, payments, canEditPayments }: { stude
   };
 
   const voidPaymentMutation = useMutation({
-    mutationFn: async ({ id, reason }: { id: string, reason?: string }) => {
+    mutationFn: async ({ id, reason, payment }: { id: string, reason?: string, payment: any }) => {
       const { error } = await supabase.from('fee_payments').update({
         voided: true,
         voided_at: new Date().toISOString(),
         void_reason: reason,
       }).eq('id', id);
       if (error) throw error;
+
+      if (userRole) {
+        await supabase.from('audit_logs').insert([{
+          actor_user_id: userRole.id,
+          actor_name: userRole.name,
+          actor_code: userRole.user_code,
+          actor_role: userRole.role,
+          event: 'payment.voided',
+          summary: `Voided payment of ₹${payment.amount} for ${student.name} (Sem ${payment.semester}). Reason: ${reason || 'None'}`,
+          student_id: student.id,
+        }]);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fee_payments', student.id] });
@@ -794,13 +832,25 @@ function PaymentHistory({ student, program, payments, canEditPayments }: { stude
   });
 
   const unvoidPaymentMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (payment: any) => {
       const { error } = await supabase.from('fee_payments').update({
         voided: false,
         voided_at: null,
         void_reason: null,
-      }).eq('id', id);
+      }).eq('id', payment.id);
       if (error) throw error;
+      
+      if (userRole) {
+        await supabase.from('audit_logs').insert([{
+          actor_user_id: userRole.id,
+          actor_name: userRole.name,
+          actor_code: userRole.user_code,
+          actor_role: userRole.role,
+          event: 'payment.unvoided',
+          summary: `Reversed void for payment of ₹${payment.amount} for ${student.name} (Sem ${payment.semester})`,
+          student_id: student.id,
+        }]);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fee_payments', student.id] });
@@ -923,7 +973,7 @@ function PaymentHistory({ student, program, payments, canEditPayments }: { stude
                           title={isAdmin ? "Un-void" : "Admin only"}
                           disabled={!isAdmin || unvoidPaymentMutation.isPending}
                           onClick={() => {
-                            unvoidPaymentMutation.mutate(p.id);
+                            unvoidPaymentMutation.mutate(p);
                           }}
                         >
                           {isAdmin ? <Undo2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
@@ -931,7 +981,7 @@ function PaymentHistory({ student, program, payments, canEditPayments }: { stude
                       ) : (
                         <VoidPaymentDialog 
                           paymentId={p.id} 
-                          voidPayment={(id, reason) => voidPaymentMutation.mutate({ id, reason })} 
+                          voidPayment={(id, reason) => voidPaymentMutation.mutate({ id, reason, payment: p })} 
                           isAdmin={isAdmin}
                           isPending={voidPaymentMutation.isPending}
                         />
