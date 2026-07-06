@@ -34,7 +34,8 @@ export type Student = {
   name: string;
   programId: string;
   currentSemester: number;
-  rolls: Record<number, string>;
+  rollNumber: string;
+  pastRollNumbers?: string[];
   email?: string;
   phone?: string;
   guardian?: string;

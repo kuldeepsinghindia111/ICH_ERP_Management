@@ -157,7 +157,6 @@ function StudentDetail() {
   const activeSemValue = activeSem ?? String(currentSemester);
 
   const semesters = Array.from({ length: program?.total_semesters ?? 6 }, (_, i) => i + 1);
-  const rolls = student.rolls || {};
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -236,25 +235,28 @@ function StudentDetail() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-lg">Semester-wise rolls</CardTitle>
+          <CardTitle className="font-display text-lg">Roll Number</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Current and past roll numbers.
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {semesters.map((n) => (
-              <div key={n} className="rounded-md border border-border bg-card p-3">
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Semester {n}</p>
-                <Input
-                  className="mt-2 font-mono text-sm"
-                  placeholder="Roll no."
-                  value={rolls[n] ?? ""}
-                  disabled={!canEditStudents}
-                  onChange={(e) => {
-                    const newRolls = { ...rolls, [n]: e.target.value };
-                    updateStudentMutation.mutate({ rolls: newRolls });
-                  }}
-                />
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Current Roll No.</p>
+              <div className="mt-2 font-mono text-xl font-medium">{student.roll_number}</div>
+            </div>
+            
+            {student.past_roll_numbers && student.past_roll_numbers.length > 0 && (
+              <div>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Past Roll Numbers</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {student.past_roll_numbers.map((r: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="font-mono text-xs">{r}</Badge>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>

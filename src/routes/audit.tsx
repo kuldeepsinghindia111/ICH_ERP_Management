@@ -59,28 +59,6 @@ function AuditPage() {
   const canView = can("audit", "view");
   const queryClient = useQueryClient();
 
-  const { data: logs = [], isLoading } = useQuery({
-    queryKey: ['auditLogs'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(500);
-      if (error) throw error;
-      return data;
-    },
-    enabled: canView
-  });
-
-  const clearAuditLogMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
-      toast.success("Audit log cleared");
-    },
-    onError: (e: any) => toast.error(e.message)
-  });
-
   const [event, setEvent] = useState<string>("all");
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -96,17 +74,29 @@ function AuditPage() {
   }, [q]);
   useEffect(() => { setPage(1); }, [debouncedQ, event, userId, studentId]);
 
-  const rows = useMemo(() => {
-    const t = debouncedQ.trim().toLowerCase();
-    return logs
-      .filter((l) => (event === "all" ? true : l.event === event))
-      .filter((l) => (userId === "all" ? true : l.actor_user_id === userId))
-      .filter((l) => (!studentId ? true : l.student_id === studentId))
-      .filter((l) => (!t ? true : l.summary.toLowerCase().includes(t) || (l.actor_name ?? "").toLowerCase().includes(t) || (l.actor_code ?? "").toLowerCase().includes(t)));
-  }, [logs, event, userId, studentId, debouncedQ]);
+  const { data: { logs = [], total = 0 } = {}, isLoading } = useQuery({
+    queryKey: ['auditLogs', page, debouncedQ, event, userId, studentId],
+    queryFn: async () => {
+      let query = supabase.from('audit_logs').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+      
+      if (event !== "all") query = query.eq('event', event);
+      if (userId !== "all") query = query.eq('actor_user_id', userId);
+      if (studentId) query = query.eq('student_id', studentId);
+      if (debouncedQ) {
+        query = query.or(`summary.ilike.%${debouncedQ}%,actor_name.ilike.%${debouncedQ}%,actor_code.ilike.%${debouncedQ}%`);
+      }
+      
+      query = query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+      
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { logs: data, total: count || 0 };
+    },
+    enabled: canView
+  });
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rows = logs;
 
 
   const exportCsv = () => {
@@ -160,7 +150,7 @@ function AuditPage() {
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button size="sm" variant="ghost" disabled={!isAdmin || logs.length === 0}>
+              <Button size="sm" variant="ghost" disabled={!isAdmin || total === 0}>
                 <Trash2 className="mr-1 h-4 w-4" /> Clear
               </Button>
             </AlertDialogTrigger>
@@ -168,14 +158,20 @@ function AuditPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Clear audit log?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes all {logs.length} audit entries. Payment records themselves are not affected.
+                  This removes all audit entries. Payment records themselves are not affected.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction disabled={clearAuditLogMutation.isPending} onClick={(e) => { 
+                <AlertDialogAction onClick={async (e) => { 
                   e.preventDefault(); 
-                  clearAuditLogMutation.mutate(undefined, { onSuccess: () => setPage(1) }); 
+                  const { error } = await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                  if (error) toast.error(error.message);
+                  else {
+                    queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
+                    toast.success("Audit log cleared");
+                    setPage(1);
+                  }
                 }}>
                   Clear log
                 </AlertDialogAction>
@@ -229,7 +225,7 @@ function AuditPage() {
           </div>
           {(studentId || userId !== "all" || event !== "all" || q) && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{rows.length} matching entries</span>
+              <span>{total} matching entries</span>
               <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => { setStudentId(null); setUserId("all"); setEvent("all"); setQ(""); }}>
                 <X className="mr-1 h-3 w-3" /> Clear filters
               </Button>
@@ -256,7 +252,7 @@ function AuditPage() {
                     </td>
                   </tr>
                 )}
-                {pageRows.map((l) => (
+                {rows.map((l) => (
                   <tr key={l.id}>
                       <td className="px-4 py-3 align-top whitespace-nowrap text-muted-foreground">
                         {new Date(l.created_at).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
@@ -284,10 +280,10 @@ function AuditPage() {
             </table>
           </div>
 
-          {rows.length > 0 && (
+          {total > 0 && (
             <div className="flex items-center justify-between px-1 pt-2 text-xs text-muted-foreground">
               <span>
-                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
+                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
               </span>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>

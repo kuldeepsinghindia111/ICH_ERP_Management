@@ -19,8 +19,8 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/students")({
   head: () => ({
     meta: [
-      { title: "Students — Imperial CMS" },
-      { name: "description", content: "Directory of enrolled students with class and semester rolls." },
+      { title: "Student Management — Imperial CMS" },
+      { name: "description", content: "Directory of enrolled students with permanent roll numbers." },
     ],
   }),
   component: StudentsPage,
@@ -89,34 +89,37 @@ function StudentsPage() {
     }
   });
 
-  const { data: students = [], isLoading: loadingStudents } = useQuery({
-    queryKey: ['students'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('students').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    }
-  });
-
   const [q, setQ] = useState("");
   const [programFilter, setProgramFilter] = useState<string>("all");
   const [sem, setSem] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
-  const filtered = useMemo(() => {
-    return students.filter((s: any) => {
-      if (programFilter !== "all" && s.program_id !== programFilter) return false;
-      if (sem !== "all" && s.current_semester !== Number(sem)) return false;
+  const { data: { students = [], total = 0 } = {}, isLoading: loadingStudents } = useQuery({
+    queryKey: ['students', page, q, programFilter, sem],
+    queryFn: async () => {
+      let query = supabase.from('students').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+      
+      if (programFilter !== "all") query = query.eq('program_id', programFilter);
+      if (sem !== "all") query = query.eq('current_semester', Number(sem));
       if (q) {
-        const t = q.toLowerCase();
-        const hit =
-          (s.name || "").toLowerCase().includes(t) ||
-          (s.admission_no || "").toLowerCase().includes(t) ||
-          Object.values(s.rolls || {}).some((r: any) => String(r).toLowerCase().includes(t));
-        if (!hit) return false;
+        query = query.or(`name.ilike.%${q}%,admission_no.ilike.%${q}%,roll_number.ilike.%${q}%`);
       }
-      return true;
-    });
-  }, [students, q, programFilter, sem]);
+      
+      query = query.range((page - 1) * pageSize, page * pageSize - 1);
+      
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { students: data, total: count || 0 };
+    }
+  });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [q, programFilter, sem]);
 
   if (loadingPrograms || loadingStudents) {
     return (
@@ -131,9 +134,9 @@ function StudentsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Registry</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Students</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Student Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {students.length} enrolled · semester-wise roll numbers tracked per student.
+            {total} enrolled · Permanent roll numbers tracked per student.
           </p>
         </div>
         {canEdit && <StudentFormDialog programs={programs} />}
@@ -187,10 +190,10 @@ function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.length === 0 && (
+                {students.length === 0 && (
                   <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No students match your filters.</td></tr>
                 )}
-                {filtered.map((s: any) => {
+                {students.map((s: any) => {
                   const program = programs.find((p: any) => p.id === s.program_id);
                   // Temporary local-storage balance computation. Will show 0 for new supabase students until fees are migrated.
                   const t = studentTotals(s.id, s.current_semester, { charges, adjustments, payments });
@@ -217,7 +220,7 @@ function StudentsPage() {
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
                       <td className="px-4 py-3">{program?.name ?? "—"}</td>
                       <td className="px-4 py-3">Sem {s.current_semester}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{(s.rolls && s.rolls[s.current_semester]) || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         {t.balance > 0 ? (
                           <Badge variant="destructive">{inr(t.balance)}</Badge>
@@ -236,6 +239,23 @@ function StudentsPage() {
           </div>
         </CardContent>
       </Card>
+      
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} students
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+              Previous
+            </Button>
+            <p className="text-sm font-medium">Page {page} of {totalPages}</p>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -252,7 +272,7 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
     name: "",
     programId: programs[0]?.id ?? "",
     currentSemester: 1,
-    roll: "",
+    rollNumber: "",
     joinedYear: new Date().getFullYear(),
     email: "",
     phone: "",
@@ -277,7 +297,7 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
         name: student.name || "",
         programId: student.program_id || programs[0]?.id || "",
         currentSemester: student.current_semester || 1,
-        roll: (student.rolls && student.rolls[student.current_semester]) || "",
+        rollNumber: student.roll_number || "",
         joinedYear: student.joined_year || new Date().getFullYear(),
         email: student.email || "",
         phone: student.phone || "",
@@ -299,7 +319,7 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
         name: "",
         programId: programs[0]?.id ?? "",
         currentSemester: 1,
-        roll: "",
+        rollNumber: "",
         joinedYear: new Date().getFullYear(),
         email: "",
         phone: "",
@@ -316,6 +336,46 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
       });
     }
   }, [isEditing, student, open, programs]);
+
+  // Auto-increment global admission no
+  useEffect(() => {
+    if (isEditing || !open) return;
+    async function fetchMaxAdmission() {
+      const { data } = await supabase.from('students').select('admission_no').order('created_at', { ascending: false }).limit(1);
+      if (data && data.length > 0) {
+        const lastAd = data[0].admission_no;
+        const match = lastAd.match(/\d+$/);
+        if (match) {
+          const next = (parseInt(match[0], 10) + 1).toString().padStart(match[0].length, '0');
+          setForm(f => ({ ...f, admissionNo: lastAd.replace(/\d+$/, next) }));
+        }
+      }
+    }
+    fetchMaxAdmission();
+  }, [isEditing, open]);
+
+  // Auto-increment program-specific roll no
+  useEffect(() => {
+    if (isEditing || !open || !form.programId) return;
+    async function fetchMaxRoll() {
+      const { data } = await supabase.from('students')
+        .select('roll_number')
+        .eq('program_id', form.programId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        const lastRoll = data[0].roll_number;
+        const match = lastRoll.match(/\d+$/);
+        if (match) {
+          const next = (parseInt(match[0], 10) + 1).toString().padStart(match[0].length, '0');
+          setForm(f => ({ ...f, rollNumber: lastRoll.replace(/\d+$/, next) }));
+        }
+      } else {
+        setForm(f => ({ ...f, rollNumber: "" }));
+      }
+    }
+    fetchMaxRoll();
+  }, [isEditing, open, form.programId]);
 
   const saveStudentMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -395,10 +455,7 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
     
     setErrors({});
 
-    const rolls: Record<number, string> = isEditing && student.rolls ? { ...student.rolls } : {};
-    if (form.roll) rolls[form.currentSemester] = form.roll;
-    
-    saveStudentMutation.mutate({
+    const dataToSave: any = {
       admission_no: form.admissionNo.trim(),
       name: form.name.trim(),
       program_id: form.programId,
@@ -417,8 +474,14 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
       state: form.state || null,
       pincode: form.pincode || null,
       status: "active",
-      rolls,
-    });
+      roll_number: form.rollNumber.trim(),
+    };
+
+    if (isEditing && form.rollNumber.trim() !== student.roll_number) {
+      dataToSave.past_roll_numbers = [...(student.past_roll_numbers || []), student.roll_number];
+    }
+    
+    saveStudentMutation.mutate(dataToSave);
   };
   
   const handleDelete = () => {
@@ -501,8 +564,8 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
             </Select>
           </div>
           <div className="sm:col-span-2">
-            <Label>Roll no. (for current semester)</Label>
-            <Input value={form.roll} onChange={(e) => setField('roll', e.target.value)} placeholder="e.g. BC24-15" />
+            <Label>Roll Number</Label>
+            <Input value={form.rollNumber} onChange={(e) => setField('rollNumber', e.target.value)} placeholder="e.g. 260bca001" />
           </div>
         </div>
 
