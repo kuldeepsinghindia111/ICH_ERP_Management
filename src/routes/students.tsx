@@ -1,21 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Plus, Search, Trash2, Loader2, Pencil } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { useStore, studentTotals, inr } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-  DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/students")({
   head: () => ({
@@ -28,33 +27,71 @@ export const Route = createFileRoute("/students")({
 });
 
 function StudentsPage() {
-  const students = useStore((s) => s.students);
-  const programs = useStore((s) => s.programs);
+  const { user } = useAuth();
+  
+  // Legacy data used for temporary balance calc (to be migrated later)
   const charges = useStore((s) => s.charges);
   const adjustments = useStore((s) => s.adjustments);
   const payments = useStore((s) => s.payments);
-  const removeStudent = useStore((s) => s.removeStudent);
-  const canEdit = useStore((s) => s.can("students", "edit"));
+
+  // Get user's permissions
+  const { data: canEdit } = useQuery({
+    queryKey: ['canEditStudents', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.from('user_roles').select('role, permissions').eq('id', user.id).single();
+      if (error || !data) return false;
+      if (data.role === 'admin') return true;
+      return !!data.permissions?.students?.edit;
+    },
+    enabled: !!user,
+  });
+
+  const { data: programs = [], isLoading: loadingPrograms } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*').order('created_at', { ascending: true });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const [q, setQ] = useState("");
-  const [program, setProgram] = useState<string>("all");
+  const [programFilter, setProgramFilter] = useState<string>("all");
   const [sem, setSem] = useState<string>("all");
 
   const filtered = useMemo(() => {
-    return students.filter((s) => {
-      if (program !== "all" && s.programId !== program) return false;
-      if (sem !== "all" && s.currentSemester !== Number(sem)) return false;
+    return students.filter((s: any) => {
+      if (programFilter !== "all" && s.program_id !== programFilter) return false;
+      if (sem !== "all" && s.current_semester !== Number(sem)) return false;
       if (q) {
         const t = q.toLowerCase();
         const hit =
-          s.name.toLowerCase().includes(t) ||
-          s.admissionNo.toLowerCase().includes(t) ||
-          Object.values(s.rolls).some((r) => r.toLowerCase().includes(t));
+          (s.name || "").toLowerCase().includes(t) ||
+          (s.admission_no || "").toLowerCase().includes(t) ||
+          Object.values(s.rolls || {}).some((r: any) => String(r).toLowerCase().includes(t));
         if (!hit) return false;
       }
       return true;
     });
-  }, [students, q, program, sem]);
+  }, [students, q, programFilter, sem]);
+
+  if (loadingPrograms || loadingStudents) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -66,7 +103,7 @@ function StudentsPage() {
             {students.length} enrolled · semester-wise roll numbers tracked per student.
           </p>
         </div>
-        {canEdit && <AddStudentDialog />}
+        {canEdit && <StudentFormDialog programs={programs} />}
       </div>
 
       <Card>
@@ -80,11 +117,11 @@ function StudentsPage() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <Select value={program} onValueChange={setProgram}>
+          <Select value={programFilter} onValueChange={setProgramFilter}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Program" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All programs</SelectItem>
-              {programs.map((p) => (
+              {programs.map((p: any) => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
             </SelectContent>
@@ -120,26 +157,34 @@ function StudentsPage() {
                 {filtered.length === 0 && (
                   <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No students match your filters.</td></tr>
                 )}
-                {filtered.map((s) => {
-                  const program = programs.find((p) => p.id === s.programId);
-                  const t = studentTotals(s.id, s.currentSemester, { charges, adjustments, payments });
+                {filtered.map((s: any) => {
+                  const program = programs.find((p: any) => p.id === s.program_id);
+                  // Temporary local-storage balance computation. Will show 0 for new supabase students until fees are migrated.
+                  const t = studentTotals(s.id, s.current_semester, { charges, adjustments, payments });
+                  
+                  // Safe initial logic for students with single-word names
+                  const parts = s.name.split(" ");
+                  const initials = parts.length > 1 
+                    ? parts[0][0] + parts[1][0] 
+                    : s.name.substring(0, 2);
+
                   return (
                     <tr key={s.id} className="hover:bg-accent/40">
                       <td className="px-4 py-3">
                         <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                            {s.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary uppercase">
+                            {initials}
                           </div>
                           <div>
                             <p className="font-medium text-foreground">{s.name}</p>
-                            <p className="text-xs text-muted-foreground">{s.email}</p>
+                            <p className="text-xs text-muted-foreground">{s.email || "—"}</p>
                           </div>
                         </Link>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admissionNo}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
                       <td className="px-4 py-3">{program?.name ?? "—"}</td>
-                      <td className="px-4 py-3">Sem {s.currentSemester}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{s.rolls[s.currentSemester] || "—"}</td>
+                      <td className="px-4 py-3">Sem {s.current_semester}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{(s.rolls && s.rolls[s.current_semester]) || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         {t.balance > 0 ? (
                           <Badge variant="destructive">{inr(t.balance)}</Badge>
@@ -148,20 +193,7 @@ function StudentsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="ghost" size="icon"
-                          disabled={!canEdit}
-                          title={canEdit ? "Delete student" : "You don't have permission to delete students"}
-                          onClick={() => {
-                            if (!canEdit) return;
-                            if (confirm(`Delete ${s.name}? This removes all fee records.`)) {
-                              removeStudent(s.id);
-                              toast.success("Student removed");
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {canEdit && <StudentFormDialog programs={programs} student={s} />}
                       </td>
                     </tr>
                   );
@@ -175,10 +207,13 @@ function StudentsPage() {
   );
 }
 
-function AddStudentDialog() {
-  const programs = useStore((s) => s.programs);
-  const addStudent = useStore((s) => s.addStudent);
+function StudentFormDialog({ programs, student }: { programs: any[], student?: any }) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const isEditing = !!student;
+  
   const [form, setForm] = useState({
     admissionNo: "",
     name: "",
@@ -190,7 +225,7 @@ function AddStudentDialog() {
     phone: "",
     guardian: "",
     guardianPhone: "",
-    gender: "male" as "male" | "female" | "other",
+    gender: "male",
     dob: "",
     category: "General",
     bloodGroup: "",
@@ -200,86 +235,230 @@ function AddStudentDialog() {
     pincode: "",
   });
 
+  // Pre-fill form when editing
+  useEffect(() => {
+    setErrors({});
+    if (isEditing && open) {
+      setForm({
+        admissionNo: student.admission_no || "",
+        name: student.name || "",
+        programId: student.program_id || programs[0]?.id || "",
+        currentSemester: student.current_semester || 1,
+        roll: (student.rolls && student.rolls[student.current_semester]) || "",
+        joinedYear: student.joined_year || new Date().getFullYear(),
+        email: student.email || "",
+        phone: student.phone || "",
+        guardian: student.guardian || "",
+        guardianPhone: student.guardian_phone || "",
+        gender: student.gender || "male",
+        dob: student.dob || "",
+        category: student.category || "General",
+        bloodGroup: student.blood_group || "",
+        address: student.address || "",
+        city: student.city || "",
+        state: student.state || "",
+        pincode: student.pincode || "",
+      });
+    } else if (!isEditing && open) {
+      // Reset form if opening in Add mode
+      setForm({
+        admissionNo: "",
+        name: "",
+        programId: programs[0]?.id ?? "",
+        currentSemester: 1,
+        roll: "",
+        joinedYear: new Date().getFullYear(),
+        email: "",
+        phone: "",
+        guardian: "",
+        guardianPhone: "",
+        gender: "male",
+        dob: "",
+        category: "General",
+        bloodGroup: "",
+        address: "",
+        city: "",
+        state: "",
+        pincode: "",
+      });
+    }
+  }, [isEditing, student, open, programs]);
+
+  const saveStudentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (isEditing) {
+        const { error } = await supabase.from('students').update(data).eq('id', student.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('students').insert([data]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(isEditing ? "Student updated successfully" : "Student added successfully");
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+  
+  const removeStudentMutation = useMutation({
+    mutationFn: async () => {
+      if (!isEditing) return;
+      const { error } = await supabase.from('students').delete().eq('id', student.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Student removed");
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const submit = () => {
-    if (!form.name.trim() || !form.admissionNo.trim() || !form.programId) {
-      toast.error("Name, admission no. and program are required");
+    const newErrors: Record<string, string> = {};
+    const alphaRegex = /^[A-Za-z\s]+$/;
+    const phoneRegex = /^\d{10}$/;
+
+    if (!form.name.trim()) {
+      newErrors.name = "Full name is required.";
+    } else if (!alphaRegex.test(form.name.trim())) {
+      newErrors.name = "Only alphabets allowed.";
+    }
+
+    if (!form.admissionNo.trim()) {
+      newErrors.admissionNo = "Admission no. is required.";
+    }
+
+    if (!form.programId) {
+      newErrors.programId = "Program is required.";
+    }
+
+    if (form.phone && !phoneRegex.test(form.phone.trim())) {
+      newErrors.phone = "Must be exactly 10 digits.";
+    }
+    
+    if (form.guardian && !alphaRegex.test(form.guardian.trim())) {
+      newErrors.guardian = "Only alphabets allowed.";
+    }
+    
+    if (form.guardianPhone && !phoneRegex.test(form.guardianPhone.trim())) {
+      newErrors.guardianPhone = "Must be exactly 10 digits.";
+    }
+    
+    if (form.city && !alphaRegex.test(form.city.trim())) {
+      newErrors.city = "Only alphabets allowed.";
+    }
+    
+    if (form.state && !alphaRegex.test(form.state.trim())) {
+      newErrors.state = "Only alphabets allowed.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-    const rolls: Record<number, string> = {};
+    
+    setErrors({});
+
+    const rolls: Record<number, string> = isEditing && student.rolls ? { ...student.rolls } : {};
     if (form.roll) rolls[form.currentSemester] = form.roll;
-    addStudent({
-      admissionNo: form.admissionNo.trim(),
+    
+    saveStudentMutation.mutate({
+      admission_no: form.admissionNo.trim(),
       name: form.name.trim(),
-      programId: form.programId,
-      currentSemester: form.currentSemester,
-      joinedYear: form.joinedYear,
-      email: form.email || undefined,
-      phone: form.phone || undefined,
-      guardian: form.guardian || undefined,
-      guardianPhone: form.guardianPhone || undefined,
+      program_id: form.programId,
+      current_semester: form.currentSemester,
+      joined_year: form.joinedYear,
+      email: form.email || null,
+      phone: form.phone || null,
+      guardian: form.guardian || null,
+      guardian_phone: form.guardianPhone || null,
       gender: form.gender,
-      dob: form.dob || undefined,
-      category: form.category || undefined,
-      bloodGroup: form.bloodGroup || undefined,
-      address: form.address || undefined,
-      city: form.city || undefined,
-      state: form.state || undefined,
-      pincode: form.pincode || undefined,
+      dob: form.dob || null,
+      category: form.category || null,
+      blood_group: form.bloodGroup || null,
+      address: form.address || null,
+      city: form.city || null,
+      state: form.state || null,
+      pincode: form.pincode || null,
       status: "active",
       rolls,
     });
-    toast.success("Student added");
-    setOpen(false);
-    setForm((f) => ({
-      ...f, admissionNo: "", name: "", roll: "", email: "", phone: "",
-      guardian: "", guardianPhone: "", dob: "", bloodGroup: "",
-      address: "", city: "", state: "", pincode: "",
-    }));
+  };
+  
+  const handleDelete = () => {
+    if (confirm(`Delete ${student?.name}? This removes all fee records.`)) {
+      removeStudentMutation.mutate();
+    }
   };
 
+  const setField = (field: string, value: any) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    if (errors[field]) setErrors((e) => ({ ...e, [field]: "" }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button><Plus className="mr-1 h-4 w-4" /> New student</Button>
+        {isEditing ? (
+          <Button variant="ghost" size="icon" title="Edit student">
+            <Pencil className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button><Plus className="mr-1 h-4 w-4" /> New student</Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display">Add student</DialogTitle>
-          <DialogDescription>Register a new admission with personal details and current semester roll.</DialogDescription>
+          <DialogTitle className="font-display">{isEditing ? "Edit student" : "Add student"}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? "Update student details." : "Register a new admission with personal details and current semester roll."}
+          </DialogDescription>
         </DialogHeader>
 
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Academic</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Label>Full name</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Label className={errors.name ? "text-destructive" : ""}>Full name</Label>
+            <Input 
+              className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.name} 
+              onChange={(e) => setField('name', e.target.value.replace(/[^A-Za-z\s]/g, ''))} 
+            />
+            {errors.name && <p className="mt-1 text-[10px] text-destructive">{errors.name}</p>}
           </div>
           <div>
-            <Label>Admission no.</Label>
-            <Input value={form.admissionNo} onChange={(e) => setForm({ ...form, admissionNo: e.target.value })} />
+            <Label className={errors.admissionNo ? "text-destructive" : ""}>Admission no.</Label>
+            <Input 
+              className={errors.admissionNo ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.admissionNo} 
+              onChange={(e) => setField('admissionNo', e.target.value)} 
+            />
+            {errors.admissionNo && <p className="mt-1 text-[10px] text-destructive">{errors.admissionNo}</p>}
           </div>
           <div>
             <Label>Joined year</Label>
             <Input type="number" value={form.joinedYear}
-              onChange={(e) => setForm({ ...form, joinedYear: Number(e.target.value) })} />
+              onChange={(e) => setField('joinedYear', Number(e.target.value))} />
           </div>
           <div>
-            <Label>Program</Label>
-            <Select value={form.programId} onValueChange={(v) => setForm({ ...form, programId: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Label className={errors.programId ? "text-destructive" : ""}>Program</Label>
+            <Select value={form.programId} onValueChange={(v) => setField('programId', v)}>
+              <SelectTrigger className={errors.programId ? "border-destructive focus-visible:ring-destructive" : ""}><SelectValue /></SelectTrigger>
               <SelectContent>
-                {programs.map((p) => (
+                {programs.map((p: any) => (
                   <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {errors.programId && <p className="mt-1 text-[10px] text-destructive">{errors.programId}</p>}
           </div>
           <div>
             <Label>Current semester</Label>
             <Select value={String(form.currentSemester)}
-              onValueChange={(v) => setForm({ ...form, currentSemester: Number(v) })}>
+              onValueChange={(v) => setField('currentSemester', Number(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -290,7 +469,7 @@ function AddStudentDialog() {
           </div>
           <div className="sm:col-span-2">
             <Label>Roll no. (for current semester)</Label>
-            <Input value={form.roll} onChange={(e) => setForm({ ...form, roll: e.target.value })} placeholder="e.g. BC24-15" />
+            <Input value={form.roll} onChange={(e) => setField('roll', e.target.value)} placeholder="e.g. BC24-15" />
           </div>
         </div>
 
@@ -298,7 +477,7 @@ function AddStudentDialog() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>Gender</Label>
-            <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v as typeof form.gender })}>
+            <Select value={form.gender} onValueChange={(v) => setField('gender', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="male">Male</SelectItem>
@@ -309,11 +488,11 @@ function AddStudentDialog() {
           </div>
           <div>
             <Label>Date of birth</Label>
-            <Input type="date" value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
+            <Input type="date" value={form.dob} onChange={(e) => setField('dob', e.target.value)} />
           </div>
           <div>
             <Label>Category</Label>
-            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+            <Select value={form.category} onValueChange={(v) => setField('category', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {["General", "OBC", "SC", "ST", "EWS"].map((c) => (
@@ -324,52 +503,94 @@ function AddStudentDialog() {
           </div>
           <div>
             <Label>Blood group</Label>
-            <Input value={form.bloodGroup} onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })} placeholder="e.g. O+" />
+            <Input value={form.bloodGroup} onChange={(e) => setField('bloodGroup', e.target.value)} placeholder="e.g. O+" />
           </div>
         </div>
 
         <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Contact</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label>Mobile no.</Label>
-            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 …" />
+            <Label className={errors.phone ? "text-destructive" : ""}>Mobile no.</Label>
+            <Input 
+              type="text" 
+              maxLength={10} 
+              className={errors.phone ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.phone} 
+              onChange={(e) => setField('phone', e.target.value.replace(/\D/g, ''))} 
+              placeholder="10-digit number" 
+            />
+            {errors.phone && <p className="mt-1 text-[10px] text-destructive">{errors.phone}</p>}
           </div>
           <div>
             <Label>Email</Label>
-            <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input value={form.email} onChange={(e) => setField('email', e.target.value)} />
           </div>
           <div>
-            <Label>Guardian name</Label>
-            <Input value={form.guardian} onChange={(e) => setForm({ ...form, guardian: e.target.value })} />
+            <Label className={errors.guardian ? "text-destructive" : ""}>Guardian name</Label>
+            <Input 
+              className={errors.guardian ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.guardian} 
+              onChange={(e) => setField('guardian', e.target.value.replace(/[^A-Za-z\s]/g, ''))} 
+            />
+            {errors.guardian && <p className="mt-1 text-[10px] text-destructive">{errors.guardian}</p>}
           </div>
           <div>
-            <Label>Guardian mobile</Label>
-            <Input value={form.guardianPhone} onChange={(e) => setForm({ ...form, guardianPhone: e.target.value })} />
+            <Label className={errors.guardianPhone ? "text-destructive" : ""}>Guardian mobile</Label>
+            <Input 
+              type="text" 
+              maxLength={10} 
+              className={errors.guardianPhone ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.guardianPhone} 
+              onChange={(e) => setField('guardianPhone', e.target.value.replace(/\D/g, ''))} 
+              placeholder="10-digit number" 
+            />
+            {errors.guardianPhone && <p className="mt-1 text-[10px] text-destructive">{errors.guardianPhone}</p>}
           </div>
           <div className="sm:col-span-2">
             <Label>Address</Label>
-            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="House, street, area" />
+            <Input value={form.address} onChange={(e) => setField('address', e.target.value)} placeholder="House, street, area" />
           </div>
           <div>
-            <Label>City</Label>
-            <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            <Label className={errors.city ? "text-destructive" : ""}>City</Label>
+            <Input 
+              className={errors.city ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.city} 
+              onChange={(e) => setField('city', e.target.value.replace(/[^A-Za-z\s]/g, ''))} 
+            />
+            {errors.city && <p className="mt-1 text-[10px] text-destructive">{errors.city}</p>}
           </div>
           <div>
-            <Label>State</Label>
-            <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+            <Label className={errors.state ? "text-destructive" : ""}>State</Label>
+            <Input 
+              className={errors.state ? "border-destructive focus-visible:ring-destructive" : ""}
+              value={form.state} 
+              onChange={(e) => setField('state', e.target.value.replace(/[^A-Za-z\s]/g, ''))} 
+            />
+            {errors.state && <p className="mt-1 text-[10px] text-destructive">{errors.state}</p>}
           </div>
           <div>
             <Label>Pincode</Label>
-            <Input value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} />
+            <Input value={form.pincode} onChange={(e) => setField('pincode', e.target.value)} />
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit}>Add student</Button>
+        <DialogFooter className="sm:justify-between">
+          <div className="flex justify-start">
+            {isEditing && (
+              <Button type="button" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleDelete} disabled={removeStudentMutation.isPending}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button disabled={saveStudentMutation.isPending} onClick={submit}>
+              {saveStudentMutation.isPending ? 'Saving...' : (isEditing ? 'Save changes' : 'Add student')}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
