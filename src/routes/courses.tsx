@@ -122,10 +122,13 @@ function CoursesPage() {
                           <td className="px-5 py-3 text-right text-muted-foreground">{c.credits} cr.</td>
                           <td className="px-5 py-3 text-right">
                             <div className="flex justify-end gap-1">
-                              <EditCourseDialog course={c} programs={programs} canEdit={canEdit} />
-                              <Button variant="ghost" size="icon" disabled={!canEdit || removeCourse.isPending} onClick={() => removeCourse.mutate(c.id)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              <EditCourseDialog 
+                                course={c} 
+                                programs={programs} 
+                                canEdit={canEdit}
+                                onRemove={() => removeCourse.mutate(c.id)}
+                                isRemoving={removeCourse.isPending}
+                              />
                             </div>
                           </td>
                         </tr>
@@ -207,7 +210,7 @@ function AddCourseDialog({ programs }: { programs: any[] }) {
   );
 }
 
-function EditCourseDialog({ course, programs, canEdit }: { course: any, programs: any[], canEdit: boolean }) {
+function EditCourseDialog({ course, programs, canEdit, onRemove, isRemoving }: { course: any, programs: any[], canEdit: boolean, onRemove: () => void, isRemoving: boolean }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [c, setC] = useState({ ...course });
@@ -263,12 +266,17 @@ function EditCourseDialog({ course, programs, canEdit }: { course: any, programs
           <div><Label>Credits</Label><Input type="number" min={1} value={c.credits} onChange={(e) => setC({ ...c, credits: Number(e.target.value) })} /></div>
           <div className="sm:col-span-2"><Label>Title</Label><Input value={c.title} onChange={(e) => setC({ ...c, title: e.target.value })} /></div>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button disabled={editCourse.isPending} onClick={() => {
-            if (!c.title.trim() || !c.code.trim()) return toast.error("Code and title required");
-            editCourse.mutate(c);
-          }}>Save changes</Button>
+        <DialogFooter className="sm:justify-between">
+          <Button variant="destructive" disabled={!canEdit || isRemoving} onClick={onRemove}>
+            Delete
+          </Button>
+          <div className="flex justify-end gap-2 mt-2 sm:mt-0">
+            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button disabled={editCourse.isPending} onClick={() => {
+              if (!c.title.trim() || !c.code.trim()) return toast.error("Code and title required");
+              editCourse.mutate(c);
+            }}>Save changes</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -76,13 +76,13 @@ function FacultyPage() {
                     <p className="text-xs text-muted-foreground">{f.designation}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <EditFacultyDialog faculty={f} canEdit={canEdit} />
-                  <Button variant="ghost" size="icon" disabled={!canEdit || removeFaculty.isPending} onClick={() => {
-                    if (confirm(`Remove ${f.name}?`)) { removeFaculty.mutate(f.id); }
-                  }}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                <div>
+                  <EditFacultyDialog 
+                    faculty={f} 
+                    canEdit={canEdit}
+                    onRemove={() => { if (confirm(`Remove ${f.name}?`)) { removeFaculty.mutate(f.id); } }}
+                    isRemoving={removeFaculty.isPending}
+                  />
                 </div>
               </div>
               <div className="mt-4 space-y-1 text-xs text-muted-foreground">
@@ -146,7 +146,7 @@ function AddFacultyDialog() {
   );
 }
 
-function EditFacultyDialog({ faculty, canEdit }: { faculty: any, canEdit: boolean }) {
+function EditFacultyDialog({ faculty, canEdit, onRemove, isRemoving }: { faculty: any, canEdit: boolean, onRemove: () => void, isRemoving: boolean }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ ...faculty });
@@ -184,12 +184,17 @@ function EditFacultyDialog({ faculty, canEdit }: { faculty: any, canEdit: boolea
           <div><Label>Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
           <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button disabled={editFaculty.isPending} onClick={() => {
-            if (!f.name.trim()) return toast.error("Name required");
-            editFaculty.mutate(f);
-          }}>Save changes</Button>
+        <DialogFooter className="sm:justify-between">
+          <Button variant="destructive" disabled={!canEdit || isRemoving} onClick={onRemove}>
+            Delete
+          </Button>
+          <div className="flex justify-end gap-2 mt-2 sm:mt-0">
+            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button disabled={editFaculty.isPending} onClick={() => {
+              if (!f.name.trim()) return toast.error("Name required");
+              editFaculty.mutate(f);
+            }}>Save changes</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
