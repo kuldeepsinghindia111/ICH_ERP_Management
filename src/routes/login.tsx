@@ -8,7 +8,6 @@ export const Route = createFileRoute('/login')({
 });
 
 function Login() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -20,30 +19,17 @@ function Login() {
     setLoading(true);
     setError(null);
 
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) {
-        setError(error.message);
-      } else {
-        router.navigate({ to: '/' });
-      }
+    if (error) {
+      setError(error.message);
     } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        toast.success("Please check your email to verify your account.");
-        setIsLogin(true); // Switch back to login after signup
-      }
+      router.navigate({ to: '/' });
     }
+    
     setLoading(false);
   };
 
@@ -51,12 +37,10 @@ function Login() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-foreground mb-2 text-center">
-          {isLogin ? 'Welcome Back' : 'Create an Account'}
+          Welcome Back
         </h1>
         <p className="text-sm text-muted-foreground mb-6 text-center">
-          {isLogin 
-            ? 'Sign in to access the management suite.' 
-            : 'Sign up using the email address you were invited with.'}
+          Sign in to access the management suite.
         </p>
         
         <form onSubmit={handleAuth} className="space-y-4">
@@ -87,19 +71,9 @@ function Login() {
             disabled={loading}
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            {loading ? 'Processing...' : 'Sign In'}
           </button>
         </form>
-        
-        <div className="mt-4 text-center text-sm">
-          <button 
-            type="button" 
-            onClick={() => { setIsLogin(!isLogin); setError(null); }}
-            className="text-primary hover:underline"
-          >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-          </button>
-        </div>
       </div>
     </div>
   );
