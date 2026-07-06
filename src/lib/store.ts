@@ -486,8 +486,8 @@ export const useStore = create<State>()(
       receiptFormat: DEFAULT_RECEIPT_FORMAT,
       sessions: seedSessions(),
       activeSessionId: seedSessions()[0].id,
-      users: initialUsers,
-      currentUserId: initialUsers[0].id,
+      users: [],
+      currentUserId: "",
       role: "admin",
       auditLog: [],
 
