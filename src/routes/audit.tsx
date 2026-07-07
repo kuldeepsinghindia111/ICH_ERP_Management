@@ -4,6 +4,7 @@ import { ScrollText, FileSpreadsheet, Trash2, ShieldAlert, Check, X } from "luci
 import { toast } from "sonner";
 
 import { useStore, type AuditEvent } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,8 +55,8 @@ const EVENT_TONE: Record<AuditEvent, string> = {
 };
 
 function AuditPage() {
-  const can = useStore((s) => s.can);
-  const isAdmin = useStore((s) => s.role) === "admin";
+  const { can, profile } = useAuth();
+  const isAdmin = profile?.role === "admin";
   const canView = can("audit", "view");
   const queryClient = useQueryClient();
 
@@ -65,7 +66,7 @@ function AuditPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const users = useStore((s) => s.users);
+  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: async () => { const {data} = await supabase.from("user_roles").select("*"); return data || []; } });
   const PAGE_SIZE = 25;
 
   useEffect(() => {

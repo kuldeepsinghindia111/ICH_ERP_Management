@@ -4,6 +4,7 @@ import { Plus, Trash2, Pencil, Save, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
+import { useAuth } from "@/hooks/use-auth";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -32,7 +33,8 @@ export const Route = createFileRoute("/general")({
 const FEE_COLUMNS = ["Admission Fee", "Tuition Fee", "Library Fee", "Exam Fee", "Other Fees"];
 
 function GeneralManagementPage() {
-  const canEdit = useStore((s) => s.can("settings", "edit"));
+  const { can } = useAuth();
+  const canEdit = can("settings", "edit");
   const queryClient = useQueryClient();
 
   const { data: sessions = [], isLoading: loadingSessions } = useQuery({

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
-  const can = useStore((s) => s.can);
+  const { can } = useAuth();
   const canExport = can("reports", "edit");
   const paymentInfo = useStore((s) => s.paymentInfo);
 

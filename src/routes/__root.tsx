@@ -243,7 +243,7 @@ function SessionSwitcher() {
   const sessions = useStore((s) => s.sessions);
   const activeSessionId = useStore((s) => s.activeSessionId);
   const setActiveSession = useStore((s) => s.setActiveSession);
-  const can = useStore((s) => s.can);
+  const { can } = useAuth();
   const canChange = can("settings", "edit");
   const active = sessions.find((s) => s.id === activeSessionId);
 

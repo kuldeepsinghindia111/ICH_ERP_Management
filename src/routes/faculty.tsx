@@ -4,6 +4,7 @@ import { Plus, Trash2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
+import { useAuth } from "@/hooks/use-auth";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +27,8 @@ export const Route = createFileRoute("/faculty")({
 
 function FacultyPage() {
   const queryClient = useQueryClient();
-  const canEdit = useStore((s) => s.can("faculty", "edit"));
+  const { can } = useAuth();
+  const canEdit = can("faculty", "edit");
 
   const { data: faculty = [], isLoading } = useQuery({
     queryKey: ["faculty"],
