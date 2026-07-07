@@ -86,38 +86,67 @@ function GeneralManagementPage() {
 
   const isLoading = loadingSessions || loadingSettings || loadingPrograms || loadingFees || loadingSections;
 
-  const [activeSessionId, setActiveSessionId] = useState<string>("");
-  const [activeStart, setActiveStart] = useState("");
-  const [activeEnd, setActiveEnd] = useState("");
-  const [activeAdmissionSeries, setActiveAdmissionSeries] = useState("");
+  type ActiveSessionRow = {
+    internalId: string;
+    sessionId: string;
+    startDate: string;
+    endDate: string;
+    admissionSeries: string;
+  };
+
+  const [activeRows, setActiveRows] = useState<ActiveSessionRow[]>([]);
   
   useEffect(() => {
-    if (sessions.length && !activeSessionId) {
-      const active = sessions.find(s => s.is_active);
-      if (active) setActiveSessionId(active.id);
+    if (sessions.length && activeRows.length === 0) {
+      const active = sessions.filter(s => s.is_active);
+      if (active.length > 0) {
+        setActiveRows(active.map(s => ({
+          internalId: Math.random().toString(),
+          sessionId: s.id,
+          startDate: s.start_date || "",
+          endDate: s.end_date || "",
+          admissionSeries: s.admission_series || "",
+        })));
+      } else {
+        setActiveRows([{
+          internalId: Math.random().toString(),
+          sessionId: sessions[0].id,
+          startDate: sessions[0].start_date || "",
+          endDate: sessions[0].end_date || "",
+          admissionSeries: sessions[0].admission_series || ""
+        }]);
+      }
     }
-  }, [sessions, activeSessionId]);
+  }, [sessions, activeRows.length]);
 
-  useEffect(() => {
-    const s = sessions.find(s => s.id === activeSessionId);
-    if (s) {
-      setActiveStart(s.start_date || "");
-      setActiveEnd(s.end_date || "");
-      setActiveAdmissionSeries(s.admission_series || "");
-    }
-  }, [activeSessionId, sessions]);
+  const handleSessionChange = (index: number, newSessionId: string) => {
+    const session = sessions.find(s => s.id === newSessionId);
+    if (!session) return;
+    const newRows = [...activeRows];
+    newRows[index] = {
+      ...newRows[index],
+      sessionId: newSessionId,
+      startDate: session.start_date || "",
+      endDate: session.end_date || "",
+      admissionSeries: session.admission_series || ""
+    };
+    setActiveRows(newRows);
+  };
 
   const updateSettings = useMutation({
     mutationFn: async () => {
       // Unset all active sessions
       await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
-      if (activeSessionId) {
-        await supabase.from("sessions").update({ 
-          is_active: true,
-          start_date: activeStart,
-          end_date: activeEnd,
-          admission_series: activeAdmissionSeries
-        }).eq("id", activeSessionId);
+      
+      for (const row of activeRows) {
+        if (row.sessionId) {
+          await supabase.from("sessions").update({ 
+            is_active: true,
+            start_date: row.startDate,
+            end_date: row.endDate,
+            admission_series: row.admissionSeries
+          }).eq("id", row.sessionId);
+        }
       }
     },
     onSuccess: () => {
@@ -132,7 +161,8 @@ function GeneralManagementPage() {
     return <div className="p-8 animate-pulse text-muted-foreground">Loading configuration...</div>;
   }
 
-  const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || "Not Set";
+  const activeSessionNames = activeRows.map(r => sessions.find(s => s.id === r.sessionId)?.name).filter(Boolean);
+  const activeSessionName = activeSessionNames.length > 0 ? activeSessionNames.join(", ") : "Not Set";
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -153,13 +183,13 @@ function GeneralManagementPage() {
               variant="secondary" 
               size="sm" 
               onClick={() => {
-                const btn = document.getElementById("add-session-btn");
-                if (btn) {
-                  btn.click();
-                  setTimeout(() => {
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                  }, 100);
-                }
+                setActiveRows([...activeRows, {
+                  internalId: Math.random().toString(),
+                  sessionId: sessions[0]?.id || "",
+                  startDate: sessions[0]?.start_date || "",
+                  endDate: sessions[0]?.end_date || "",
+                  admissionSeries: sessions[0]?.admission_series || ""
+                }]);
               }}
             >
               <Plus className="mr-2 h-4 w-4" /> Add session
@@ -167,50 +197,76 @@ function GeneralManagementPage() {
           )}
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-end gap-6">
-            <div className="grid gap-2 w-[240px]">
-              <label className="text-sm font-medium">Current Active Session:</label>
-              <Select value={activeSessionId} onValueChange={setActiveSessionId}>
-                <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
-                <SelectContent>
-                  {sessions.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-col gap-6">
+            {activeRows.map((row, index) => (
+              <div key={row.internalId} className="flex flex-wrap items-end gap-6 pb-6 border-b last:border-b-0 last:pb-0">
+                <div className="grid gap-2 w-[240px]">
+                  <label className="text-sm font-medium">Active Session:</label>
+                  <Select value={row.sessionId} onValueChange={(val) => handleSessionChange(index, val)}>
+                    <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
+                    <SelectContent>
+                      {sessions.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
-              <label className="text-sm font-medium">Start Date:</label>
-              <Input 
-                type="date"
-                value={activeStart} 
-                onChange={(e) => setActiveStart(e.target.value)}
-              />
-            </div>
+                <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
+                  <label className="text-sm font-medium">Start Date:</label>
+                  <Input 
+                    type="date"
+                    value={row.startDate} 
+                    onChange={(e) => {
+                      const newRows = [...activeRows];
+                      newRows[index].startDate = e.target.value;
+                      setActiveRows(newRows);
+                    }}
+                  />
+                </div>
 
-            <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
-              <label className="text-sm font-medium">End Date:</label>
-              <Input 
-                type="date"
-                value={activeEnd} 
-                onChange={(e) => setActiveEnd(e.target.value)}
-              />
-            </div>
+                <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
+                  <label className="text-sm font-medium">End Date:</label>
+                  <Input 
+                    type="date"
+                    value={row.endDate} 
+                    onChange={(e) => {
+                      const newRows = [...activeRows];
+                      newRows[index].endDate = e.target.value;
+                      setActiveRows(newRows);
+                    }}
+                  />
+                </div>
 
-            <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
-              <label className="text-sm font-medium">Admission Series:</label>
-              <Input 
-                value={activeAdmissionSeries} 
-                onChange={(e) => setActiveAdmissionSeries(e.target.value)}
-                placeholder="e.g. ADM-2027-0001"
-              />
-            </div>
+                <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
+                  <label className="text-sm font-medium">Admission Series:</label>
+                  <Input 
+                    value={row.admissionSeries} 
+                    onChange={(e) => {
+                      const newRows = [...activeRows];
+                      newRows[index].admissionSeries = e.target.value;
+                      setActiveRows(newRows);
+                    }}
+                    placeholder="e.g. ADM-2027-0001"
+                  />
+                </div>
+
+                {activeRows.length > 1 && canEdit && (
+                  <Button variant="ghost" size="icon" onClick={() => {
+                    setActiveRows(activeRows.filter((_, i) => i !== index));
+                  }}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
 
             {canEdit && (
-              <Button disabled={updateSettings.isPending} onClick={() => updateSettings.mutate()}>
-                <Save className="mr-2 h-4 w-4" /> Save
-              </Button>
+              <div className="flex justify-end pt-2">
+                <Button disabled={updateSettings.isPending} onClick={() => updateSettings.mutate()}>
+                  <Save className="mr-2 h-4 w-4" /> Save
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
