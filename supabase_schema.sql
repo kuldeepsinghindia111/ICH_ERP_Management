@@ -262,7 +262,8 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT false,
-    admission_series TEXT NOT NULL DEFAULT 'ADM-2026-0001'
+    admission_series TEXT NOT NULL DEFAULT 'ADM-2026-0001',
+    program_id UUID REFERENCES public.programs(id)
 );
 
 -- 10. Create College Settings Table

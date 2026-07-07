@@ -158,14 +158,14 @@ function GeneralManagementPage() {
         </CardContent>
       </Card>
 
-      <SessionManagementSetup sessions={sessions} canEdit={canEdit} />
+      <SessionManagementSetup sessions={sessions} programs={programs} canEdit={canEdit} />
       <CourseFeeSetup programs={programs} feeStructures={feeStructures} canEdit={canEdit} />
       <RollNumberInitialization programs={programs} sections={sections} canEdit={canEdit} />
     </div>
   );
 }
 
-function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdit: boolean }) {
+function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any[], programs: any[], canEdit: boolean }) {
   const queryClient = useQueryClient();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -173,6 +173,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
   const [localStart, setLocalStart] = useState("");
   const [localEnd, setLocalEnd] = useState("");
   const [localSeries, setLocalSeries] = useState("");
+  const [localProgramId, setLocalProgramId] = useState("");
 
   const startAdd = () => {
     setEditingId("new");
@@ -180,6 +181,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
     setLocalStart(new Date().toISOString().split('T')[0]);
     setLocalEnd(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]);
     setLocalSeries("ADM-2027-0001");
+    setLocalProgramId(programs[0]?.id || "");
   };
 
   const startEdit = (s: any) => {
@@ -188,6 +190,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
     setLocalStart(s.start_date);
     setLocalEnd(s.end_date);
     setLocalSeries(s.admission_series || "ADM-2026-0001");
+    setLocalProgramId(s.program_id || "");
   };
 
   const saveSession = useMutation({
@@ -197,7 +200,8 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
           name: localName,
           start_date: localStart,
           end_date: localEnd,
-          admission_series: localSeries
+          admission_series: localSeries,
+          program_id: localProgramId === "none" || !localProgramId ? null : localProgramId
         });
         if (error) throw error;
       } else {
@@ -205,7 +209,8 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
           name: localName,
           start_date: localStart,
           end_date: localEnd,
-          admission_series: localSeries
+          admission_series: localSeries,
+          program_id: localProgramId === "none" || !localProgramId ? null : localProgramId
         }).eq("id", editingId);
         if (error) throw error;
       }
@@ -245,6 +250,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
           <TableHeader>
             <TableRow>
               <TableHead>Session Name</TableHead>
+              <TableHead>Course Name</TableHead>
               <TableHead>Admission Series</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
@@ -255,12 +261,26 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
           <TableBody>
             {sessions.map(s => {
               const isEditing = editingId === s.id;
+              const p = programs.find(pr => pr.id === s.program_id);
               return (
                 <TableRow key={s.id}>
                   <TableCell>
                     {isEditing ? (
                       <Input value={localName} onChange={e => setLocalName(e.target.value)} />
                     ) : s.name}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Select value={localProgramId} onValueChange={setLocalProgramId}>
+                        <SelectTrigger><SelectValue placeholder="Global / All Courses" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Global / All Courses</SelectItem>
+                          {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      p?.name || "Global / All Courses"
+                    )}
                   </TableCell>
                   <TableCell>
                     {isEditing ? (
@@ -302,6 +322,15 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
             {editingId === "new" && (
               <TableRow>
                 <TableCell><Input value={localName} onChange={e => setLocalName(e.target.value)} /></TableCell>
+                <TableCell>
+                  <Select value={localProgramId} onValueChange={setLocalProgramId}>
+                    <SelectTrigger><SelectValue placeholder="Global / All Courses" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Global / All Courses</SelectItem>
+                      {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
                 <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} /></TableCell>
