@@ -92,6 +92,8 @@ function GeneralManagementPage() {
     startDate: string;
     endDate: string;
     admissionSeries: string;
+    isNew?: boolean;
+    newName?: string;
   };
 
   const [activeRows, setActiveRows] = useState<ActiveSessionRow[]>([]);
@@ -139,13 +141,23 @@ function GeneralManagementPage() {
       await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
       
       for (const row of activeRows) {
-        if (row.sessionId) {
-          await supabase.from("sessions").update({ 
+        if (row.isNew && row.newName) {
+          const { error } = await supabase.from("sessions").insert({
+            name: row.newName,
+            start_date: row.startDate,
+            end_date: row.endDate,
+            admission_series: row.admissionSeries,
+            is_active: true
+          });
+          if (error) throw error;
+        } else if (row.sessionId) {
+          const { error } = await supabase.from("sessions").update({ 
             is_active: true,
             start_date: row.startDate,
             end_date: row.endDate,
             admission_series: row.admissionSeries
           }).eq("id", row.sessionId);
+          if (error) throw error;
         }
       }
     },
@@ -202,14 +214,38 @@ function GeneralManagementPage() {
               <div key={row.internalId} className="flex flex-wrap items-end gap-6 pb-6 border-b last:border-b-0 last:pb-0">
                 <div className="grid gap-2 w-[240px]">
                   <label className="text-sm font-medium">Active Session:</label>
-                  <Select value={row.sessionId} onValueChange={(val) => handleSessionChange(index, val)}>
-                    <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
-                    <SelectContent>
-                      {sessions.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 items-center">
+                    {row.isNew ? (
+                      <Input 
+                        placeholder="Session Name (e.g. 2027-28)"
+                        value={row.newName || ""}
+                        onChange={(e) => {
+                          const newRows = [...activeRows];
+                          newRows[index].newName = e.target.value;
+                          setActiveRows(newRows);
+                        }}
+                      />
+                    ) : (
+                      <Select value={row.sessionId} onValueChange={(val) => handleSessionChange(index, val)}>
+                        <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
+                        <SelectContent>
+                          {sessions.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {canEdit && !row.isNew && (
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        const newRows = [...activeRows];
+                        newRows[index].isNew = true;
+                        newRows[index].newName = sessions.find(s => s.id === row.sessionId)?.name || "";
+                        setActiveRows(newRows);
+                      }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
