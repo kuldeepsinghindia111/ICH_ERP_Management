@@ -408,7 +408,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
               <TableHead>Course Name</TableHead>
               <TableHead>Roll Number Series</TableHead>
               <TableHead>Status</TableHead>
-              {canEdit && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -443,9 +443,9 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                   <TableCell>
                     {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
                   </TableCell>
-                  {canEdit && (
-                    <TableCell className="text-right">
-                      {isEditing ? (
+                  <TableCell className="text-right">
+                    {canEdit && (
+                      isEditing ? (
                         <div className="flex justify-end gap-2">
                           <Button size="icon" variant="ghost" onClick={() => saveSession.mutate()}><Save className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
@@ -455,9 +455,9 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                           <Button size="icon" variant="ghost" onClick={() => startEdit(s)}><Pencil className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this session?")) deleteSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
-                      )}
-                    </TableCell>
-                  )}
+                      )
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -549,7 +549,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
               <TableHead>Course/Class Name</TableHead>
               {FEE_COLUMNS.map(col => <TableHead key={col}>{col} (Rs.)</TableHead>)}
               <TableHead>Total Fees (Rs.)</TableHead>
-              {canEdit && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -581,18 +581,18 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
                     );
                   })}
                   <TableCell className="font-semibold">{isEditing ? Object.values(localFees).reduce((a, b) => a + (Number(b) || 0), 0) : total}</TableCell>
-                  {canEdit && (
-                    <TableCell className="text-right">
-                      {isEditing ? (
+                  <TableCell className="text-right">
+                    {canEdit && (
+                      isEditing ? (
                         <div className="flex justify-end gap-2">
                           <Button size="icon" variant="ghost" onClick={() => saveFees.mutate(p.id)}><Save className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => setEditingProgramId(null)}>x</Button>
                         </div>
                       ) : (
                         <Button size="icon" variant="ghost" onClick={() => startEdit(p.id)}><Pencil className="h-4 w-4" /></Button>
-                      )}
-                    </TableCell>
-                  )}
+                      )
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -678,7 +678,7 @@ function RollNumberInitialization({ programs, sections, canEdit }: { programs: a
               <TableHead>Class Name</TableHead>
               <TableHead>Section</TableHead>
               <TableHead>Starting Roll Number</TableHead>
-              {canEdit && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -710,9 +710,9 @@ function RollNumberInitialization({ programs, sections, canEdit }: { programs: a
                       <Input type="number" value={localStartRoll} onChange={e => setLocalStartRoll(Number(e.target.value))} className="w-24" />
                     ) : s.starting_roll_number}
                   </TableCell>
-                  {canEdit && (
-                    <TableCell className="text-right">
-                      {isEditing ? (
+                  <TableCell className="text-right">
+                    {canEdit && (
+                      isEditing ? (
                         <div className="flex justify-end gap-2">
                           <Button size="icon" variant="ghost" onClick={() => saveSection.mutate()}><Save className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
@@ -722,9 +722,9 @@ function RollNumberInitialization({ programs, sections, canEdit }: { programs: a
                           <Button size="icon" variant="ghost" onClick={() => startEdit(s)}><Pencil className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete?")) deleteSection.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
-                      )}
-                    </TableCell>
-                  )}
+                      )
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
