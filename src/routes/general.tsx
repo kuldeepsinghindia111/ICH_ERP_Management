@@ -88,7 +88,6 @@ function GeneralManagementPage() {
   const [activeStart, setActiveStart] = useState("");
   const [activeEnd, setActiveEnd] = useState("");
   const [activeAdmissionSeries, setActiveAdmissionSeries] = useState("");
-  const [triggerAddSession, setTriggerAddSession] = useState(0);
   
   useEffect(() => {
     if (sessions.length && !activeSessionId) {
@@ -145,13 +144,8 @@ function GeneralManagementPage() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3">
           <CardTitle>Session & Key Settings</CardTitle>
-          {canEdit && (
-            <Button variant="secondary" size="sm" onClick={() => setTriggerAddSession(t => t + 1)}>
-              <Plus className="mr-2 h-4 w-4" /> Add Session
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-end gap-6">
@@ -203,19 +197,14 @@ function GeneralManagementPage() {
         </CardContent>
       </Card>
 
-      <SessionManagementSetup 
-        sessions={sessions} 
-        programs={programs} 
-        canEdit={canEdit} 
-        triggerAdd={triggerAddSession} 
-      />
+      <SessionManagementSetup sessions={sessions} programs={programs} canEdit={canEdit} />
       <CourseFeeSetup programs={programs} feeStructures={feeStructures} canEdit={canEdit} />
       <RollNumberInitialization programs={programs} sections={sections} canEdit={canEdit} />
     </div>
   );
 }
 
-function SessionManagementSetup({ sessions, programs, canEdit, triggerAdd = 0 }: { sessions: any[], programs: any[], canEdit: boolean, triggerAdd?: number }) {
+function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any[], programs: any[], canEdit: boolean }) {
   const queryClient = useQueryClient();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -235,16 +224,6 @@ function SessionManagementSetup({ sessions, programs, canEdit, triggerAdd = 0 }:
     setLocalRollSeries("ROL-2027-0001");
     setLocalProgramId(programs[0]?.id || "");
   };
-
-  useEffect(() => {
-    if (triggerAdd > 0) {
-      startAdd();
-      // small delay to let render happen then scroll
-      setTimeout(() => {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-      }, 100);
-    }
-  }, [triggerAdd]);
 
   const startEdit = (s: any) => {
     setEditingId(s.id);
