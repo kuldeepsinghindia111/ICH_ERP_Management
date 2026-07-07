@@ -37,7 +37,7 @@ function GeneralManagementPage() {
   const canEdit = can("settings", "edit");
   const queryClient = useQueryClient();
 
-  const { data: sessions = [], isLoading: loadingSessions } = useQuery({
+  const { data: sessions = [], isLoading: loadingSessions, error: errorSessions } = useQuery({
     queryKey: ["sessions"],
     queryFn: async () => {
       const { data, error } = await supabase.from("sessions").select("*").order("start_date", { ascending: false });
@@ -46,7 +46,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: settings, isLoading: loadingSettings } = useQuery({
+  const { data: settings, isLoading: loadingSettings, error: errorSettings } = useQuery({
     queryKey: ["college_settings"],
     queryFn: async () => {
       const { data, error } = await supabase.from("college_settings").select("*").limit(1).single();
@@ -55,7 +55,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: programs = [], isLoading: loadingPrograms } = useQuery({
+  const { data: programs = [], isLoading: loadingPrograms, error: errorPrograms } = useQuery({
     queryKey: ["programs"],
     queryFn: async () => {
       const { data, error } = await supabase.from("programs").select("*").order("name");
@@ -64,7 +64,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: feeStructures = [], isLoading: loadingFees } = useQuery({
+  const { data: feeStructures = [], isLoading: loadingFees, error: errorFees } = useQuery({
     queryKey: ["fee_structures"],
     queryFn: async () => {
       const { data, error } = await supabase.from("fee_structures").select("*");
@@ -73,7 +73,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: sections = [], isLoading: loadingSections } = useQuery({
+  const { data: sections = [], isLoading: loadingSections, error: errorSections } = useQuery({
     queryKey: ["program_sections"],
     queryFn: async () => {
       const { data, error } = await supabase.from("program_sections").select("*");
@@ -121,8 +121,19 @@ function GeneralManagementPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const anyError = errorSessions || errorSettings || errorPrograms || errorFees || errorSections;
+
   if (isLoading) {
     return <div className="p-8 animate-pulse text-muted-foreground">Loading configuration...</div>;
+  }
+
+  if (anyError) {
+    return (
+      <div className="p-8 text-destructive">
+        <h2 className="text-lg font-bold">Error loading data</h2>
+        <pre className="mt-4 whitespace-pre-wrap text-sm">{JSON.stringify(anyError, null, 2)}</pre>
+      </div>
+    );
   }
 
   const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || "Not Set";
