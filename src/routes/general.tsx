@@ -167,16 +167,161 @@ function GeneralManagementPage() {
 
             {canEdit && (
               <Button disabled={updateSettings.isPending} onClick={() => updateSettings.mutate()}>
-                <Save className="mr-2 h-4 w-4" /> Save Global Settings
+                <Save className="mr-2 h-4 w-4" /> Save
               </Button>
             )}
           </div>
         </CardContent>
       </Card>
 
+      <SessionManagementSetup sessions={sessions} canEdit={canEdit} />
       <CourseFeeSetup programs={programs} feeStructures={feeStructures} canEdit={canEdit} />
       <RollNumberInitialization programs={programs} sections={sections} canEdit={canEdit} />
     </div>
+  );
+}
+
+function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdit: boolean }) {
+  const queryClient = useQueryClient();
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [localName, setLocalName] = useState("");
+  const [localStart, setLocalStart] = useState("");
+  const [localEnd, setLocalEnd] = useState("");
+
+  const startAdd = () => {
+    setEditingId("new");
+    setLocalName("2027-28");
+    setLocalStart(new Date().toISOString().split('T')[0]);
+    setLocalEnd(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]);
+  };
+
+  const startEdit = (s: any) => {
+    setEditingId(s.id);
+    setLocalName(s.name);
+    setLocalStart(s.start_date);
+    setLocalEnd(s.end_date);
+  };
+
+  const saveSession = useMutation({
+    mutationFn: async () => {
+      if (editingId === "new") {
+        const { error } = await supabase.from("sessions").insert({
+          name: localName,
+          start_date: localStart,
+          end_date: localEnd
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("sessions").update({
+          name: localName,
+          start_date: localStart,
+          end_date: localEnd
+        }).eq("id", editingId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      setEditingId(null);
+      toast.success("Session saved successfully");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteSession = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sessions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      toast.success("Session deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle>Academic Sessions</CardTitle>
+        {canEdit && (
+          <Button variant="secondary" size="sm" onClick={startAdd}>
+            <Plus className="mr-2 h-4 w-4" /> Add Session
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Session Name</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>End Date</TableHead>
+              <TableHead>Status</TableHead>
+              {canEdit && <TableHead className="text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sessions.map(s => {
+              const isEditing = editingId === s.id;
+              return (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input value={localName} onChange={e => setLocalName(e.target.value)} />
+                    ) : s.name}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} />
+                    ) : new Date(s.start_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} />
+                    ) : new Date(s.end_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
+                  </TableCell>
+                  {canEdit && (
+                    <TableCell className="text-right">
+                      {isEditing ? (
+                        <div className="flex justify-end gap-2">
+                          <Button size="icon" variant="ghost" onClick={() => saveSession.mutate()}><Save className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <Button size="icon" variant="ghost" onClick={() => startEdit(s)}><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => { if(confirm("Delete this session?")) deleteSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
+            
+            {editingId === "new" && (
+              <TableRow>
+                <TableCell><Input value={localName} onChange={e => setLocalName(e.target.value)} /></TableCell>
+                <TableCell><Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} /></TableCell>
+                <TableCell><Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} /></TableCell>
+                <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button size="icon" variant="ghost" onClick={() => saveSession.mutate()}><Save className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
