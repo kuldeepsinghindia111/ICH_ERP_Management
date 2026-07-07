@@ -86,7 +86,6 @@ function GeneralManagementPage() {
 
   // Local state for Step 1
   const [activeSessionId, setActiveSessionId] = useState<string>("");
-  const [admissionSeries, setAdmissionSeries] = useState<string>("ADM-2026-0001");
   
   useEffect(() => {
     if (sessions.length) {
@@ -95,22 +94,12 @@ function GeneralManagementPage() {
     }
   }, [sessions]);
 
-  useEffect(() => {
-    if (settings?.admission_series) {
-      setAdmissionSeries(settings.admission_series);
-    }
-  }, [settings]);
-
   const updateSettings = useMutation({
     mutationFn: async () => {
       // Unset all active sessions
       await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
       if (activeSessionId) {
         await supabase.from("sessions").update({ is_active: true }).eq("id", activeSessionId);
-      }
-      
-      if (settings?.id) {
-        await supabase.from("college_settings").update({ admission_series: admissionSeries }).eq("id", settings.id);
       }
     },
     onSuccess: () => {
@@ -157,12 +146,7 @@ function GeneralManagementPage() {
             </div>
             
             <div className="grid gap-2 flex-1 max-w-[300px]">
-              <label className="text-sm font-medium">Admission Number Series Starting From:</label>
-              <Input 
-                value={admissionSeries} 
-                onChange={(e) => setAdmissionSeries(e.target.value)}
-                placeholder="ADM-2026-0001"
-              />
+              {/* Other global settings can go here */}
             </div>
 
             {canEdit && (
@@ -188,12 +172,14 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
   const [localName, setLocalName] = useState("");
   const [localStart, setLocalStart] = useState("");
   const [localEnd, setLocalEnd] = useState("");
+  const [localSeries, setLocalSeries] = useState("");
 
   const startAdd = () => {
     setEditingId("new");
     setLocalName("2027-28");
     setLocalStart(new Date().toISOString().split('T')[0]);
     setLocalEnd(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]);
+    setLocalSeries("ADM-2027-0001");
   };
 
   const startEdit = (s: any) => {
@@ -201,6 +187,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
     setLocalName(s.name);
     setLocalStart(s.start_date);
     setLocalEnd(s.end_date);
+    setLocalSeries(s.admission_series || "ADM-2026-0001");
   };
 
   const saveSession = useMutation({
@@ -209,14 +196,16 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
         const { error } = await supabase.from("sessions").insert({
           name: localName,
           start_date: localStart,
-          end_date: localEnd
+          end_date: localEnd,
+          admission_series: localSeries
         });
         if (error) throw error;
       } else {
         const { error } = await supabase.from("sessions").update({
           name: localName,
           start_date: localStart,
-          end_date: localEnd
+          end_date: localEnd,
+          admission_series: localSeries
         }).eq("id", editingId);
         if (error) throw error;
       }
@@ -256,6 +245,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
           <TableHeader>
             <TableRow>
               <TableHead>Session Name</TableHead>
+              <TableHead>Admission Series</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Status</TableHead>
@@ -271,6 +261,11 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
                     {isEditing ? (
                       <Input value={localName} onChange={e => setLocalName(e.target.value)} />
                     ) : s.name}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} />
+                    ) : s.admission_series}
                   </TableCell>
                   <TableCell>
                     {isEditing ? (
@@ -307,6 +302,7 @@ function SessionManagementSetup({ sessions, canEdit }: { sessions: any[], canEdi
             {editingId === "new" && (
               <TableRow>
                 <TableCell><Input value={localName} onChange={e => setLocalName(e.target.value)} /></TableCell>
+                <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} /></TableCell>
                 <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
