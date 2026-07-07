@@ -263,6 +263,7 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     end_date DATE NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT false,
     admission_series TEXT NOT NULL DEFAULT 'ADM-2026-0001',
+    roll_number_series TEXT NOT NULL DEFAULT 'ROL-2026-0001',
     program_id UUID REFERENCES public.programs(id)
 );
 

@@ -212,6 +212,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
   const [localStart, setLocalStart] = useState("");
   const [localEnd, setLocalEnd] = useState("");
   const [localSeries, setLocalSeries] = useState("");
+  const [localRollSeries, setLocalRollSeries] = useState("");
   const [localProgramId, setLocalProgramId] = useState("");
 
   const startAdd = () => {
@@ -220,6 +221,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
     setLocalStart(new Date().toISOString().split('T')[0]);
     setLocalEnd(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]);
     setLocalSeries("ADM-2027-0001");
+    setLocalRollSeries("ROL-2027-0001");
     setLocalProgramId(programs[0]?.id || "");
   };
 
@@ -229,6 +231,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
     setLocalStart(s.start_date);
     setLocalEnd(s.end_date);
     setLocalSeries(s.admission_series || "ADM-2026-0001");
+    setLocalRollSeries(s.roll_number_series || "ROL-2026-0001");
     setLocalProgramId(s.program_id || "");
   };
 
@@ -240,6 +243,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
           start_date: localStart,
           end_date: localEnd,
           admission_series: localSeries,
+          roll_number_series: localRollSeries,
           program_id: localProgramId === "none" || !localProgramId ? null : localProgramId
         });
         if (error) throw error;
@@ -249,6 +253,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
           start_date: localStart,
           end_date: localEnd,
           admission_series: localSeries,
+          roll_number_series: localRollSeries,
           program_id: localProgramId === "none" || !localProgramId ? null : localProgramId
         }).eq("id", editingId);
         if (error) throw error;
@@ -290,6 +295,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
             <TableRow>
               <TableHead>Session Name</TableHead>
               <TableHead>Course Name</TableHead>
+              <TableHead>Roll Number Series</TableHead>
               <TableHead>Status</TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
@@ -317,6 +323,11 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     ) : (
                       p?.name || "Global / All Courses"
                     )}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input value={localRollSeries} onChange={e => setLocalRollSeries(e.target.value)} />
+                    ) : s.roll_number_series}
                   </TableCell>
                   <TableCell>
                     {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
@@ -352,6 +363,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     </SelectContent>
                   </Select>
                 </TableCell>
+                <TableCell><Input value={localRollSeries} onChange={e => setLocalRollSeries(e.target.value)} /></TableCell>
                 <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
