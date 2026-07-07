@@ -251,9 +251,9 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
             <TableRow>
               <TableHead>Session Name</TableHead>
               <TableHead>Course Name</TableHead>
-              <TableHead>Admission Series</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
+              <TableHead>Admission Series</TableHead>
               <TableHead>Status</TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
@@ -284,11 +284,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                   </TableCell>
                   <TableCell>
                     {isEditing ? (
-                      <Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} />
-                    ) : s.admission_series}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
                       <Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} />
                     ) : new Date(s.start_date).toLocaleDateString()}
                   </TableCell>
@@ -296,6 +291,11 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     {isEditing ? (
                       <Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} />
                     ) : new Date(s.end_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} />
+                    ) : s.admission_series}
                   </TableCell>
                   <TableCell>
                     {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
@@ -331,9 +331,9 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} /></TableCell>
+                <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
