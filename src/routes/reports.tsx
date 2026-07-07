@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/use-auth";
 import { useMemo, useState } from "react";
 import { CalendarRange, Printer } from "lucide-react";
 
