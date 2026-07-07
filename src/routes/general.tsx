@@ -34,7 +34,9 @@ const FEE_COLUMNS = ["Admission Fee", "Tuition Fee", "Library Fee", "Exam Fee", 
 
 function GeneralManagementPage() {
   const { can } = useAuth();
-  const canEdit = can("settings", "edit");
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+  const canEdit = isMounted && can("settings", "edit");
   const queryClient = useQueryClient();
 
   const { data: sessions = [], isLoading: loadingSessions } = useQuery({
