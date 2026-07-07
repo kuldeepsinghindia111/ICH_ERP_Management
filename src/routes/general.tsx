@@ -144,8 +144,25 @@ function GeneralManagementPage() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle>Session & Key Settings</CardTitle>
+          {canEdit && (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => {
+                const btn = document.getElementById("add-session-btn");
+                if (btn) {
+                  btn.click();
+                  setTimeout(() => {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                  }, 100);
+                }
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add session
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-end gap-6">
@@ -284,7 +301,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Academic Sessions</CardTitle>
         {canEdit && (
-          <Button variant="secondary" size="sm" onClick={startAdd}>
+          <Button id="add-session-btn" variant="secondary" size="sm" onClick={startAdd}>
             <Plus className="mr-2 h-4 w-4" /> Add Session
           </Button>
         )}
