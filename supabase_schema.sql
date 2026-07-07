@@ -36,7 +36,7 @@ BEGIN
     has_perm := (user_permissions #>> ARRAY[section_key, access_type])::boolean;
     RETURN COALESCE(has_perm, false);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
 -- 1. Create Programs Table
 CREATE TABLE IF NOT EXISTS public.programs (
@@ -130,7 +130,7 @@ BEGIN
   
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -145,7 +145,7 @@ BEGIN
   END IF;
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_login
   AFTER UPDATE ON auth.users
@@ -421,3 +421,10 @@ CREATE POLICY "Admins can delete audit logs" ON public.audit_logs
 
 
 
+
+-- Revoke execute permissions on trigger functions from public and API roles
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.handle_user_login() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_user_login() FROM anon, authenticated;
