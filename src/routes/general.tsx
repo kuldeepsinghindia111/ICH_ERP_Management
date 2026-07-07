@@ -87,6 +87,7 @@ function GeneralManagementPage() {
   const [activeSessionId, setActiveSessionId] = useState<string>("");
   const [activeStart, setActiveStart] = useState("");
   const [activeEnd, setActiveEnd] = useState("");
+  const [activeAdmissionSeries, setActiveAdmissionSeries] = useState("");
   
   useEffect(() => {
     if (sessions.length && !activeSessionId) {
@@ -100,6 +101,7 @@ function GeneralManagementPage() {
     if (s) {
       setActiveStart(s.start_date || "");
       setActiveEnd(s.end_date || "");
+      setActiveAdmissionSeries(s.admission_series || "");
     }
   }, [activeSessionId, sessions]);
 
@@ -111,7 +113,8 @@ function GeneralManagementPage() {
         await supabase.from("sessions").update({ 
           is_active: true,
           start_date: activeStart,
-          end_date: activeEnd
+          end_date: activeEnd,
+          admission_series: activeAdmissionSeries
         }).eq("id", activeSessionId);
       }
     },
@@ -173,6 +176,15 @@ function GeneralManagementPage() {
                 type="date"
                 value={activeEnd} 
                 onChange={(e) => setActiveEnd(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
+              <label className="text-sm font-medium">Admission Series:</label>
+              <Input 
+                value={activeAdmissionSeries} 
+                onChange={(e) => setActiveAdmissionSeries(e.target.value)}
+                placeholder="e.g. ADM-2027-0001"
               />
             </div>
 
@@ -278,7 +290,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
             <TableRow>
               <TableHead>Session Name</TableHead>
               <TableHead>Course Name</TableHead>
-              <TableHead>Admission Series</TableHead>
               <TableHead>Status</TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
@@ -306,11 +317,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     ) : (
                       p?.name || "Global / All Courses"
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} />
-                    ) : s.admission_series}
                   </TableCell>
                   <TableCell>
                     {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
@@ -346,7 +352,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
