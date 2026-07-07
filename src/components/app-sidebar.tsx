@@ -29,6 +29,7 @@ import { type Section } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
+  { title: "General Management", url: "/general", icon: Settings, section: "settings" },
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Student's Management", url: "/students", icon: GraduationCap, section: "students" },
   { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
@@ -42,7 +43,6 @@ const admin: { title: string; url: string; icon: typeof Users; section: Section 
   { title: "Users & Roles", url: "/users", icon: ShieldCheck, section: "users" },
   { title: "Audit Log", url: "/audit", icon: ScrollText, section: "audit" },
   { title: "Payment Settings", url: "/settings", icon: Settings, section: "settings" },
-  { title: "General Management", url: "/general", icon: Settings, section: "settings" },
 ];
 
 export function AppSidebar() {
