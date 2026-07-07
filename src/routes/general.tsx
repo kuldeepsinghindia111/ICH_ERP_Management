@@ -84,22 +84,35 @@ function GeneralManagementPage() {
 
   const isLoading = loadingSessions || loadingSettings || loadingPrograms || loadingFees || loadingSections;
 
-  // Local state for Step 1
   const [activeSessionId, setActiveSessionId] = useState<string>("");
+  const [activeStart, setActiveStart] = useState("");
+  const [activeEnd, setActiveEnd] = useState("");
   
   useEffect(() => {
-    if (sessions.length) {
+    if (sessions.length && !activeSessionId) {
       const active = sessions.find(s => s.is_active);
       if (active) setActiveSessionId(active.id);
     }
-  }, [sessions]);
+  }, [sessions, activeSessionId]);
+
+  useEffect(() => {
+    const s = sessions.find(s => s.id === activeSessionId);
+    if (s) {
+      setActiveStart(s.start_date || "");
+      setActiveEnd(s.end_date || "");
+    }
+  }, [activeSessionId, sessions]);
 
   const updateSettings = useMutation({
     mutationFn: async () => {
       // Unset all active sessions
       await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
       if (activeSessionId) {
-        await supabase.from("sessions").update({ is_active: true }).eq("id", activeSessionId);
+        await supabase.from("sessions").update({ 
+          is_active: true,
+          start_date: activeStart,
+          end_date: activeEnd
+        }).eq("id", activeSessionId);
       }
     },
     onSuccess: () => {
@@ -144,9 +157,23 @@ function GeneralManagementPage() {
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="grid gap-2 flex-1 max-w-[300px]">
-              {/* Other global settings can go here */}
+
+            <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
+              <label className="text-sm font-medium">Start Date:</label>
+              <Input 
+                type="date"
+                value={activeStart} 
+                onChange={(e) => setActiveStart(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
+              <label className="text-sm font-medium">End Date:</label>
+              <Input 
+                type="date"
+                value={activeEnd} 
+                onChange={(e) => setActiveEnd(e.target.value)}
+              />
             </div>
 
             {canEdit && (
@@ -252,8 +279,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
               <TableHead>Session Name</TableHead>
               <TableHead>Course Name</TableHead>
               <TableHead>Admission Series</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
               <TableHead>Status</TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
@@ -288,16 +313,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     ) : s.admission_series}
                   </TableCell>
                   <TableCell>
-                    {isEditing ? (
-                      <Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} />
-                    ) : new Date(s.start_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} />
-                    ) : new Date(s.end_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
                     {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
                   </TableCell>
                   {canEdit && (
@@ -310,7 +325,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                       ) : (
                         <div className="flex justify-end gap-2">
                           <Button size="icon" variant="ghost" onClick={() => startEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => { if(confirm("Delete this session?")) deleteSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this session?")) deleteSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
                       )}
                     </TableCell>
@@ -318,7 +333,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                 </TableRow>
               );
             })}
-            
+
             {editingId === "new" && (
               <TableRow>
                 <TableCell><Input value={localName} onChange={e => setLocalName(e.target.value)} /></TableCell>
@@ -332,8 +347,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                   </Select>
                 </TableCell>
                 <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
-                <TableCell><Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} /></TableCell>
-                <TableCell><Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} /></TableCell>
                 <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -372,7 +385,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
     mutationFn: async (pId: string) => {
       // delete existing first
       await supabase.from("fee_structures").delete().eq("program_id", pId).eq("semester", 1).in("fee_head", FEE_COLUMNS);
-      
+
       const inserts = FEE_COLUMNS.map(col => ({
         program_id: pId,
         semester: 1,
@@ -398,7 +411,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Course & Fee Setup</CardTitle>
         <Button variant="secondary" size="sm" asChild>
-           <a href="/courses"><Plus className="mr-2 h-4 w-4" /> Add New Course/Class</a>
+          <a href="/courses"><Plus className="mr-2 h-4 w-4" /> Add New Course/Class</a>
         </Button>
       </CardHeader>
       <CardContent>
@@ -414,7 +427,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
           <TableBody>
             {programs.map(p => {
               const isEditing = editingProgramId === p.id;
-              
+
               const feesForProgram = feeStructures.filter(f => f.program_id === p.id && f.semester === 1);
               let total = 0;
 
@@ -427,10 +440,10 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
                     return (
                       <TableCell key={col}>
                         {isEditing ? (
-                          <Input 
-                            type="number" 
-                            className="w-24 h-8" 
-                            value={localFees[col] || ""} 
+                          <Input
+                            type="number"
+                            className="w-24 h-8"
+                            value={localFees[col] || ""}
                             onChange={(e) => setLocalFees({ ...localFees, [col]: Number(e.target.value) })}
                           />
                         ) : (
@@ -439,7 +452,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
                       </TableCell>
                     );
                   })}
-                  <TableCell className="font-semibold">{isEditing ? Object.values(localFees).reduce((a,b)=>a+(Number(b)||0), 0) : total}</TableCell>
+                  <TableCell className="font-semibold">{isEditing ? Object.values(localFees).reduce((a, b) => a + (Number(b) || 0), 0) : total}</TableCell>
                   {canEdit && (
                     <TableCell className="text-right">
                       {isEditing ? (
@@ -579,7 +592,7 @@ function RollNumberInitialization({ programs, sections, canEdit }: { programs: a
                       ) : (
                         <div className="flex justify-end gap-2">
                           <Button size="icon" variant="ghost" onClick={() => startEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => { if(confirm("Delete?")) deleteSection.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete?")) deleteSection.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
                       )}
                     </TableCell>
@@ -589,24 +602,24 @@ function RollNumberInitialization({ programs, sections, canEdit }: { programs: a
             })}
 
             {editingId === "new" && (
-               <TableRow>
-                 <TableCell>
-                   <Select value={localProgramId} onValueChange={setLocalProgramId}>
-                     <SelectTrigger><SelectValue /></SelectTrigger>
-                     <SelectContent>
-                       {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
-                     </SelectContent>
-                   </Select>
-                 </TableCell>
-                 <TableCell><Input value={localSectionName} onChange={e => setLocalSectionName(e.target.value)} className="w-20" /></TableCell>
-                 <TableCell><Input type="number" value={localStartRoll} onChange={e => setLocalStartRoll(Number(e.target.value))} className="w-24" /></TableCell>
-                 <TableCell className="text-right">
-                   <div className="flex justify-end gap-2">
-                     <Button size="icon" variant="ghost" onClick={() => saveSection.mutate()}><Save className="h-4 w-4" /></Button>
-                     <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
-                   </div>
-                 </TableCell>
-               </TableRow>
+              <TableRow>
+                <TableCell>
+                  <Select value={localProgramId} onValueChange={setLocalProgramId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell><Input value={localSectionName} onChange={e => setLocalSectionName(e.target.value)} className="w-20" /></TableCell>
+                <TableCell><Input type="number" value={localStartRoll} onChange={e => setLocalStartRoll(Number(e.target.value))} className="w-24" /></TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button size="icon" variant="ghost" onClick={() => saveSection.mutate()}><Save className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
