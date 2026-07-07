@@ -37,7 +37,7 @@ function GeneralManagementPage() {
   const canEdit = can("settings", "edit");
   const queryClient = useQueryClient();
 
-  const { data: sessions = [], isLoading: loadingSessions, error: errorSessions } = useQuery({
+  const { data: sessions = [], isLoading: loadingSessions } = useQuery({
     queryKey: ["sessions"],
     queryFn: async () => {
       const { data, error } = await supabase.from("sessions").select("*").order("start_date", { ascending: false });
@@ -46,7 +46,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: settings, isLoading: loadingSettings, error: errorSettings } = useQuery({
+  const { data: settings, isLoading: loadingSettings } = useQuery({
     queryKey: ["college_settings"],
     queryFn: async () => {
       const { data, error } = await supabase.from("college_settings").select("*").limit(1).single();
@@ -55,7 +55,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: programs = [], isLoading: loadingPrograms, error: errorPrograms } = useQuery({
+  const { data: programs = [], isLoading: loadingPrograms } = useQuery({
     queryKey: ["programs"],
     queryFn: async () => {
       const { data, error } = await supabase.from("programs").select("*").order("name");
@@ -64,7 +64,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: feeStructures = [], isLoading: loadingFees, error: errorFees } = useQuery({
+  const { data: feeStructures = [], isLoading: loadingFees } = useQuery({
     queryKey: ["fee_structures"],
     queryFn: async () => {
       const { data, error } = await supabase.from("fee_structures").select("*");
@@ -73,7 +73,7 @@ function GeneralManagementPage() {
     },
   });
 
-  const { data: sections = [], isLoading: loadingSections, error: errorSections } = useQuery({
+  const { data: sections = [], isLoading: loadingSections } = useQuery({
     queryKey: ["program_sections"],
     queryFn: async () => {
       const { data, error } = await supabase.from("program_sections").select("*");
@@ -86,7 +86,6 @@ function GeneralManagementPage() {
 
   // Local state for Step 1
   const [activeSessionId, setActiveSessionId] = useState<string>("");
-  const [admissionSeries, setAdmissionSeries] = useState<string>("ADM-2026-0001");
   
   useEffect(() => {
     if (sessions.length) {
@@ -95,22 +94,12 @@ function GeneralManagementPage() {
     }
   }, [sessions]);
 
-  useEffect(() => {
-    if (settings?.admission_series) {
-      setAdmissionSeries(settings.admission_series);
-    }
-  }, [settings]);
-
   const updateSettings = useMutation({
     mutationFn: async () => {
       // Unset all active sessions
       await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
       if (activeSessionId) {
         await supabase.from("sessions").update({ is_active: true }).eq("id", activeSessionId);
-      }
-      
-      if (settings?.id) {
-        await supabase.from("college_settings").update({ admission_series: admissionSeries }).eq("id", settings.id);
       }
     },
     onSuccess: () => {
@@ -121,19 +110,8 @@ function GeneralManagementPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const anyError = errorSessions || errorSettings || errorPrograms || errorFees || errorSections;
-
   if (isLoading) {
     return <div className="p-8 animate-pulse text-muted-foreground">Loading configuration...</div>;
-  }
-
-  if (anyError) {
-    return (
-      <div className="p-8 text-destructive">
-        <h2 className="text-lg font-bold">Error loading data</h2>
-        <pre className="mt-4 whitespace-pre-wrap text-sm">{JSON.stringify(anyError, null, 2)}</pre>
-      </div>
-    );
   }
 
   const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || "Not Set";
@@ -168,12 +146,7 @@ function GeneralManagementPage() {
             </div>
             
             <div className="grid gap-2 flex-1 max-w-[300px]">
-              <label className="text-sm font-medium">Admission Number Series Starting From:</label>
-              <Input 
-                value={admissionSeries} 
-                onChange={(e) => setAdmissionSeries(e.target.value)}
-                placeholder="ADM-2026-0001"
-              />
+              {/* Other global settings can go here */}
             </div>
 
             {canEdit && (
@@ -278,9 +251,9 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
             <TableRow>
               <TableHead>Session Name</TableHead>
               <TableHead>Course Name</TableHead>
+              <TableHead>Admission Series</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
-              <TableHead>Admission Series</TableHead>
               <TableHead>Status</TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
@@ -311,6 +284,11 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                   </TableCell>
                   <TableCell>
                     {isEditing ? (
+                      <Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} />
+                    ) : s.admission_series}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
                       <Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} />
                     ) : new Date(s.start_date).toLocaleDateString()}
                   </TableCell>
@@ -318,11 +296,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     {isEditing ? (
                       <Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} />
                     ) : new Date(s.end_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} />
-                    ) : s.admission_series}
                   </TableCell>
                   <TableCell>
                     {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
@@ -358,9 +331,9 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     </SelectContent>
                   </Select>
                 </TableCell>
+                <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} /></TableCell>
                 <TableCell><Input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)} /></TableCell>
-                <TableCell><Input value={localSeries} onChange={e => setLocalSeries(e.target.value)} /></TableCell>
                 <TableCell><span className="text-muted-foreground">Inactive</span></TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
