@@ -260,7 +260,8 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     start_date DATE NOT NULL,
-    end_date DATE NOT NULL
+    end_date DATE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT false
 );
 
 -- 10. Create College Settings Table
@@ -278,7 +279,16 @@ CREATE TABLE IF NOT EXISTS public.college_settings (
     support_phone TEXT NOT NULL,
     receipt_prefix TEXT NOT NULL DEFAULT 'RCPT',
     receipt_date_pattern TEXT NOT NULL DEFAULT 'YYYYMMDD',
-    receipt_counter_start INTEGER NOT NULL DEFAULT 1
+    receipt_counter_start INTEGER NOT NULL DEFAULT 1,
+    admission_series TEXT NOT NULL DEFAULT 'ADM-2026-0001'
+);
+
+-- 10.5 Create Program Sections Table
+CREATE TABLE IF NOT EXISTS public.program_sections (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    program_id UUID NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
+    section_name TEXT NOT NULL,
+    starting_roll_number INTEGER NOT NULL
 );
 
 -- 11. Create Fee Structures Table
@@ -296,6 +306,7 @@ ALTER TABLE public.faculty ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.college_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fee_structures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.program_sections ENABLE ROW LEVEL SECURITY;
 
 -- Policies for courses (requires 'courses' permission)
 CREATE POLICY "Users with courses view permission can read courses" ON public.courses
@@ -313,6 +324,12 @@ CREATE POLICY "Users with faculty edit permission can all faculty" ON public.fac
 CREATE POLICY "Users with settings view permission can read sessions" ON public.sessions
     FOR SELECT TO authenticated USING (public.has_permission('settings', 'view'));
 CREATE POLICY "Users with settings edit permission can all sessions" ON public.sessions
+    FOR ALL TO authenticated USING (public.has_permission('settings', 'edit'));
+
+-- Policies for program_sections (requires 'settings' permission)
+CREATE POLICY "Users with settings view permission can read program_sections" ON public.program_sections
+    FOR SELECT TO authenticated USING (public.has_permission('settings', 'view'));
+CREATE POLICY "Users with settings edit permission can all program_sections" ON public.program_sections
     FOR ALL TO authenticated USING (public.has_permission('settings', 'edit'));
 
 -- Policies for college_settings (requires 'settings' permission)

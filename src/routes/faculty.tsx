@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
@@ -56,10 +56,15 @@ function FacultyPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Administration</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Faculty</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Faculty Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">{faculty.length} members across departments.</p>
         </div>
-        {canEdit && <AddFacultyDialog />}
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/settings"><Settings className="mr-1 h-4 w-4" /> Settings</Link>
+          </Button>
+          {canEdit && <AddFacultyDialog />}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

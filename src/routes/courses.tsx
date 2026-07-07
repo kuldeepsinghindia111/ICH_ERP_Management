@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
@@ -79,7 +79,7 @@ function CoursesPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Academics</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Courses</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Course Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">Program & semester-wise course catalog.</p>
         </div>
         <div className="flex gap-2">
@@ -90,6 +90,7 @@ function CoursesPage() {
               {programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          {canEdit && <ManageProgramsDialog programs={programs} />}
           {canEdit && <AddCourseDialog programs={programs} />}
         </div>
       </div>
@@ -283,3 +284,100 @@ function EditCourseDialog({ course, programs, canEdit, onRemove, isRemoving }: {
   );
 }
 
+
+export function ManageProgramsDialog({ programs }: { programs: any[] }) {
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [semesters, setSemesters] = useState(6);
+  
+  const queryClient = useQueryClient();
+
+  const addProgram = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("programs").insert({ name, code, total_semesters: semesters });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      toast.success("Program added");
+      setAdding(false);
+      setName("");
+      setCode("");
+      setSemesters(6);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeProgram = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("programs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      toast.success("Program removed");
+    },
+    onError: (e: any) => toast.error("Could not remove program (it might be in use by courses/students)."),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Settings</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Manage Programs</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          {programs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No programs found.</p>
+          ) : (
+            <div className="space-y-2">
+              {programs.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
+                  <div>
+                    <span className="font-medium">{p.name} ({p.code})</span>
+                    <span className="ml-2 text-muted-foreground">{p.total_semesters} Semesters</span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => { if(confirm(`Remove ${p.name}?`)) removeProgram.mutate(p.id) }}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {adding ? (
+            <div className="space-y-3 rounded-md border bg-muted/50 p-3 mt-4">
+              <h4 className="text-sm font-medium">New Program</h4>
+              <div className="grid gap-2">
+                <Label>Program Name (e.g. Bachelor of Arts)</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Program Code (e.g. BA)</Label>
+                <Input value={code} onChange={e => setCode(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Total Semesters</Label>
+                <Input type="number" value={semesters} onChange={e => setSemesters(Number(e.target.value))} />
+              </div>
+              <div className="flex gap-2 justify-end mt-2">
+                <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
+                <Button disabled={!name || !code || addProgram.isPending} onClick={() => addProgram.mutate()}>Save</Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full mt-4" onClick={() => setAdding(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Add Program
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

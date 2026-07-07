@@ -15,6 +15,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GeneralRouteImport } from './routes/general'
 import { Route as FeesRouteImport } from './routes/fees'
 import { Route as FacultyRouteImport } from './routes/faculty'
 import { Route as CoursesRouteImport } from './routes/courses'
@@ -50,6 +51,11 @@ const PayRoute = PayRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneralRoute = GeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeesRoute = FeesRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/courses': typeof CoursesRoute
   '/faculty': typeof FacultyRoute
   '/fees': typeof FeesRoute
+  '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRoute
   '/faculty': typeof FacultyRoute
   '/fees': typeof FeesRoute
+  '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/courses': typeof CoursesRoute
   '/faculty': typeof FacultyRoute
   '/fees': typeof FeesRoute
+  '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/faculty'
     | '/fees'
+    | '/general'
     | '/login'
     | '/pay'
     | '/reports'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/faculty'
     | '/fees'
+    | '/general'
     | '/login'
     | '/pay'
     | '/reports'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/faculty'
     | '/fees'
+    | '/general'
     | '/login'
     | '/pay'
     | '/reports'
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   CoursesRoute: typeof CoursesRoute
   FacultyRoute: typeof FacultyRoute
   FeesRoute: typeof FeesRoute
+  GeneralRoute: typeof GeneralRoute
   LoginRoute: typeof LoginRoute
   PayRoute: typeof PayRoute
   ReportsRoute: typeof ReportsRoute
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/general': {
+      id: '/general'
+      path: '/general'
+      fullPath: '/general'
+      preLoaderRoute: typeof GeneralRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fees': {
@@ -292,6 +312,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesRoute: CoursesRoute,
   FacultyRoute: FacultyRoute,
   FeesRoute: FeesRoute,
+  GeneralRoute: GeneralRoute,
   LoginRoute: LoginRoute,
   PayRoute: PayRoute,
   ReportsRoute: ReportsRoute,

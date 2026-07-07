@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ExternalLink, Loader2 } from "lucide-react";
+import { Search, ExternalLink, Loader2, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useStore, semesterSummary, studentTotals, inr } from "@/lib/store";
@@ -172,15 +172,20 @@ function FeesPage() {
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Finance</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Fees management</h1>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Financials</p>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Fees Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Collect payments and track semester-wise dues across concessions, scholarships and fines.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/pay"><ExternalLink className="mr-1 h-4 w-4" /> Open online payment page</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/settings"><Settings className="mr-1 h-4 w-4" /> Settings</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/pay"><ExternalLink className="mr-1 h-4 w-4" /> Open online payment page</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

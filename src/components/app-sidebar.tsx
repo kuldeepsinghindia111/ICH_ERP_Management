@@ -30,18 +30,19 @@ import { useAuth } from "@/hooks/use-auth";
 
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Students", url: "/students", icon: GraduationCap, section: "students" },
-  { title: "Fees", url: "/fees", icon: Wallet, section: "fees" },
+  { title: "Student's Management", url: "/students", icon: GraduationCap, section: "students" },
+  { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
   { title: "Make Payment", url: "/pay", icon: CreditCard, section: "payments" },
   { title: "Reports", url: "/reports", icon: BarChart3, section: "reports" },
 ];
 
 const admin: { title: string; url: string; icon: typeof Users; section: Section }[] = [
-  { title: "Faculty", url: "/faculty", icon: Users, section: "faculty" },
-  { title: "Courses", url: "/courses", icon: BookOpen, section: "courses" },
+  { title: "Faculty Management", url: "/faculty", icon: Users, section: "faculty" },
+  { title: "Course Management", url: "/courses", icon: BookOpen, section: "courses" },
   { title: "Users & Roles", url: "/users", icon: ShieldCheck, section: "users" },
   { title: "Audit Log", url: "/audit", icon: ScrollText, section: "audit" },
   { title: "Payment Settings", url: "/settings", icon: Settings, section: "settings" },
+  { title: "General Management", url: "/general", icon: Settings, section: "settings" },
 ];
 
 export function AppSidebar() {

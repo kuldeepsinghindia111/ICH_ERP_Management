@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { Plus, Search, Trash2, Loader2, Pencil } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -134,12 +134,17 @@ function StudentsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Registry</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Student Management</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Student's Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {total} enrolled · Permanent roll numbers tracked per student.
           </p>
         </div>
-        {canEdit && <StudentFormDialog programs={programs} />}
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/settings"><Settings className="mr-1 h-4 w-4" /> Settings</Link>
+          </Button>
+          {canEdit && <StudentFormDialog programs={programs} />}
+        </div>
       </div>
 
       <Card>
