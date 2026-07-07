@@ -86,6 +86,7 @@ function GeneralManagementPage() {
 
   // Local state for Step 1
   const [activeSessionId, setActiveSessionId] = useState<string>("");
+  const [admissionSeries, setAdmissionSeries] = useState<string>("ADM-2026-0001");
   
   useEffect(() => {
     if (sessions.length) {
@@ -94,12 +95,22 @@ function GeneralManagementPage() {
     }
   }, [sessions]);
 
+  useEffect(() => {
+    if (settings?.admission_series) {
+      setAdmissionSeries(settings.admission_series);
+    }
+  }, [settings]);
+
   const updateSettings = useMutation({
     mutationFn: async () => {
       // Unset all active sessions
       await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
       if (activeSessionId) {
         await supabase.from("sessions").update({ is_active: true }).eq("id", activeSessionId);
+      }
+      
+      if (settings?.id) {
+        await supabase.from("college_settings").update({ admission_series: admissionSeries }).eq("id", settings.id);
       }
     },
     onSuccess: () => {
@@ -146,7 +157,12 @@ function GeneralManagementPage() {
             </div>
             
             <div className="grid gap-2 flex-1 max-w-[300px]">
-              {/* Other global settings can go here */}
+              <label className="text-sm font-medium">Admission Number Series Starting From:</label>
+              <Input 
+                value={admissionSeries} 
+                onChange={(e) => setAdmissionSeries(e.target.value)}
+                placeholder="ADM-2026-0001"
+              />
             </div>
 
             {canEdit && (
