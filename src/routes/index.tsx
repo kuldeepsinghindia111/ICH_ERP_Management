@@ -145,7 +145,7 @@ function Dashboard() {
                       <div>
                         <p className="font-medium text-foreground">{st.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {program?.name} · Sem {st.currentSemester} · Roll {st.rolls[st.currentSemester] || "—"}
+                          {program?.name} · Sem {st.currentSemester} · Roll {st.rollNumber || "—"}
                         </p>
                       </div>
                     </div>

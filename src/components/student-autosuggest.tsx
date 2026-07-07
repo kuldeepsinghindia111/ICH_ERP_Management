@@ -42,7 +42,7 @@ export function StudentAutosuggest({
       ? students.filter((s) =>
           s.name.toLowerCase().includes(t) ||
           s.admissionNo.toLowerCase().includes(t) ||
-          Object.values(s.rolls).some((r) => r.toLowerCase().includes(t)),
+          (s.rollNumber && s.rollNumber.toLowerCase().includes(t)),
         )
       : students;
     return base.slice(0, 8);

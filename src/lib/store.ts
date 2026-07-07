@@ -403,11 +403,10 @@ const seedCourses: Course[] = [];
 const seedFaculty: Faculty[] = [];
 
 function makeStudent(admissionNo: string, name: string, programId: string, currentSemester: number, joinedYear: number, rollPrefix: string): Student {
-  const rolls: Record<number, string> = {};
-  for (let s = 1; s <= currentSemester; s++) rolls[s] = `${rollPrefix}${String(s).padStart(2, "0")}`;
+  const rollNumber = `${rollPrefix}${String(currentSemester).padStart(2, "0")}`;
   return {
     id: uid(),
-    admissionNo, name, programId, currentSemester, rolls, joinedYear,
+    admissionNo, name, programId, currentSemester, rollNumber, joinedYear,
     status: "active",
     email: `${name.toLowerCase().replace(/[^a-z]/g, ".")}@student.college.edu`,
     guardian: "—",
@@ -634,8 +633,7 @@ export const useStore = create<State>()(
 
       addStudent: (s) => {
         const id = uid();
-        const rolls = s.rolls ?? { [s.currentSemester]: "" };
-        set((st) => ({ students: [...st.students, { ...s, id, rolls }] }));
+        set((st) => ({ students: [...st.students, { ...s, id }] }));
         return id;
       },
       updateStudent: (id, patch) =>
@@ -643,7 +641,7 @@ export const useStore = create<State>()(
       setRoll: (studentId, semester, roll) =>
         set((s) => ({
           students: s.students.map((st) =>
-            st.id === studentId ? { ...st, rolls: { ...st.rolls, [semester]: roll } } : st,
+            st.id === studentId ? { ...st, rollNumber: roll } : st,
           ),
         })),
       removeStudent: (id) =>
