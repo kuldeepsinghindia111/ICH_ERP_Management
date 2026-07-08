@@ -112,15 +112,14 @@ function GeneralManagementPage() {
 
   // --- New session row state ---
   const [addingNewSession, setAddingNewSession] = useState(false);
-  const [newSessionLocal, setNewSessionLocal] = useState({ sessionId: "", startDate: "", endDate: "", admissionSeries: "" });
+  const [newSessionLocal, setNewSessionLocal] = useState({ name: "", startDate: "", endDate: "", admissionSeries: "" });
 
   const startAddSession = () => {
-    const first = sessions.find(s => !s.is_settings_active) || sessions[0];
     setNewSessionLocal({
-      sessionId: first?.id || "",
-      startDate: first?.start_date || "",
-      endDate: first?.end_date || "",
-      admissionSeries: first?.admission_series || "",
+      name: "2027-28",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      admissionSeries: "ADM-2027-0001",
     });
     setAddingNewSession(true);
   };
@@ -162,12 +161,13 @@ function GeneralManagementPage() {
   // Save the new row (mark as active)
   const saveNewSettingsRow = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("sessions").update({
+      const { error } = await supabase.from("sessions").insert({
         is_settings_active: true,
+        name: newSessionLocal.name,
         start_date: newSessionLocal.startDate,
         end_date: newSessionLocal.endDate,
         admission_series: newSessionLocal.admissionSeries
-      }).eq("id", newSessionLocal.sessionId);
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -224,7 +224,7 @@ function GeneralManagementPage() {
 
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle>Session & Key Settings</CardTitle>
+          <CardTitle>Session & Admission No. Management</CardTitle>
           {canEdit && (
             <Button variant="secondary" size="sm" onClick={startAddSession}>
               <Plus className="mr-2 h-4 w-4" /> Add session
@@ -289,14 +289,7 @@ function GeneralManagementPage() {
               {addingNewSession && (
                 <TableRow>
                   <TableCell>
-                    <Select value={newSessionLocal.sessionId} onValueChange={handleNewSessionChange}>
-                      <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
-                      <SelectContent>
-                        {sessions.filter(s => !s.is_settings_active).map(s => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input value={newSessionLocal.name} onChange={e => setNewSessionLocal({ ...newSessionLocal, name: e.target.value })} placeholder="e.g. 2026-27" />
                   </TableCell>
                   <TableCell>
                     <Input type="date" value={newSessionLocal.startDate} onChange={e => setNewSessionLocal({ ...newSessionLocal, startDate: e.target.value })} />
