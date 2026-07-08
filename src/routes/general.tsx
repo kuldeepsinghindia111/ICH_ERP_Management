@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2, Pencil, Save, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -90,11 +90,11 @@ function GeneralManagementPage() {
   const [settingsEditingIndex, setSettingsEditingIndex] = useState<number | null>(null);
   const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", startDate: "", endDate: "", admissionSeries: "" });
 
-  // The active sessions loaded from DB
-  const activeSessions = useMemo(() => sessions.filter(s => s.is_active), [sessions]);
+  // Show ALL sessions so user can toggle active/inactive
+  const allSessions = sessions;
 
   const startSettingsEdit = (index: number) => {
-    const s = activeSessions[index];
+    const s = allSessions[index];
     if (!s) return;
     setSettingsEditingIndex(index);
     setSettingsLocal({
@@ -176,6 +176,19 @@ function GeneralManagementPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Toggle active/inactive for a session in Session & Key Settings
+  const toggleSettingsStatus = useMutation({
+    mutationFn: async ({ sessionId, currentStatus }: { sessionId: string; currentStatus: boolean }) => {
+      const { error } = await supabase.from("sessions").update({ is_active: !currentStatus }).eq("id", sessionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      toast.success("Session status updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Delete (deactivate) a row
   const deactivateSession = useMutation({
     mutationFn: async (sessionId: string) => {
@@ -193,7 +206,7 @@ function GeneralManagementPage() {
     return <div className="p-8 animate-pulse text-muted-foreground">Loading configuration...</div>;
   }
 
-  const activeSessionNames = activeSessions.map(s => s.name).filter(Boolean);
+  const activeSessionNames = sessions.filter(s => s.is_active).map(s => s.name).filter(Boolean);
   const activeSessionName = activeSessionNames.length > 0 ? activeSessionNames.join(", ") : "Not Set";
 
   return (
@@ -224,11 +237,12 @@ function GeneralManagementPage() {
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
                 <TableHead>Admission Series</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeSessions.map((s, index) => {
+              {allSessions.map((s, index) => {
                 const isEditing = settingsEditingIndex === index;
                 return (
                   <TableRow key={s.id}>
@@ -248,6 +262,18 @@ function GeneralManagementPage() {
                         <Input value={settingsLocal.admissionSeries} onChange={e => setSettingsLocal({ ...settingsLocal, admissionSeries: e.target.value })} placeholder="e.g. ADM-2027-0001" />
                       ) : (s.admission_series || "—")}
                     </TableCell>
+                    <TableCell>
+                      {canEdit ? (
+                        <button
+                          className={`text-sm font-medium cursor-pointer hover:underline ${s.is_active ? "text-primary" : "text-muted-foreground"}`}
+                          onClick={() => toggleSettingsStatus.mutate({ sessionId: s.id, currentStatus: s.is_active })}
+                        >
+                          {s.is_active ? "Active" : "Inactive"}
+                        </button>
+                      ) : (
+                        s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       {canEdit && (
                         isEditing ? (
@@ -258,7 +284,7 @@ function GeneralManagementPage() {
                         ) : (
                           <div className="flex justify-end gap-2">
                             <Button size="icon" variant="ghost" onClick={() => startSettingsEdit(index)}><Pencil className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => { if (confirm("Deactivate this session?")) deactivateSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this session?")) deactivateSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
                         )
                       )}
@@ -383,6 +409,19 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Toggle active/inactive for a session
+  const toggleSessionStatus = useMutation({
+    mutationFn: async ({ sessionId, currentStatus }: { sessionId: string; currentStatus: boolean }) => {
+      const { error } = await supabase.from("sessions").update({ is_active: !currentStatus }).eq("id", sessionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      toast.success("Session status updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -434,7 +473,16 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
                     ) : s.roll_number_series}
                   </TableCell>
                   <TableCell>
-                    {s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>}
+                    {canEdit ? (
+                      <button
+                        className={`text-sm font-medium cursor-pointer hover:underline ${s.is_active ? "text-primary" : "text-muted-foreground"}`}
+                        onClick={() => toggleSessionStatus.mutate({ sessionId: s.id, currentStatus: s.is_active })}
+                      >
+                        {s.is_active ? "Active" : "Inactive"}
+                      </button>
+                    ) : (
+                      s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     {canEdit && (
