@@ -845,12 +845,24 @@ export function studentTotals(
   data: Pick<State, "charges" | "adjustments" | "payments"> & { structures?: any[], student?: any },
 ) {
   let netPayable = 0, totalPaid = 0, balance = 0, totalCharged = 0, totalConcession = 0, totalScholarship = 0;
+  const allCharges: any[] = [];
+  const allAdjustments: any[] = [];
+  const allPayments: any[] = [];
+  
   for (let s = 1; s <= currentSemester; s++) {
     const sum = semesterSummary(studentId, s, data);
     netPayable += sum.netPayable; totalPaid += sum.totalPaid; balance += sum.balance;
     totalCharged += sum.totalCharged; totalConcession += sum.totalConcession; totalScholarship += sum.totalScholarship;
+    allCharges.push(...sum.charges);
+    allAdjustments.push(...sum.adjustments);
+    allPayments.push(...sum.payments);
   }
-  return { netPayable, totalPaid, balance, totalCharged, totalConcession, totalScholarship };
+  return { 
+    netPayable, totalPaid, balance, totalCharged, totalConcession, totalScholarship,
+    charges: allCharges,
+    adjustments: allAdjustments,
+    payments: allPayments
+  };
 }
 
 export function formatYear(n: number): string {
