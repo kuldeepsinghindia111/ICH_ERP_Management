@@ -132,6 +132,15 @@ export function CollectPaymentDialog({
     }
   });
 
+  const { data: feeStructures = [] } = useQuery({
+    queryKey: ['fee_structures'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_structures').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const paymentInfo = useStore((s) => s.paymentInfo);
   const receiptFormat = useStore((s) => s.receiptFormat);
 
@@ -151,8 +160,8 @@ export function CollectPaymentDialog({
   );
 
   const sum = useMemo(
-    () => (student ? semesterSummary(student.id, Number(sem), { charges, adjustments, payments }) : null),
-    [student, sem, charges, adjustments, payments],
+    () => (student ? semesterSummary(student.id, Number(sem), { charges, adjustments, payments, structures: feeStructures, student }) : null),
+    [student, sem, charges, adjustments, payments, feeStructures],
   );
 
   const regenReceipt = () => setReference(nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat));

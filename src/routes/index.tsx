@@ -14,6 +14,8 @@ import { useStore, studentTotals, inr, formatYear } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,18 +36,27 @@ function Dashboard() {
   const adjustments = useStore((s) => s.adjustments);
   const payments = useStore((s) => s.payments);
 
+  const { data: feeStructures = [] } = useQuery({
+    queryKey: ['fee_structures'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_structures').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const totals = useMemo(() => {
     let netPayable = 0, totalPaid = 0, balance = 0;
     let studentsWithDues = 0;
     students.forEach((st) => {
-      const t = studentTotals(st.id, st.currentSemester, { charges, adjustments, payments });
+      const t = studentTotals(st.id, st.currentSemester, { charges, adjustments, payments, structures: feeStructures, student: st });
       netPayable += t.netPayable;
       totalPaid += t.totalPaid;
       balance += t.balance;
       if (t.balance > 0) studentsWithDues++;
     });
     return { netPayable, totalPaid, balance, studentsWithDues };
-  }, [students, charges, adjustments, payments]);
+  }, [students, charges, adjustments, payments, feeStructures]);
 
   const collectionRate = totals.netPayable
     ? Math.round((totals.totalPaid / totals.netPayable) * 100)
@@ -59,12 +70,12 @@ function Dashboard() {
     return students
       .map((st) => ({
         st,
-        totals: studentTotals(st.id, st.currentSemester, { charges, adjustments, payments }),
+        totals: studentTotals(st.id, st.currentSemester, { charges, adjustments, payments, structures: feeStructures, student: st }),
       }))
       .filter((r) => r.totals.balance > 0)
       .sort((a, b) => b.totals.balance - a.totals.balance)
       .slice(0, 5);
-  }, [students, charges, adjustments, payments]);
+  }, [students, charges, adjustments, payments, feeStructures]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">

@@ -67,6 +67,15 @@ function StudentsPage() {
     }
   });
 
+  const { data: feeStructures = [] } = useQuery({
+    queryKey: ['fee_structures'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_structures').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Get user's permissions
   const { data: canEdit } = useQuery({
     queryKey: ['canEditStudents', user?.id],
@@ -201,7 +210,7 @@ function StudentsPage() {
                 {students.map((s: any) => {
                   const program = programs.find((p: any) => p.id === s.program_id);
                   // Temporary local-storage balance computation. Will show 0 for new supabase students until fees are migrated.
-                  const t = studentTotals(s.id, s.current_semester, { charges, adjustments, payments });
+                  const t = studentTotals(s.id, s.current_semester, { charges, adjustments, payments, structures: feeStructures, student: s });
                   
                   // Safe initial logic for students with single-word names
                   const parts = s.name.split(" ");

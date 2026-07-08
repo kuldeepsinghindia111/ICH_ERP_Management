@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2 } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
@@ -131,6 +131,15 @@ function StudentDetail() {
     enabled: !!studentId,
   });
 
+  const { data: feeStructures = [] } = useQuery({
+    queryKey: ['fee_structures'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_structures').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const updateStudentMutation = useMutation({
     mutationFn: async (updates: any) => {
       const { error } = await supabase.from('students').update(updates).eq('id', studentId);
@@ -153,7 +162,7 @@ function StudentDetail() {
 
   const program = programs.find((p: any) => p.id === student.program_id);
   const currentSemester = student.current_semester;
-  const totals = studentTotals(student.id, currentSemester, { charges, adjustments, payments });
+  const totals = studentTotals(student.id, currentSemester, { charges, adjustments, payments, structures: feeStructures, student });
   const activeSemValue = activeSem ?? String(currentSemester);
 
   const semesters = Array.from({ length: program?.total_semesters ?? 6 }, (_, i) => i + 1);
@@ -285,6 +294,7 @@ function StudentDetail() {
                   payments={payments}
                   canEditPayments={canEditPayments ?? false} 
                   userRole={userRole}
+                  feeStructures={feeStructures}
                 />
               </TabsContent>
             ))}
@@ -317,12 +327,13 @@ function TotalPill({
 }
 
 function SemesterLedger({ 
-  student, semester, charges, adjustments, payments, canEditPayments, userRole 
+  student, semester, charges, adjustments, payments, canEditPayments, userRole, feeStructures 
 }: { 
   student: any; semester: number; 
   charges: any[]; adjustments: any[]; payments: any[];
   canEditPayments: boolean;
   userRole?: any;
+  feeStructures: any[];
 }) {
   const studentId = student.id;
   const queryClient = useQueryClient();
@@ -365,13 +376,13 @@ function SemesterLedger({
   });
 
   const sum = useMemo(
-    () => semesterSummary(studentId, semester, { charges, adjustments, payments }),
-    [studentId, semester, charges, adjustments, payments],
+    () => semesterSummary(studentId, semester, { charges, adjustments, payments, structures: feeStructures, student }),
+    [studentId, semester, charges, adjustments, payments, feeStructures, student],
   );
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <SummaryPanel sum={sum} />
+      <SummaryPanel sum={sum} semester={semester} />
 
       <div className="lg:col-span-2 space-y-4">
         <LedgerBlock
@@ -418,7 +429,7 @@ function SemesterLedger({
   );
 }
 
-function SummaryPanel({ sum }: { sum: ReturnType<typeof semesterSummary> }) {
+function SummaryPanel({ sum, semester }: { sum: ReturnType<typeof semesterSummary>, semester: number }) {
   const rows: [string, string, string?][] = [
     ["Total charged", inr(sum.totalCharged)],
     ["Concessions", `− ${inr(sum.totalConcession)}`, "text-warning"],
@@ -429,6 +440,12 @@ function SummaryPanel({ sum }: { sum: ReturnType<typeof semesterSummary> }) {
   return (
     <Card>
       <CardContent className="space-y-2 p-5">
+        <div className="grid gap-2 text-sm sm:grid-cols-2">
+          <div className="flex justify-between border-b pb-2 sm:border-0 sm:pb-0">
+            <span className="text-muted-foreground">Class Year</span>
+            <span className="font-medium text-foreground">{formatYear(semester)}</span>
+          </div>
+        </div>
         {rows.map(([l, v, cls]) => (
           <div key={l} className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{l}</span>
@@ -636,11 +653,16 @@ function AddPaymentDialog({
   const queryClient = useQueryClient();
   const addPaymentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { data: allPayments, error: fetchErr } = await supabase.from('fee_payments').select('reference');
+      const { data: allPayments, error: fetchErr } = await supabase.from('fee_payments').select('reference, paid_at');
       if (fetchErr) throw fetchErr;
       
+      const mappedPayments = (allPayments || []).map((p: any) => ({
+        id: '', studentId: '', semester: 0, amount: 0, method: 'cash' as any,
+        reference: p.reference, paidAt: p.paid_at
+      }));
+
       const receiptFormat = useStore.getState().receiptFormat;
-      const receiptNum = nextReceiptNo(new Date().toISOString(), allPayments || [], receiptFormat);
+      const receiptNum = nextReceiptNo(new Date().toISOString(), mappedPayments, receiptFormat);
       
       const txnRef = data.reference?.trim();
       const finalNote = txnRef ? `Txn Ref: ${txnRef}` : null;

@@ -815,31 +815,42 @@ export const useStore = create<State>()(
 // ---------- Selectors / helpers ----------
 export function semesterSummary(
   studentId: string, semester: number,
-  data: Pick<State, "charges" | "adjustments" | "payments">,
+  data: Pick<State, "charges" | "adjustments" | "payments"> & { structures?: any[], student?: any },
 ) {
   const charges = data.charges.filter((c) => c.studentId === studentId && c.semester === semester);
   const adjustments = data.adjustments.filter((a) => a.studentId === studentId && a.semester === semester);
   const payments = data.payments.filter((p) => p.studentId === studentId && p.semester === semester);
-  const totalCharged = charges.reduce((s, c) => s + c.amount, 0);
+  
+  // Calculate prescribed base fees from fee_structures for this student's program and semester
+  let prescribedFee = 0;
+  if (data.structures && data.student) {
+    const structs = data.structures.filter(s => s.program_id === data.student.program_id && s.semester === semester);
+    prescribedFee = structs.reduce((sum, s) => sum + Number(s.amount), 0);
+  }
+
+  const manualCharges = charges.reduce((s, c) => s + c.amount, 0);
+  const totalCharged = prescribedFee + manualCharges;
+
   const totalConcession = adjustments.filter((a) => a.type === "concession").reduce((s, a) => s + a.amount, 0);
   const totalScholarship = adjustments.filter((a) => a.type === "scholarship").reduce((s, a) => s + a.amount, 0);
   const totalAdjustment = totalConcession + totalScholarship;
   const netPayable = totalCharged - totalAdjustment;
   const totalPaid = payments.filter((p) => !p.voided).reduce((s, p) => s + p.amount, 0);
   const balance = netPayable - totalPaid;
-  return { charges, adjustments, payments, totalCharged, totalConcession, totalScholarship, totalAdjustment, netPayable, totalPaid, balance };
+  return { charges, adjustments, payments, prescribedFee, manualCharges, totalCharged, totalConcession, totalScholarship, totalAdjustment, netPayable, totalPaid, balance };
 }
 
 export function studentTotals(
   studentId: string, currentSemester: number,
-  data: Pick<State, "charges" | "adjustments" | "payments">,
+  data: Pick<State, "charges" | "adjustments" | "payments"> & { structures?: any[], student?: any },
 ) {
-  let netPayable = 0, totalPaid = 0, balance = 0;
+  let netPayable = 0, totalPaid = 0, balance = 0, totalCharged = 0, totalConcession = 0, totalScholarship = 0;
   for (let s = 1; s <= currentSemester; s++) {
     const sum = semesterSummary(studentId, s, data);
     netPayable += sum.netPayable; totalPaid += sum.totalPaid; balance += sum.balance;
+    totalCharged += sum.totalCharged; totalConcession += sum.totalConcession; totalScholarship += sum.totalScholarship;
   }
-  return { netPayable, totalPaid, balance };
+  return { netPayable, totalPaid, balance, totalCharged, totalConcession, totalScholarship };
 }
 
 export function formatYear(n: number): string {

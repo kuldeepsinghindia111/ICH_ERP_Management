@@ -61,7 +61,6 @@ function FeesPage() {
     }
   });
   
-  // Fetch ledger data
   const { data: charges = [], isLoading: loadingCharges } = useQuery({
     queryKey: ['fee_charges'],
     queryFn: async () => {
@@ -71,6 +70,15 @@ function FeesPage() {
         id: d.id, studentId: d.student_id, semester: d.semester,
         head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
       }));
+    }
+  });
+
+  const { data: feeStructures = [], isLoading: loadingStructures } = useQuery({
+    queryKey: ['fee_structures'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_structures').select('*');
+      if (error) throw error;
+      return data;
     }
   });
   
@@ -100,7 +108,7 @@ function FeesPage() {
     }
   });
 
-  const isLoading = loadingPrograms || loadingStudents || loadingCharges || loadingAdjustments || loadingPayments;
+  const isLoading = loadingPrograms || loadingStudents || loadingCharges || loadingAdjustments || loadingPayments || loadingStructures;
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -120,8 +128,7 @@ function FeesPage() {
   const rows = useMemo(() => {
     const items: {
       st: any;
-      semester: number;
-      sum: ReturnType<typeof semesterSummary>;
+      sum: ReturnType<typeof studentTotals>;
     }[] = [];
     
     if (!students.length) return items;
@@ -129,6 +136,7 @@ function FeesPage() {
     students.forEach((st: any) => {
       if (pickStudentId && st.id !== pickStudentId) return;
       if (program !== "all" && st.program_id !== program) return;
+      if (sem !== "all" && String(st.current_semester) !== sem) return;
       if (debouncedQ) {
         const t = debouncedQ.toLowerCase();
         const hit =
@@ -136,17 +144,14 @@ function FeesPage() {
           (st.admission_no || "").toLowerCase().includes(t);
         if (!hit) return;
       }
-      const semesters = sem === "all" ? Array.from({ length: st.current_semester }, (_, i) => i + 1) : [Number(sem)];
-      semesters.forEach((s) => {
-        if (s > st.current_semester) return;
-        const sum = semesterSummary(st.id, s, { charges, adjustments, payments });
-        if (status === "pending" && sum.balance <= 0) return;
-        if (status === "cleared" && sum.balance > 0) return;
-        items.push({ st, semester: s, sum });
-      });
+      
+      const sum = studentTotals(st.id, st.current_semester, { charges, adjustments, payments, structures: feeStructures, student: st });
+      if (status === "pending" && sum.balance <= 0) return;
+      if (status === "cleared" && sum.balance > 0) return;
+      items.push({ st, sum });
     });
     return items;
-  }, [students, debouncedQ, program, sem, status, pickStudentId, charges, adjustments, payments]);
+  }, [students, debouncedQ, program, sem, status, pickStudentId, charges, adjustments, payments, feeStructures]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -154,11 +159,11 @@ function FeesPage() {
   const totals = useMemo(() => {
     let paid = 0, balance = 0, billed = 0;
     students.forEach((st: any) => {
-      const t = studentTotals(st.id, st.current_semester, { charges, adjustments, payments });
+      const t = studentTotals(st.id, st.current_semester, { charges, adjustments, payments, structures: feeStructures, student: st });
       billed += t.netPayable; paid += t.totalPaid; balance += t.balance;
     });
     return { billed, paid, balance };
-  }, [students, charges, adjustments, payments]);
+  }, [students, charges, adjustments, payments, feeStructures]);
 
   if (isLoading) {
     return (
@@ -235,8 +240,8 @@ function FeesPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Student</th>
-                  <th className="px-4 py-3 font-medium">Sem</th>
-                  <th className="px-4 py-3 text-right font-medium">Charged</th>
+                  <th className="px-4 py-3 font-medium">Class Year</th>
+                  <th className="px-4 py-3 text-right font-medium">Total Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
                   <th className="px-4 py-3 text-right font-medium">Net</th>
@@ -249,15 +254,15 @@ function FeesPage() {
                 {rows.length === 0 && (
                   <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
-                {pageRows.map(({ st, semester, sum }) => (
-                  <tr key={st.id + "-" + semester} className="hover:bg-accent/40">
+                {pageRows.map(({ st, sum }) => (
+                  <tr key={st.id} className="hover:bg-accent/40">
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{st.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {programs.find((p: any) => p.id === st.program_id)?.name} · Roll {(st.rolls && st.rolls[semester]) || "—"}
+                        {programs.find((p: any) => p.id === st.program_id)?.name} · Roll {(st.rolls && st.rolls[st.current_semester]) || "—"}
                       </p>
                     </td>
-                    <td className="px-4 py-3">{formatYear(semester)}</td>
+                    <td className="px-4 py-3">{formatYear(st.current_semester)}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
@@ -271,7 +276,7 @@ function FeesPage() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         {sum.balance > 0 && canEditPayments && (
-                          <CollectPaymentDialog studentId={st.id} semester={semester} variant="sm" />
+                          <CollectPaymentDialog studentId={st.id} semester={st.current_semester} variant="sm" />
                         )}
                         <Button asChild variant="outline" size="sm">
                           <Link to="/students/$studentId" params={{ studentId: st.id }}>Ledger</Link>

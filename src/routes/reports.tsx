@@ -115,6 +115,15 @@ function Reports() {
       return data;
     }
   });
+
+  const { data: feeStructures = [] } = useQuery({
+    queryKey: ['fee_structures'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_structures').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
   
   const activeSessionId = collegeSettings?.active_session_id || "all";
 
@@ -162,12 +171,12 @@ function Reports() {
       if (program !== "all" && st.programId !== program) return;
       for (let s = 1; s <= st.currentSemester; s++) {
         if (sem !== "all" && s !== Number(sem)) continue;
-        const sum = semesterSummary(st.id, s, { charges, adjustments, payments });
+        const sum = semesterSummary(st.id, s, { charges, adjustments, payments, structures: feeStructures, student: st });
         if (sum.balance > 0) rows.push({ st, semester: s, balance: sum.balance });
       }
     });
     return rows.sort((a, b) => b.balance - a.balance);
-  }, [students, charges, adjustments, payments, program, sem]);
+  }, [students, charges, adjustments, payments, feeStructures, program, sem]);
 
   const byHead = useMemo(() => {
     const m: Record<string, number> = {};
@@ -178,11 +187,11 @@ function Reports() {
   const totals = useMemo(() => {
     let billed = 0, paid = 0, balance = 0;
     students.forEach((st) => {
-      const t = studentTotals(st.id, st.currentSemester, { charges, adjustments, payments });
+      const t = studentTotals(st.id, st.currentSemester, { charges, adjustments, payments, structures: feeStructures, student: st });
       billed += t.netPayable; paid += t.totalPaid; balance += t.balance;
     });
     return { billed, paid, balance };
-  }, [students, charges, adjustments, payments]);
+  }, [students, charges, adjustments, payments, feeStructures]);
 
   const receiptsTotal = useMemo(
     () => filteredReceipts.reduce((s, p) => s + p.amount, 0),
