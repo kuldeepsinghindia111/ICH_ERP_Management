@@ -148,6 +148,8 @@ export function CollectPaymentDialog({
   const [sem, setSem] = useState(String(semester ?? student?.current_semester ?? 1));
   const [method, setMethod] = useState<Method>("cash");
   const [amount, setAmount] = useState("");
+  const [concession, setConcession] = useState("");
+  const [scholarship, setScholarship] = useState("");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
@@ -168,7 +170,11 @@ export function CollectPaymentDialog({
 
   // Prefill on open and when semester/date changes.
   useEffect(() => {
-    if (open && sum) setAmount(String(Math.max(sum.balance, 0)));
+    if (open && sum) {
+      setAmount(String(Math.max(sum.balance, 0)));
+      setConcession("");
+      setScholarship("");
+    }
   }, [open, sem]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -225,6 +231,30 @@ export function CollectPaymentDialog({
       }]);
       if (error) throw error;
       
+      const adjustmentsToInsert = [];
+      if (data.concession > 0) {
+        adjustmentsToInsert.push({
+          student_id: data.studentId,
+          semester: data.semester,
+          type: "concession",
+          amount: data.concession,
+          label: "Applied during payment",
+        });
+      }
+      if (data.scholarship > 0) {
+        adjustmentsToInsert.push({
+          student_id: data.studentId,
+          semester: data.semester,
+          type: "scholarship",
+          amount: data.scholarship,
+          label: "Applied during payment",
+        });
+      }
+      if (adjustmentsToInsert.length > 0) {
+        const { error: adjErr } = await supabase.from('fee_adjustments').insert(adjustmentsToInsert);
+        if (adjErr) throw adjErr;
+      }
+      
       if (userRole && student) {
         await supabase.from('audit_logs').insert([{
           actor_user_id: userRole.id,
@@ -232,7 +262,7 @@ export function CollectPaymentDialog({
           actor_code: userRole.user_code,
           actor_role: userRole.role,
           event: 'payment.collected',
-          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`,
+          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})` + (data.concession ? ` + ₹${data.concession} Concession` : '') + (data.scholarship ? ` + ₹${data.scholarship} Scholarship` : ''),
           student_id: data.studentId,
         }]);
       }
@@ -240,6 +270,7 @@ export function CollectPaymentDialog({
     onSuccess: () => {
       toast.success("Payment recorded successfully");
       queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      queryClient.invalidateQueries({ queryKey: ['fee_adjustments'] });
       // Generate receipt
       const amt = Number(amount);
       const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
@@ -267,19 +298,36 @@ export function CollectPaymentDialog({
     setPreview(null);
     resetForm();
   };
-
   const submit = async () => {
     setTouched({ amount: true, reference: true });
-    if (errors.amount || errors.reference) {
-      return toast.error(errors.amount ?? errors.reference ?? "Please fix the errors");
-    }
     const amt = Number(amount);
+    const conc = Number(concession);
+    const schol = Number(scholarship);
+    
+    if ((!amt || amt <= 0) && (!conc || conc <= 0) && (!schol || schol <= 0)) {
+      return toast.error("Enter a valid payment, concession, or scholarship amount");
+    }
+    
+    const hasPayment = amt > 0;
+    if (hasPayment && Object.keys(errors).length > 0) {
+      if (errors.amount || errors.reference) {
+        return toast.error(errors.amount ?? errors.reference ?? "Please fix the errors");
+      }
+    }
+    
     const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
     const iso = new Date(paidAt).toISOString();
     
     savePaymentMutation.mutate({
-      studentId: student.id, semester: Number(sem), amount: amt,
-      method, reference: ref, note: note || undefined, paidAt: iso,
+      studentId: student.id, 
+      semester: Number(sem), 
+      amount: amt,
+      method, 
+      reference: ref, 
+      note: note || undefined, 
+      paidAt: iso,
+      concession: conc,
+      scholarship: schol
     });
   };
 
@@ -335,6 +383,16 @@ export function CollectPaymentDialog({
                 <div>
                   <Label>Date</Label>
                   <Input type="date" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} max={new Date().toISOString().slice(0, 10)} />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Concession (INR)</Label>
+                  <Input type="number" min={0} step="0.01" value={concession} onChange={(e) => setConcession(e.target.value)} placeholder="0.00" />
+                </div>
+                <div>
+                  <Label>Scholarship (INR)</Label>
+                  <Input type="number" min={0} step="0.01" value={scholarship} onChange={(e) => setScholarship(e.target.value)} placeholder="0.00" />
                 </div>
               </div>
               <div>
