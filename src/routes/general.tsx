@@ -340,7 +340,7 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
 
   const startAdd = () => {
     setEditingId("new");
-    setLocalName("2027-28");
+    setLocalName(`Config ${Date.now()}`);
     setLocalStart(new Date().toISOString().split('T')[0]);
     setLocalEnd(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]);
     setLocalSeries("ADM-2027-0001");
@@ -418,10 +418,10 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>Academic Sessions</CardTitle>
+        <CardTitle>Roll No. Management</CardTitle>
         {canEdit && (
           <Button id="add-session-btn" variant="secondary" size="sm" onClick={startAdd}>
-            <Plus className="mr-2 h-4 w-4" /> Add Session
+            <Plus className="mr-2 h-4 w-4" /> Add Configuration
           </Button>
         )}
       </CardHeader>
@@ -429,7 +429,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Session Name</TableHead>
               <TableHead>Course Name</TableHead>
               <TableHead>Roll Number Series</TableHead>
               <TableHead>Status</TableHead>
@@ -442,11 +441,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
               const p = programs.find(pr => pr.id === s.program_id);
               return (
                 <TableRow key={s.id}>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input value={localName} onChange={e => setLocalName(e.target.value)} />
-                    ) : s.name}
-                  </TableCell>
                   <TableCell>
                     {isEditing ? (
                       <Select value={localProgramId} onValueChange={setLocalProgramId}>
@@ -498,7 +492,6 @@ function SessionManagementSetup({ sessions, programs, canEdit }: { sessions: any
 
             {editingId === "new" && (
               <TableRow>
-                <TableCell><Input value={localName} onChange={e => setLocalName(e.target.value)} /></TableCell>
                 <TableCell>
                   <Select value={localProgramId} onValueChange={setLocalProgramId}>
                     <SelectTrigger><SelectValue placeholder="Global / All Courses" /></SelectTrigger>
