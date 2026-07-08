@@ -343,7 +343,7 @@ export function ManageProgramsDialog({ programs }: { programs: any[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Settings</Button>
+        <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Course Settings</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
