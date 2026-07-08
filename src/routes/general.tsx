@@ -520,6 +520,18 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
     onError: (e: any) => toast.error(e.message),
   });
 
+  const removeProgram = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("programs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      toast.success("Course/Class removed successfully");
+    },
+    onError: (e: any) => toast.error("Could not remove course. It might be in use by students or other records."),
+  });
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -575,7 +587,21 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
                           <Button size="icon" variant="ghost" onClick={() => setEditingProgramId(null)}>x</Button>
                         </div>
                       ) : (
-                        <Button size="icon" variant="ghost" onClick={() => startEdit(p.id)}><Pencil className="h-4 w-4" /></Button>
+                        <div className="flex justify-end gap-2">
+                          <Button size="icon" variant="ghost" onClick={() => startEdit(p.id)}><Pencil className="h-4 w-4" /></Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={removeProgram.isPending}
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete ${p.name}?`)) {
+                                removeProgram.mutate(p.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       )
                     )}
                   </TableCell>
