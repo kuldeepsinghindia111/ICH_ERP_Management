@@ -86,85 +86,105 @@ function GeneralManagementPage() {
 
   const isLoading = loadingSessions || loadingSettings || loadingPrograms || loadingFees || loadingSections;
 
-  type ActiveSessionRow = {
-    internalId: string;
-    sessionId: string;
-    startDate: string;
-    endDate: string;
-    admissionSeries: string;
-    isNew?: boolean;
-    newName?: string;
+  // --- Session & Key Settings: per-row edit/save/delete like Academic Sessions ---
+  const [settingsEditingIndex, setSettingsEditingIndex] = useState<number | null>(null);
+  const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", startDate: "", endDate: "", admissionSeries: "" });
+
+  // The active sessions loaded from DB
+  const activeSessions = useMemo(() => sessions.filter(s => s.is_active), [sessions]);
+
+  const startSettingsEdit = (index: number) => {
+    const s = activeSessions[index];
+    if (!s) return;
+    setSettingsEditingIndex(index);
+    setSettingsLocal({
+      sessionId: s.id,
+      startDate: s.start_date || "",
+      endDate: s.end_date || "",
+      admissionSeries: s.admission_series || "",
+    });
   };
 
-  const [activeRows, setActiveRows] = useState<ActiveSessionRow[]>([]);
-  
-  useEffect(() => {
-    if (sessions.length && activeRows.length === 0) {
-      const active = sessions.filter(s => s.is_active);
-      if (active.length > 0) {
-        setActiveRows(active.map(s => ({
-          internalId: Math.random().toString(),
-          sessionId: s.id,
-          startDate: s.start_date || "",
-          endDate: s.end_date || "",
-          admissionSeries: s.admission_series || "",
-        })));
-      } else {
-        setActiveRows([{
-          internalId: Math.random().toString(),
-          sessionId: sessions[0].id,
-          startDate: sessions[0].start_date || "",
-          endDate: sessions[0].end_date || "",
-          admissionSeries: sessions[0].admission_series || ""
-        }]);
-      }
-    }
-  }, [sessions, activeRows.length]);
+  const cancelSettingsEdit = () => {
+    setSettingsEditingIndex(null);
+  };
 
-  const handleSessionChange = (index: number, newSessionId: string) => {
+  // --- New session row state ---
+  const [addingNewSession, setAddingNewSession] = useState(false);
+  const [newSessionLocal, setNewSessionLocal] = useState({ sessionId: "", startDate: "", endDate: "", admissionSeries: "" });
+
+  const startAddSession = () => {
+    const first = sessions[0];
+    setNewSessionLocal({
+      sessionId: first?.id || "",
+      startDate: first?.start_date || "",
+      endDate: first?.end_date || "",
+      admissionSeries: first?.admission_series || "",
+    });
+    setAddingNewSession(true);
+  };
+
+  const cancelAddSession = () => {
+    setAddingNewSession(false);
+  };
+
+  const handleNewSessionChange = (newSessionId: string) => {
     const session = sessions.find(s => s.id === newSessionId);
     if (!session) return;
-    const newRows = [...activeRows];
-    newRows[index] = {
-      ...newRows[index],
+    setNewSessionLocal({
       sessionId: newSessionId,
       startDate: session.start_date || "",
       endDate: session.end_date || "",
-      admissionSeries: session.admission_series || ""
-    };
-    setActiveRows(newRows);
+      admissionSeries: session.admission_series || "",
+    });
   };
 
-  const updateSettings = useMutation({
+  // Save a single existing row
+  const saveSettingsRow = useMutation({
     mutationFn: async () => {
-      // Unset all active sessions
-      await supabase.from("sessions").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000"); // hack to update all
-      
-      for (const row of activeRows) {
-        if (row.isNew && row.newName) {
-          const { error } = await supabase.from("sessions").insert({
-            name: row.newName,
-            start_date: row.startDate,
-            end_date: row.endDate,
-            admission_series: row.admissionSeries,
-            is_active: true
-          });
-          if (error) throw error;
-        } else if (row.sessionId) {
-          const { error } = await supabase.from("sessions").update({ 
-            is_active: true,
-            start_date: row.startDate,
-            end_date: row.endDate,
-            admission_series: row.admissionSeries
-          }).eq("id", row.sessionId);
-          if (error) throw error;
-        }
-      }
+      const { error } = await supabase.from("sessions").update({
+        start_date: settingsLocal.startDate,
+        end_date: settingsLocal.endDate,
+        admission_series: settingsLocal.admissionSeries
+      }).eq("id", settingsLocal.sessionId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["college_settings"] });
-      toast.success("Settings saved");
+      setSettingsEditingIndex(null);
+      toast.success("Session updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Save the new row (mark as active)
+  const saveNewSettingsRow = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("sessions").update({
+        is_active: true,
+        start_date: newSessionLocal.startDate,
+        end_date: newSessionLocal.endDate,
+        admission_series: newSessionLocal.admissionSeries
+      }).eq("id", newSessionLocal.sessionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      setAddingNewSession(false);
+      toast.success("Session added & activated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Delete (deactivate) a row
+  const deactivateSession = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { error } = await supabase.from("sessions").update({ is_active: false }).eq("id", sessionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      toast.success("Session deactivated");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -173,7 +193,7 @@ function GeneralManagementPage() {
     return <div className="p-8 animate-pulse text-muted-foreground">Loading configuration...</div>;
   }
 
-  const activeSessionNames = activeRows.map(r => sessions.find(s => s.id === r.sessionId)?.name).filter(Boolean);
+  const activeSessionNames = activeSessions.map(s => s.name).filter(Boolean);
   const activeSessionName = activeSessionNames.length > 0 ? activeSessionNames.join(", ") : "Not Set";
 
   return (
@@ -191,120 +211,93 @@ function GeneralManagementPage() {
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle>Session & Key Settings</CardTitle>
           {canEdit && (
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={() => {
-                setActiveRows([...activeRows, {
-                  internalId: Math.random().toString(),
-                  sessionId: sessions[0]?.id || "",
-                  startDate: sessions[0]?.start_date || "",
-                  endDate: sessions[0]?.end_date || "",
-                  admissionSeries: sessions[0]?.admission_series || ""
-                }]);
-              }}
-            >
+            <Button variant="secondary" size="sm" onClick={startAddSession}>
               <Plus className="mr-2 h-4 w-4" /> Add session
             </Button>
           )}
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-6">
-            {activeRows.map((row, index) => (
-              <div key={row.internalId} className="flex flex-wrap items-end gap-6 pb-6 border-b last:border-b-0 last:pb-0">
-                <div className="grid gap-2 w-[240px]">
-                  <label className="text-sm font-medium">Active Session:</label>
-                  <div className="flex gap-2 items-center">
-                    {row.isNew ? (
-                      <Input 
-                        placeholder="Session Name (e.g. 2027-28)"
-                        value={row.newName || ""}
-                        onChange={(e) => {
-                          const newRows = [...activeRows];
-                          newRows[index].newName = e.target.value;
-                          setActiveRows(newRows);
-                        }}
-                      />
-                    ) : (
-                      <Select value={row.sessionId} onValueChange={(val) => handleSessionChange(index, val)}>
-                        <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
-                        <SelectContent>
-                          {sessions.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {canEdit && !row.isNew && (
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        const newRows = [...activeRows];
-                        newRows[index].isNew = true;
-                        newRows[index].newName = sessions.find(s => s.id === row.sessionId)?.name || "";
-                        setActiveRows(newRows);
-                      }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Session Name</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>End Date</TableHead>
+                <TableHead>Admission Series</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {activeSessions.map((s, index) => {
+                const isEditing = settingsEditingIndex === index;
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.name}</TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input type="date" value={settingsLocal.startDate} onChange={e => setSettingsLocal({ ...settingsLocal, startDate: e.target.value })} />
+                      ) : s.start_date}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input type="date" value={settingsLocal.endDate} onChange={e => setSettingsLocal({ ...settingsLocal, endDate: e.target.value })} />
+                      ) : s.end_date}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input value={settingsLocal.admissionSeries} onChange={e => setSettingsLocal({ ...settingsLocal, admissionSeries: e.target.value })} placeholder="e.g. ADM-2027-0001" />
+                      ) : (s.admission_series || "—")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canEdit && (
+                        isEditing ? (
+                          <div className="flex justify-end gap-2">
+                            <Button size="icon" variant="ghost" onClick={() => saveSettingsRow.mutate()}><Save className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={cancelSettingsEdit}>x</Button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-end gap-2">
+                            <Button size="icon" variant="ghost" onClick={() => startSettingsEdit(index)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => { if (confirm("Deactivate this session?")) deactivateSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </div>
+                        )
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
 
-                <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
-                  <label className="text-sm font-medium">Start Date:</label>
-                  <Input 
-                    type="date"
-                    value={row.startDate} 
-                    onChange={(e) => {
-                      const newRows = [...activeRows];
-                      newRows[index].startDate = e.target.value;
-                      setActiveRows(newRows);
-                    }}
-                  />
-                </div>
-
-                <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
-                  <label className="text-sm font-medium">End Date:</label>
-                  <Input 
-                    type="date"
-                    value={row.endDate} 
-                    onChange={(e) => {
-                      const newRows = [...activeRows];
-                      newRows[index].endDate = e.target.value;
-                      setActiveRows(newRows);
-                    }}
-                  />
-                </div>
-
-                <div className="grid gap-2 flex-1 min-w-[200px] max-w-[250px]">
-                  <label className="text-sm font-medium">Admission Series:</label>
-                  <Input 
-                    value={row.admissionSeries} 
-                    onChange={(e) => {
-                      const newRows = [...activeRows];
-                      newRows[index].admissionSeries = e.target.value;
-                      setActiveRows(newRows);
-                    }}
-                    placeholder="e.g. ADM-2027-0001"
-                  />
-                </div>
-
-                {activeRows.length > 1 && canEdit && (
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    setActiveRows(activeRows.filter((_, i) => i !== index));
-                  }}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            {canEdit && (
-              <div className="flex justify-end pt-2">
-                <Button disabled={updateSettings.isPending} onClick={() => updateSettings.mutate()}>
-                  <Save className="mr-2 h-4 w-4" /> Save
-                </Button>
-              </div>
-            )}
-          </div>
+              {addingNewSession && (
+                <TableRow>
+                  <TableCell>
+                    <Select value={newSessionLocal.sessionId} onValueChange={handleNewSessionChange}>
+                      <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
+                      <SelectContent>
+                        {sessions.filter(s => !s.is_active).map(s => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input type="date" value={newSessionLocal.startDate} onChange={e => setNewSessionLocal({ ...newSessionLocal, startDate: e.target.value })} />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="date" value={newSessionLocal.endDate} onChange={e => setNewSessionLocal({ ...newSessionLocal, endDate: e.target.value })} />
+                  </TableCell>
+                  <TableCell>
+                    <Input value={newSessionLocal.admissionSeries} onChange={e => setNewSessionLocal({ ...newSessionLocal, admissionSeries: e.target.value })} placeholder="e.g. ADM-2027-0001" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="icon" variant="ghost" onClick={() => saveNewSettingsRow.mutate()}><Save className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={cancelAddSession}>x</Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
