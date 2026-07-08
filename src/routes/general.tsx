@@ -204,7 +204,7 @@ function GeneralManagementPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
       <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-4 rounded-lg flex items-center justify-center">
-        <span className="font-bold text-3xl">Welcome to ichacc.online Portal</span>
+        <span className="font-display text-3xl font-semibold">Welcome to ichacc.online Portal</span>
       </div>
       <div>
         <h1 className="font-display text-3xl font-semibold text-foreground">
