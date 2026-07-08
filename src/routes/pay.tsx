@@ -236,22 +236,27 @@ function PayPage() {
     if (!payerName.trim()) return toast.error("Payer name is required");
     const amt = Number(amount);
     
-    // For online, we auto-generate a reference; for offline the user provides one.
-    const ref = mode === "online"
-      ? nextReceiptNo(paidAtISO, payments, receiptFormat)
-      : reference.trim();
-      
-    if (mode === "offline" && (offlineErrors.amount || offlineErrors.reference)) {
-      return toast.error(offlineErrors.amount ?? offlineErrors.reference ?? "Fix the highlighted fields");
+    const txnRef = reference.trim();
+    if (mode === "offline" && (offlineErrors.amount || (method !== "cash" && !txnRef))) {
+      return toast.error(offlineErrors.amount ?? "Fix the highlighted fields");
     }
+    
+    const receiptNum = nextReceiptNo(paidAtISO, payments, receiptFormat);
+    const txnNotes = [];
+    if (mode === "online") txnNotes.push("Online");
+    else txnNotes.push("Offline");
+    txnNotes.push(`(${method.toUpperCase()}) by ${payerName}`);
+    if (payerPhone) txnNotes.push(`· ${payerPhone}`);
+    if (txnRef) txnNotes.push(`Txn Ref: ${txnRef}`);
+    if (note) txnNotes.push(`— ${note}`);
     
     savePaymentMutation.mutate({
       studentId: student.id,
       semester: Number(semester),
       amount: amt,
       method,
-      reference: ref,
-      note: `${mode === "online" ? "Online" : "Offline"} (${method.toUpperCase()}) by ${payerName}${payerPhone ? ` · ${payerPhone}` : ""}${note ? ` — ${note}` : ""}`,
+      reference: receiptNum,
+      note: txnNotes.join(" "),
       paidAt: paidAtISO,
     });
   };

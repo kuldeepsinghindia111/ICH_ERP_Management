@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
-import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, type FeeHead, type FeePayment } from "@/lib/store";
+import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, nextReceiptNo, type FeeHead, type FeePayment } from "@/lib/store";
 import { downloadReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -636,12 +636,22 @@ function AddPaymentDialog({
   const queryClient = useQueryClient();
   const addPaymentMutation = useMutation({
     mutationFn: async (data: any) => {
+      const { data: allPayments, error: fetchErr } = await supabase.from('fee_payments').select('reference');
+      if (fetchErr) throw fetchErr;
+      
+      const receiptFormat = useStore.getState().receiptFormat;
+      const receiptNum = nextReceiptNo(new Date().toISOString(), allPayments || [], receiptFormat);
+      
+      const txnRef = data.reference?.trim();
+      const finalNote = txnRef ? `Txn Ref: ${txnRef}` : null;
+
       const { error } = await supabase.from('fee_payments').insert([{
         student_id: data.studentId,
         semester: data.semester,
         amount: data.amount,
         method: data.method,
-        reference: data.reference,
+        reference: receiptNum,
+        note: finalNote,
         paid_at: new Date().toISOString(),
       }]);
       if (error) throw error;

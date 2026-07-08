@@ -17,7 +17,7 @@ export type CollegeInfo = {
 export type ReceiptData = {
   college: CollegeInfo;
   payment: Pick<FeePayment, "amount" | "method" | "reference" | "note" | "paidAt"> & { id?: string };
-  student: Pick<Student, "name" | "admissionNo"> & { rollNo?: string };
+  student: Pick<Student, "name" | "admissionNo" | "guardian"> & { rollNo?: string };
   program?: Pick<Program, "name" | "code">;
   semester: number;
 };
@@ -55,10 +55,10 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   y += 14;
   const lines: [string, string][] = [
     ["Name", data.student.name],
+    ["Father/Guardian", data.student.guardian || "—"],
     ["Admission No.", data.student.admissionNo],
-    ...(data.student.rollNo ? [["Roll No.", data.student.rollNo] as [string, string]] : []),
+    ["Roll No.", data.student.rollNo || "—"],
     ...(data.program ? [["Program", `${data.program.name} (${data.program.code})`] as [string, string]] : []),
-    ["Semester", `Semester ${data.semester}`],
   ];
   lines.forEach(([k, v]) => {
     doc.setTextColor(120);
@@ -81,7 +81,6 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
 
   const pay: [string, string][] = [
     ["Method", data.payment.method.toUpperCase()],
-    ["Reference", ref],
     ...(data.payment.note ? [["Note", data.payment.note] as [string, string]] : []),
   ];
   pay.forEach(([k, v]) => {
@@ -95,27 +94,16 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
 
   y += 6;
   // Amount box
-  doc.setFillColor(15, 33, 71);
-  doc.rect(30, y, W - 60, 46, "F");
-  doc.setTextColor(255);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("Amount received", 44, y + 18);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(inr(data.payment.amount), W - 44, y + 30, { align: "right" });
-  y += 66;
-
+  doc.setDrawColor(200);
+  doc.rect(30, y, W - 60, 40);
   doc.setTextColor(20);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text(
-    `Credited to: ${data.college.accountName} · ${data.college.bankName} · A/c ${data.college.accountNumber} · IFSC ${data.college.ifsc}`,
-    30,
-    y,
-    { maxWidth: W - 60 },
-  );
-  y += 24;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Amount received", 44, y + 25);
+  doc.setFontSize(16);
+  doc.text(inr(data.payment.amount), W - 44, y + 26, { align: "right" });
+  y += 56;
+
 
   doc.setTextColor(120);
   doc.setFontSize(7);
@@ -124,6 +112,14 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
     30,
     y,
   );
+  y += 10;
+  doc.setFont("helvetica", "bold");
+  doc.text(
+    "Note: Exam fees will be charged separately at the time of exam forms.",
+    30,
+    y,
+  );
+  doc.setFont("helvetica", "normal");
   y += 10;
   doc.text(
     "This is a system-generated receipt.",
