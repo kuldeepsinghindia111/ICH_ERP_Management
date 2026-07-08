@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { inr, formatYear, FEE_HEADS, type FeeCharge, type FeeAdjustment, type FeePayment } from "@/lib/store";
+import { inr, formatYear, FEE_HEADS } from "@/lib/store";
 
 export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }) {
   return (
@@ -37,7 +37,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
         <div className="space-y-4 mt-6">
           <LedgerBlock
             title="Charges"
-            rows={sum.charges.map((c: FeeCharge) => ({
+            rows={sum.charges.map((c: any) => ({
               id: c.id,
               main: FEE_HEADS.find((h) => h.key === c.head)?.label ?? c.head,
               sub: c.label,
@@ -47,7 +47,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
           />
           <LedgerBlock
             title="Concessions & scholarships"
-            rows={sum.adjustments.map((a: FeeAdjustment) => ({
+            rows={sum.adjustments.map((a: any) => ({
               id: a.id,
               main: a.type === "concession" ? "Concession" : "Scholarship",
               sub: a.label,
@@ -58,7 +58,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
           />
           <LedgerBlock
             title="Payments"
-            rows={sum.payments.map((p: FeePayment) => ({
+            rows={sum.payments.map((p: any) => ({
               id: p.id,
               main: `${p.method.toUpperCase()}${p.voided ? " · VOID" : ""}`,
               sub: `${new Date(p.paidAt).toLocaleDateString()} · ${p.reference ?? "—"}${p.voided && p.voidReason ? ` — ${p.voidReason}` : ""}`,
