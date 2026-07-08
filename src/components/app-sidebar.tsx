@@ -31,7 +31,7 @@ import { useAuth } from "@/hooks/use-auth";
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
   { title: "General Management", url: "/general", icon: Settings, section: "settings" },
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Student's Management", url: "/students", icon: GraduationCap, section: "students" },
+  { title: "Student's Profile", url: "/students", icon: GraduationCap, section: "students" },
   { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
   { title: "Make Payment", url: "/pay", icon: CreditCard, section: "payments" },
   { title: "Reports", url: "/reports", icon: BarChart3, section: "reports" },
