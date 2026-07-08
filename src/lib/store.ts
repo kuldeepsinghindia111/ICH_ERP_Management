@@ -843,5 +843,12 @@ export function studentTotals(
   return { netPayable, totalPaid, balance };
 }
 
+export function formatYear(n: number): string {
+  if (n === 1) return "1st Year";
+  if (n === 2) return "2nd Year";
+  if (n === 3) return "3rd Year";
+  return `${n}th Year`;
+}
+
 export const inr = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);

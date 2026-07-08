@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
-import { useStore, semesterSummary, studentTotals, inr, FEE_HEADS, type FeeHead, type FeePayment } from "@/lib/store";
+import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, type FeeHead, type FeePayment } from "@/lib/store";
 import { downloadReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -213,12 +213,12 @@ function StudentDetail() {
                   <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {semesters.map((n) => (
-                      <SelectItem key={n} value={String(n)}>Current: Sem {n}</SelectItem>
+                      <SelectItem key={n} value={String(n)}>Current: {formatYear(n)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="text-sm font-medium">Current: Sem {currentSemester}</div>
+                <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
               )}
             </div>
           </CardContent>
@@ -272,7 +272,7 @@ function StudentDetail() {
           <Tabs value={activeSemValue} onValueChange={setActiveSem}>
             <TabsList className="flex flex-wrap">
               {semesters.map((n) => (
-                <TabsTrigger key={n} value={String(n)}>Sem {n}</TabsTrigger>
+                <TabsTrigger key={n} value={String(n)}>{formatYear(n)}</TabsTrigger>
               ))}
             </TabsList>
             {semesters.map((n) => (
@@ -653,7 +653,7 @@ function AddPaymentDialog({
           actor_code: userRole.user_code,
           actor_role: userRole.role,
           event: 'payment.collected',
-          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`,
+          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (${formatYear(data.semester)})`,
           student_id: data.studentId,
         }]);
       }
@@ -777,7 +777,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
     const rolls = student.rolls || {};
     const lines = rows.map((p) => [
       new Date(p.paidAt).toISOString(),
-      `Sem ${p.semester}`,
+      `${formatYear(p.semester)}`,
       rolls[p.semester] ?? "",
       p.method.toUpperCase(),
       p.reference ?? "",
@@ -820,7 +820,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
           actor_code: userRole.user_code,
           actor_role: userRole.role,
           event: 'payment.voided',
-          summary: `Voided payment of ₹${payment.amount} for ${student.name} (Sem ${payment.semester}). Reason: ${reason || 'None'}`,
+          summary: `Voided payment of ₹${payment.amount} for ${student.name} (${formatYear(payment.semester)}). Reason: ${reason || 'None'}`,
           student_id: student.id,
         }]);
       }
@@ -849,7 +849,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
           actor_code: userRole.user_code,
           actor_role: userRole.role,
           event: 'payment.unvoided',
-          summary: `Reversed void for payment of ₹${payment.amount} for ${student.name} (Sem ${payment.semester})`,
+          summary: `Reversed void for payment of ₹${payment.amount} for ${student.name} (${formatYear(payment.semester)})`,
           student_id: student.id,
         }]);
       }
@@ -950,7 +950,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
               {rows.map((p) => (
                 <tr key={p.id} className={p.voided ? "bg-muted/30" : ""}>
                   <td className="px-3 py-2">{new Date(p.paidAt).toLocaleDateString()}</td>
-                  <td className="px-3 py-2">Sem {p.semester}</td>
+                  <td className="px-3 py-2">{formatYear(p.semester)}</td>
                   <td className="px-3 py-2">{p.method.toUpperCase()}</td>
                   <td className="px-3 py-2 font-mono text-xs">{p.reference ?? "—"}</td>
                   <td className={`px-3 py-2 text-right font-medium ${p.voided ? "text-muted-foreground line-through" : ""}`}>

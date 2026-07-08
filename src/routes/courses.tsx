@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useStore } from "@/lib/store";
+import { useStore, formatYear } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -112,7 +112,7 @@ function CoursesPage() {
                   <div className="flex items-center justify-between border-b border-border px-5 py-3">
                     <div>
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">{prog?.name}</p>
-                      <h3 className="font-display text-lg font-semibold">Semester {sem}</h3>
+                      <h3 className="font-display text-lg font-semibold">{formatYear(Number(sem))}</h3>
                     </div>
                     <p className="text-xs text-muted-foreground">{list.length} courses</p>
                   </div>
@@ -191,10 +191,10 @@ function AddCourseDialog({ programs }: { programs: any[] }) {
             </Select>
           </div>
           <div>
-            <Label>Semester</Label>
+            <Label>Year</Label>
             <Select value={String(c.semester)} onValueChange={(v) => setC({ ...c, semester: Number(v) })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>)}</SelectContent>
+              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label>Course code</Label><Input value={c.code} onChange={(e) => setC({ ...c, code: e.target.value })} /></div>
@@ -259,10 +259,10 @@ function EditCourseDialog({ course, programs, canEdit, onRemove, isRemoving }: {
             </Select>
           </div>
           <div>
-            <Label>Semester</Label>
+            <Label>Year</Label>
             <Select value={String(c.semester)} onValueChange={(v) => setC({ ...c, semester: Number(v) })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>)}</SelectContent>
+              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label>Course code</Label><Input value={c.code} onChange={(e) => setC({ ...c, code: e.target.value })} /></div>
@@ -411,7 +411,7 @@ export function ManageProgramsDialog({ programs }: { programs: any[] }) {
                 <Input value={code} onChange={e => setCode(e.target.value)} />
               </div>
               <div className="grid gap-2">
-                <Label>Total Semesters</Label>
+                <Label>Total Years</Label>
                 <Input type="number" value={semesters} onChange={e => setSemesters(Number(e.target.value))} />
               </div>
               <div className="flex gap-2 justify-end mt-2">

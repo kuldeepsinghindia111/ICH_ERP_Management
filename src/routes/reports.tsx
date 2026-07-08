@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarRange, Printer } from "lucide-react";
 
 import {
-  useStore, semesterSummary, studentTotals, inr, FEE_HEADS,
+  useStore, semesterSummary, studentTotals, inr, FEE_HEADS, formatYear,
   type Student, type Program, type FeeCharge, type FeeAdjustment, type FeePayment
 } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
       { title: "Reports — Imperial CMS" },
-      { name: "description", content: "Filter receipts by date, class, semester, month, year or session. Export CSV or print." },
+      { name: "description", content: "Filter receipts by date, class, year, month, or session. Export CSV or print." },
     ],
   }),
   component: Reports,
@@ -190,7 +190,7 @@ function Reports() {
   );
 
   const exportCsv = () => {
-    const rows = ["Date,Receipt No,Student,Admission,Program,Semester,Method,Amount"];
+    const rows = ["Date,Receipt No,Student,Admission,Program,Year,Method,Amount"];
     filteredReceipts.forEach((p) => {
       const st = students.find((s) => s.id === p.studentId);
       const prog = programs.find((pr) => pr.id === st?.programId);
@@ -200,7 +200,7 @@ function Reports() {
         st?.name ?? "",
         st?.admissionNo ?? "",
         prog?.name ?? "",
-        p.semester,
+        formatYear(p.semester),
         p.method,
         p.amount,
       ].join(","));
@@ -221,14 +221,14 @@ function Reports() {
         <td style="font-family:monospace">${p.reference ?? ""}</td>
         <td>${st?.name ?? ""}<br/><span style="color:#666;font-size:11px">${st?.admissionNo ?? ""}</span></td>
         <td>${prog?.name ?? ""}</td>
-        <td>Sem ${p.semester}</td>
+        <td>${formatYear(p.semester)}</td>
         <td style="text-transform:uppercase">${p.method}</td>
         <td style="text-align:right">₹ ${p.amount.toLocaleString("en-IN")}</td>
       </tr>`;
     }).join("");
     const filterLine = [
       program !== "all" && `Program: ${programs.find((pp) => pp.id === program)?.name}`,
-      sem !== "all" && `Semester: ${sem}`,
+      sem !== "all" && `Year: ${formatYear(Number(sem))}`,
       sessions.find((s) => s.id === sessionId) && `Session: ${sessions.find((s) => s.id === sessionId)?.name}`,
       month !== "all" && `Month: ${month}`,
       year !== "all" && `Year: ${year}`,
@@ -251,7 +251,7 @@ function Reports() {
       <table>
         <thead><tr>
           <th>Date</th><th>Receipt no</th><th>Student</th><th>Program</th>
-          <th>Sem</th><th>Method</th><th style="text-align:right">Amount</th>
+          <th>Year</th><th>Method</th><th style="text-align:right">Amount</th>
         </tr></thead>
         <tbody>${rows || `<tr><td colspan="7" style="text-align:center;color:#888;padding:24px">No receipts for these filters.</td></tr>`}</tbody>
         <tfoot><tr><td colspan="6" style="text-align:right">Total (${filteredReceipts.length} receipts)</td>
@@ -283,7 +283,7 @@ function Reports() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="font-display text-lg flex items-center gap-2">
-              <CalendarRange className="h-4 w-4" /> Receipts — filter by date / class / semester / month / year / session
+              <CalendarRange className="h-4 w-4" /> Receipts — filter by date / class / year / month / session
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               {filteredReceipts.length} receipts · total {inr(receiptsTotal)}
@@ -340,12 +340,12 @@ function Reports() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Semester</Label>
+              <Label className="text-xs">Year</Label>
               <Select value={sem} onValueChange={setSem}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 h-8 text-xs w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All semesters</SelectItem>
-                  {[1,2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>Sem {n}</SelectItem>)}
+                  <SelectItem value="all">All years</SelectItem>
+                  {[1,2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -423,7 +423,7 @@ function Reports() {
                         <p className="text-xs text-muted-foreground">{st?.admissionNo}</p>
                       </td>
                       <td className="px-4 py-2">{prog?.name ?? "—"}</td>
-                      <td className="px-4 py-2">Sem {p.semester}</td>
+                      <td className="px-4 py-2">{formatYear(p.semester)}</td>
                       <td className="px-4 py-2 uppercase text-xs">{p.method}</td>
                       <td className="px-4 py-2 text-right text-success">{inr(p.amount)}</td>
                     </tr>
@@ -438,7 +438,7 @@ function Reports() {
       <Card>
         <CardHeader>
           <CardTitle className="font-display text-lg">Pending fees</CardTitle>
-          <p className="text-xs text-muted-foreground">{pending.length} semester entries with dues (respects program / semester filters).</p>
+          <p className="text-xs text-muted-foreground">{pending.length} year entries with dues (respects program / year filters).</p>
         </CardHeader>
         <CardContent className="p-0">
           <div className="max-h-[420px] overflow-y-auto">
@@ -463,7 +463,7 @@ function Reports() {
                         {programs.find((p) => p.id === r.st.programId)?.name} · {r.st.admissionNo}
                       </p>
                     </td>
-                    <td className="px-4 py-2">Sem {r.semester}</td>
+                    <td className="px-4 py-2">{formatYear(r.semester)}</td>
                     <td className="px-4 py-2 text-right"><Badge variant="destructive">{inr(r.balance)}</Badge></td>
                     <td className="px-4 py-2 text-right">
                       <Button asChild variant="ghost" size="sm">

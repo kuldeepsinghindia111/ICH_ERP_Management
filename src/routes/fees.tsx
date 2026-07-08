@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, ExternalLink, Loader2, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-import { useStore, semesterSummary, studentTotals, inr } from "@/lib/store";
+import { useStore, semesterSummary, studentTotals, inr, formatYear } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/fees")({
   head: () => ({
     meta: [
       { title: "Fees — Imperial CMS" },
-      { name: "description", content: "Semester-wise fee ledger, collections, and pending balances." },
+      { name: "description", content: "Year-wise fee ledger, collections, and pending balances." },
     ],
   }),
   component: FeesPage,
@@ -175,7 +175,7 @@ function FeesPage() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Financials</p>
           <h1 className="font-display text-3xl font-semibold text-foreground">Fees Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Collect payments and track semester-wise dues across concessions, scholarships and fines.
+            Collect payments and track year-wise dues across concessions, scholarships and fines.
           </p>
         </div>
         <div className="flex gap-2">
@@ -212,8 +212,8 @@ function FeesPage() {
             <Select value={sem} onValueChange={setSem}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All sem</SelectItem>
-                {[1,2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>Sem {n}</SelectItem>)}
+                <SelectItem value="all">All years</SelectItem>
+                {[1,2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
@@ -257,7 +257,7 @@ function FeesPage() {
                         {programs.find((p: any) => p.id === st.program_id)?.name} · Roll {(st.rolls && st.rolls[semester]) || "—"}
                       </p>
                     </td>
-                    <td className="px-4 py-3">Sem {semester}</td>
+                    <td className="px-4 py-3">{formatYear(semester)}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>

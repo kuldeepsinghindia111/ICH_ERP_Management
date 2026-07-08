@@ -4,7 +4,7 @@ import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { useStore, studentTotals, inr, type FeeCharge, type FeeAdjustment, type FeePayment } from "@/lib/store";
+import { useStore, studentTotals, inr, formatYear, type FeeCharge, type FeeAdjustment, type FeePayment } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -168,11 +168,11 @@ function StudentsPage() {
             </SelectContent>
           </Select>
           <Select value={sem} onValueChange={setSem}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Semester" /></SelectTrigger>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Year" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All semesters</SelectItem>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>
+              <SelectItem value="all">All years</SelectItem>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -188,7 +188,7 @@ function StudentsPage() {
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Admission No</th>
                   <th className="px-4 py-3 font-medium">Program</th>
-                  <th className="px-4 py-3 font-medium">Semester</th>
+                  <th className="px-4 py-3 font-medium">Year</th>
                   <th className="px-4 py-3 font-medium">Current roll</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3"></th>
@@ -224,7 +224,7 @@ function StudentsPage() {
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
                       <td className="px-4 py-3">{program?.name ?? "—"}</td>
-                      <td className="px-4 py-3">Sem {s.current_semester}</td>
+                      <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
                       <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         {t.balance > 0 ? (
@@ -515,7 +515,7 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
         <DialogHeader>
           <DialogTitle className="font-display">{isEditing ? "Edit student" : "Add student"}</DialogTitle>
           <DialogDescription>
-            {isEditing ? "Update student details." : "Register a new admission with personal details and current semester roll."}
+            {isEditing ? "Update student details." : "Register a new admission with personal details and current year roll."}
           </DialogDescription>
         </DialogHeader>
 
@@ -557,13 +557,13 @@ function StudentFormDialog({ programs, student }: { programs: any[], student?: a
             {errors.programId && <p className="mt-1 text-[10px] text-destructive">{errors.programId}</p>}
           </div>
           <div>
-            <Label>Current semester</Label>
+            <Label>Current year</Label>
             <Select value={String(form.currentSemester)}
               onValueChange={(v) => setField('currentSemester', Number(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>
+                {Array.from({ length: 8 }, (_, i) => i + 1).map(n => (
+                  <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

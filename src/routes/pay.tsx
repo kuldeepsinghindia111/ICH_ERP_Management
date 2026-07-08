@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import {
-  useStore, semesterSummary, inr, nextReceiptNo,
+  useStore, semesterSummary, inr, nextReceiptNo, formatYear,
   validatePaymentFields, referenceHint, type PaymentMethod,
 } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
@@ -211,7 +211,7 @@ function PayPage() {
           actor_code: userRole.user_code,
           actor_role: userRole.role,
           event: 'payment.collected',
-          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`,
+          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (${formatYear(data.semester)})`,
           student_id: data.studentId,
         }]);
       }
@@ -364,7 +364,7 @@ function PayPage() {
                       <div>
                         <p className="font-medium">{s.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {s.admission_no} · {p?.name} · Sem {s.current_semester}
+                          {s.admission_no} · {p?.name} · {formatYear(s.current_semester)}
                         </p>
                       </div>
                       <span className="text-xs text-primary font-medium">Select &rarr;</span>
@@ -397,12 +397,12 @@ function PayPage() {
                     <p className="text-sm text-muted-foreground">{student.admission_no}</p>
                   </div>
                   <div>
-                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Semester</Label>
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Year</Label>
                     <Select value={semester} onValueChange={(v) => { setSemester(v); }}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-28 font-medium"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: student.current_semester }, (_, i) => i + 1).map(n => (
-                          <SelectItem key={n} value={String(n)}>Sem {n}</SelectItem>
+                          <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -579,8 +579,8 @@ function PayPage() {
                 <span className="font-medium">{receipt.studentName}</span>
               </div>
               <div className="flex justify-between pb-1">
-                <span className="text-muted-foreground">Semester</span>
-                <span className="font-medium">{receipt.semester}</span>
+                <span className="text-muted-foreground">Year</span>
+                <span className="font-medium">{formatYear(receipt.semester)}</span>
               </div>
             </div>
 

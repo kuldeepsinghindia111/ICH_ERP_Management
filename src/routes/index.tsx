@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { useStore, studentTotals, inr } from "@/lib/store";
+import { useStore, studentTotals, inr, formatYear } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,7 +145,7 @@ function Dashboard() {
                       <div>
                         <p className="font-medium text-foreground">{st.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {program?.name} · Sem {st.currentSemester} · Roll {st.rollNumber || "—"}
+                          {program?.name} · {formatYear(st.currentSemester)} · Roll {st.rollNumber || "—"}
                         </p>
                       </div>
                     </div>
@@ -177,7 +177,7 @@ function Dashboard() {
                     <div>
                       <p className="text-sm font-medium text-foreground">{st?.name ?? "Unknown"}</p>
                       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                        Sem {p.semester} · {p.method}
+                        {formatYear(p.semester)} · {p.method}
                       </p>
                     </div>
                     <div className="text-right">
