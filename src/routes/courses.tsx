@@ -330,14 +330,30 @@ export function ManageProgramsDialog({ programs }: { programs: any[] }) {
 
   const removeProgram = useMutation({
     mutationFn: async (id: string) => {
+      // Check if program is in use by students
+      const { count: studentCount, error: studentError } = await supabase
+        .from("students")
+        .select("*", { count: "exact", head: true })
+        .eq("program_id", id);
+        
+      if (studentError) throw studentError;
+      if (studentCount && studentCount > 0) {
+        throw new Error(`Cannot delete: ${studentCount} student(s) are currently enrolled in this program.`);
+      }
+
+      // Cascade delete fee structures and courses
+      await supabase.from("fee_structures").delete().eq("program_id", id);
+      await supabase.from("courses").delete().eq("program_id", id);
+
       const { error } = await supabase.from("programs").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: ["fee_structures"] });
       toast.success("Program removed");
     },
-    onError: (e: any) => toast.error("Could not remove program (it might be in use by courses/students)."),
+    onError: (e: any) => toast.error(e.message),
   });
 
   return (

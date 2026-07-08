@@ -522,14 +522,31 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
 
   const removeProgram = useMutation({
     mutationFn: async (id: string) => {
+      // Check if program is in use by students
+      const { count: studentCount, error: studentError } = await supabase
+        .from("students")
+        .select("*", { count: "exact", head: true })
+        .eq("program_id", id);
+        
+      if (studentError) throw studentError;
+      if (studentCount && studentCount > 0) {
+        throw new Error(`Cannot delete: ${studentCount} student(s) are currently enrolled in this course/class.`);
+      }
+
+      // Cascade delete fee structures and courses
+      await supabase.from("fee_structures").delete().eq("program_id", id);
+      await supabase.from("courses").delete().eq("program_id", id);
+
+      // Finally delete the program
       const { error } = await supabase.from("programs").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: ["fee_structures"] });
       toast.success("Course/Class removed successfully");
     },
-    onError: (e: any) => toast.error("Could not remove course. It might be in use by students or other records."),
+    onError: (e: any) => toast.error(e.message),
   });
 
   return (
