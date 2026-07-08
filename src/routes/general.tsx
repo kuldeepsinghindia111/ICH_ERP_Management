@@ -313,20 +313,25 @@ function GeneralManagementPage() {
         </CardContent>
       </Card>
       <CourseFeeSetup programs={programs} feeStructures={feeStructures} canEdit={canEdit} />
-      <RollNoManagementSetup sessions={sessions.filter(s => s.name.startsWith('Config '))} programs={programs} canEdit={canEdit} />
+      <RollNoManagementSetup configSessions={sessions.filter(s => s.name.startsWith('Config'))} realSessions={sessions.filter(s => !s.name.startsWith('Config'))} programs={programs} canEdit={canEdit} />
 
     </div>
   );
 }
 
-function RollNoManagementSetup({ sessions, programs, canEdit }: { sessions: any[], programs: any[], canEdit: boolean }) {
+function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit }: { configSessions: any[], realSessions: any[], programs: any[], canEdit: boolean }) {
   const queryClient = useQueryClient();
 
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(realSessions[0]?.id || "");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [localRollSeries, setLocalRollSeries] = useState("");
   const [localProgramId, setLocalProgramId] = useState("");
 
   const startAdd = () => {
+    if (!selectedSessionId) {
+      toast.error("Please select a session first");
+      return;
+    }
     setEditingId("new");
     setLocalRollSeries("ROL-2027-0001");
     setLocalProgramId(programs[0]?.id || "");
@@ -342,7 +347,7 @@ function RollNoManagementSetup({ sessions, programs, canEdit }: { sessions: any[
     mutationFn: async () => {
       if (editingId === "new") {
         const { error } = await supabase.from("sessions").insert({
-          name: `Config ${Date.now()}`,
+          name: `Config_${selectedSessionId}_${Date.now()}`,
           start_date: new Date().toISOString().split('T')[0],
           end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
           roll_number_series: localRollSeries,
@@ -381,23 +386,35 @@ function RollNoManagementSetup({ sessions, programs, canEdit }: { sessions: any[
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Roll No. Management</CardTitle>
-        {canEdit && (
-          <Button variant="secondary" size="sm" onClick={startAdd}>
-            <Plus className="mr-2 h-4 w-4" /> Add Configuration
-          </Button>
-        )}
+        <div className="flex items-center gap-4">
+          <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select Session" />
+            </SelectTrigger>
+            <SelectContent>
+              {realSessions.map(rs => (
+                <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {canEdit && (
+            <Button variant="secondary" size="sm" onClick={startAdd}>
+              <Plus className="mr-2 h-4 w-4" /> Add Configuration
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Course</TableHead>
-              <TableHead>Roll No.</TableHead>
+              <TableHead>Roll No. Series</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sessions.map(s => {
+            {configSessions.filter(s => s.name.startsWith(`Config_${selectedSessionId}`)).map(s => {
               const isEditing = editingId === s.id;
               const p = programs.find(pr => pr.id === s.program_id);
               return (
