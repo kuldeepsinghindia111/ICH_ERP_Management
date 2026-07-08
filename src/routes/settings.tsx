@@ -312,7 +312,7 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
   });
 
   const p = programs?.find(p => p.id === selectedProgram);
-  const semOptions = p ? Array.from({ length: p.total_semesters }, (_, i) => i + 1) : [];
+  const yearOptions = p ? Array.from({ length: Math.ceil(p.total_semesters / 2) }, (_, i) => i + 1) : [];
 
   return (
     <Card>
@@ -354,9 +354,9 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
             <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedProgram}>
               <SelectTrigger><SelectValue placeholder="Choose year" /></SelectTrigger>
               <SelectContent>
-                {semOptions.map(sem => {
-                  const label = sem === 1 ? "1st Year" : sem === 2 ? "2nd Year" : sem === 3 ? "3rd Year" : `${sem}th Year`;
-                  return <SelectItem key={sem} value={String(sem)}>{label}</SelectItem>;
+                {yearOptions.map(year => {
+                  const label = year === 1 ? "1st Year" : year === 2 ? "2nd Year" : year === 3 ? "3rd Year" : `${year}th Year`;
+                  return <SelectItem key={year} value={String(year)}>{label}</SelectItem>;
                 })}
               </SelectContent>
             </Select>
