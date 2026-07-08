@@ -337,13 +337,14 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
             </Select>
           </div>
           <div>
-            <Label>Select Semester</Label>
+            <Label>Select Year</Label>
             <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedProgram}>
-              <SelectTrigger><SelectValue placeholder="Choose semester" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Choose year" /></SelectTrigger>
               <SelectContent>
-                {semOptions.map(sem => (
-                  <SelectItem key={sem} value={String(sem)}>Semester {sem}</SelectItem>
-                ))}
+                {semOptions.map(sem => {
+                  const label = sem === 1 ? "1st Year" : sem === 2 ? "2nd Year" : sem === 3 ? "3rd Year" : `${sem}th Year`;
+                  return <SelectItem key={sem} value={String(sem)}>{label}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -352,7 +353,7 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
         {selectedProgram && selectedSemester && (
           <div className="space-y-4 border rounded-md p-4">
             <h4 className="font-medium text-sm flex justify-between items-center">
-              <span>Standard Fees for Semester {selectedSemester}</span>
+              <span>Standard Fees for {selectedSemester === "1" ? "1st Year" : selectedSemester === "2" ? "2nd Year" : selectedSemester === "3" ? "3rd Year" : `${selectedSemester}th Year`}</span>
               {structures && structures.length > 0 && (
                  <Button 
                    size="sm" 
