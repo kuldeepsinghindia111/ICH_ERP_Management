@@ -313,8 +313,156 @@ function GeneralManagementPage() {
         </CardContent>
       </Card>
       <CourseFeeSetup programs={programs} feeStructures={feeStructures} canEdit={canEdit} />
+      <RollNoManagementSetup sessions={sessions.filter(s => s.name.startsWith('Config '))} programs={programs} canEdit={canEdit} />
 
     </div>
+  );
+}
+
+function RollNoManagementSetup({ sessions, programs, canEdit }: { sessions: any[], programs: any[], canEdit: boolean }) {
+  const queryClient = useQueryClient();
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [localRollSeries, setLocalRollSeries] = useState("");
+  const [localProgramId, setLocalProgramId] = useState("");
+
+  const startAdd = () => {
+    setEditingId("new");
+    setLocalRollSeries("ROL-2027-0001");
+    setLocalProgramId(programs[0]?.id || "");
+  };
+
+  const startEdit = (s: any) => {
+    setEditingId(s.id);
+    setLocalRollSeries(s.roll_number_series || "ROL-2026-0001");
+    setLocalProgramId(s.program_id || "");
+  };
+
+  const saveConfig = useMutation({
+    mutationFn: async () => {
+      if (editingId === "new") {
+        const { error } = await supabase.from("sessions").insert({
+          name: `Config ${Date.now()}`,
+          start_date: new Date().toISOString().split('T')[0],
+          end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+          roll_number_series: localRollSeries,
+          program_id: localProgramId === "none" || !localProgramId ? null : localProgramId
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("sessions").update({
+          roll_number_series: localRollSeries,
+          program_id: localProgramId === "none" || !localProgramId ? null : localProgramId
+        }).eq("id", editingId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      setEditingId(null);
+      toast.success("Roll No configuration saved");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteConfig = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sessions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      toast.success("Roll No configuration deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle>Roll No. Management</CardTitle>
+        {canEdit && (
+          <Button variant="secondary" size="sm" onClick={startAdd}>
+            <Plus className="mr-2 h-4 w-4" /> Add Configuration
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Course</TableHead>
+              <TableHead>Roll No.</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sessions.map(s => {
+              const isEditing = editingId === s.id;
+              const p = programs.find(pr => pr.id === s.program_id);
+              return (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    {isEditing ? (
+                      <Select value={localProgramId} onValueChange={setLocalProgramId}>
+                        <SelectTrigger><SelectValue placeholder="Global / All Courses" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Global / All Courses</SelectItem>
+                          {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      p?.name || "Global / All Courses"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input value={localRollSeries} onChange={e => setLocalRollSeries(e.target.value)} />
+                    ) : s.roll_number_series}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {canEdit && (
+                      isEditing ? (
+                        <div className="flex justify-end gap-2">
+                          <Button size="icon" variant="ghost" onClick={() => saveConfig.mutate()}><Save className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <Button size="icon" variant="ghost" onClick={() => startEdit(s)}><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this configuration?")) deleteConfig.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                      )
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+
+            {editingId === "new" && (
+              <TableRow>
+                <TableCell>
+                  <Select value={localProgramId} onValueChange={setLocalProgramId}>
+                    <SelectTrigger><SelectValue placeholder="Global / All Courses" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Global / All Courses</SelectItem>
+                      {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell><Input value={localRollSeries} onChange={e => setLocalRollSeries(e.target.value)} /></TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button size="icon" variant="ghost" onClick={() => saveConfig.mutate()}><Save className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>x</Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
