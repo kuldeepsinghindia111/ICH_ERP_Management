@@ -218,7 +218,7 @@ function FeesPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All years</SelectItem>
-                {[1,2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
+                {[1,2,3].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
@@ -240,7 +240,7 @@ function FeesPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Student</th>
-                  <th className="px-4 py-3 font-medium">Class Year</th>
+                  <th className="px-4 py-3 font-medium">Course</th>
                   <th className="px-4 py-3 text-right font-medium">Total Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
@@ -258,11 +258,8 @@ function FeesPage() {
                   <tr key={st.id} className="hover:bg-accent/40">
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{st.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {programs.find((p: any) => p.id === st.program_id)?.name} · Roll {(st.rolls && st.rolls[st.current_semester]) || "—"}
-                      </p>
                     </td>
-                    <td className="px-4 py-3">{formatYear(st.current_semester)}</td>
+                    <td className="px-4 py-3">{programs.find((p: any) => p.id === st.program_id)?.name}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
