@@ -224,7 +224,7 @@ function GeneralManagementPage() {
 
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle>Session & Admission No. Management</CardTitle>
+          <CardTitle>Session & Admission Management</CardTitle>
           {canEdit && (
             <Button variant="secondary" size="sm" onClick={startAddSession}>
               <Plus className="mr-2 h-4 w-4" /> Add session
