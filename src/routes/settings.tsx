@@ -193,6 +193,7 @@ function CollegeSettingsCard({ canEdit }: { canEdit: boolean }) {
 
 function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
   const queryClient = useQueryClient();
+  const [selectedSession, setSelectedSession] = useState<string>("");
   const [selectedProgram, setSelectedProgram] = useState<string>("");
   const [selectedSemester, setSelectedSemester] = useState<string>("");
   const [head, setHead] = useState<string>("tuition");
@@ -208,9 +209,9 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
   });
 
   const { data: structures, isLoading } = useQuery({
-    queryKey: ["fee_structures", selectedProgram, selectedSemester],
+    queryKey: ["fee_structures", selectedProgram, selectedSemester, selectedSession],
     queryFn: async () => {
-      if (!selectedProgram || !selectedSemester) return [];
+      if (!selectedSession || !selectedProgram || !selectedSemester) return [];
       const { data, error } = await supabase
         .from("fee_structures")
         .select("*, program:programs(name)")
@@ -219,7 +220,7 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedProgram && !!selectedSemester
+    enabled: !!selectedSession && !!selectedProgram && !!selectedSemester
   });
 
   const addStructure = useMutation({
@@ -324,7 +325,19 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 bg-muted/40 p-4 rounded-md border border-border">
+        <div className="grid gap-4 sm:grid-cols-3 bg-muted/40 p-4 rounded-md border border-border">
+          <div>
+            <Label>Select Session</Label>
+            <Select value={selectedSession} onValueChange={setSelectedSession}>
+              <SelectTrigger><SelectValue placeholder="Choose session" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2025-26">2025-26</SelectItem>
+                <SelectItem value="2026-27">2026-27</SelectItem>
+                <SelectItem value="2027-28">2027-28</SelectItem>
+                <SelectItem value="2028-29">2028-29</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label>Select Program</Label>
             <Select value={selectedProgram} onValueChange={(v) => { setSelectedProgram(v); setSelectedSemester(""); }}>
@@ -350,10 +363,10 @@ function FeeStructuresCard({ canEdit }: { canEdit: boolean }) {
           </div>
         </div>
 
-        {selectedProgram && selectedSemester && (
+        {selectedSession && selectedProgram && selectedSemester && (
           <div className="space-y-4 border rounded-md p-4">
             <h4 className="font-medium text-sm flex justify-between items-center">
-              <span>Standard Fees for {selectedSemester === "1" ? "1st Year" : selectedSemester === "2" ? "2nd Year" : selectedSemester === "3" ? "3rd Year" : `${selectedSemester}th Year`}</span>
+              <span>Standard Fees for {selectedSemester === "1" ? "1st Year" : selectedSemester === "2" ? "2nd Year" : selectedSemester === "3" ? "3rd Year" : `${selectedSemester}th Year`} ({selectedSession})</span>
               {structures && structures.length > 0 && (
                  <Button 
                    size="sm" 
