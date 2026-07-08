@@ -275,7 +275,7 @@ export type ReceiptFormat = {
   prefix: string;
   /** Date pattern using YYYY / YY / MM / DD tokens. */
   datePattern: string;
-  /** Starting number for the daily counter (defaults to 1). */
+  /** Starting number for the continuous counter (defaults to 1). */
   counterStart: number;
 };
 
@@ -300,13 +300,18 @@ export function nextReceiptNo(
   cfg: ReceiptFormat = DEFAULT_RECEIPT_FORMAT,
 ): string {
   const d = new Date(dateISO);
-  const dateStr = formatReceiptDate(cfg.datePattern, d);
-  const prefix = `${cfg.prefix}-${dateStr}-`;
+  const dateStr = cfg.datePattern ? formatReceiptDate(cfg.datePattern, d) : "";
+  const prefix = dateStr ? `${cfg.prefix}-${dateStr}-` : `${cfg.prefix}-`;
+  
+  const basePrefix = `${cfg.prefix}-`;
   let max = Math.max(0, cfg.counterStart - 1);
+  
   existing.forEach((p) => {
     const r = p.reference ?? "";
-    if (r.startsWith(prefix)) {
-      const n = Number(r.slice(prefix.length));
+    if (r.startsWith(basePrefix)) {
+      const parts = r.split('-');
+      const lastPart = parts[parts.length - 1];
+      const n = Number(lastPart);
       if (Number.isFinite(n) && n > max) max = n;
     }
   });

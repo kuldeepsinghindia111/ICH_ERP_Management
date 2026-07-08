@@ -166,7 +166,7 @@ function CollegeSettingsCard({ canEdit }: { canEdit: boolean }) {
               onChange={(e) => setDraft((d: any) => ({ ...d, receipt_date_pattern: e.target.value }))} />
           </div>
           <div>
-            <Label>Daily counter starts at</Label>
+            <Label>Counter Starting No.</Label>
             <Input type="number" min={1} value={draft.receipt_counter_start || 1} disabled={!canEdit}
               onChange={(e) => setDraft((d: any) => ({ ...d, receipt_counter_start: Number(e.target.value) }))} />
           </div>
