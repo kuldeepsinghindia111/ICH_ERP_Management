@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { LedgerSummaryDialog } from "@/components/ledger-summary-dialog";
 import { CollectPaymentDialog } from "@/components/collect-payment-dialog";
 import { StudentAutosuggest } from "@/components/student-autosuggest";
 
@@ -277,9 +278,7 @@ function FeesPage() {
                         {sum.balance > 0 && canEditPayments && (
                           <CollectPaymentDialog studentId={st.id} semester={st.current_semester} variant="sm" />
                         )}
-                        <Button asChild variant="outline" size="sm">
-                          <Link to="/students/$studentId" params={{ studentId: st.id }}>Ledger</Link>
-                        </Button>
+                        <LedgerSummaryDialog student={st} sum={sum} />
                       </div>
                     </td>
                   </tr>
