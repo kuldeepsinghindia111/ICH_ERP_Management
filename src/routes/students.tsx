@@ -4,14 +4,14 @@ import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { useStore, studentTotals, inr, formatYear, type FeeCharge, type FeeAdjustment, type FeePayment } from "@/lib/store";
+import { useStore, formatYear } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -29,53 +29,6 @@ export const Route = createFileRoute("/students")({
 function StudentsPage() {
   const { user } = useAuth();
   
-  const { data: charges = [] } = useQuery({
-    queryKey: ['fee_charges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('fee_charges').select('*');
-      return (data || []).map(c => ({
-        ...c,
-        studentId: c.student_id,
-        createdAt: c.created_at,
-      })) as FeeCharge[];
-    }
-  });
-
-  const { data: adjustments = [] } = useQuery({
-    queryKey: ['fee_adjustments'],
-    queryFn: async () => {
-      const { data } = await supabase.from('fee_adjustments').select('*');
-      return (data || []).map(a => ({
-        ...a,
-        studentId: a.student_id,
-        createdAt: a.created_at,
-      })) as FeeAdjustment[];
-    }
-  });
-
-  const { data: payments = [] } = useQuery({
-    queryKey: ['fee_payments'],
-    queryFn: async () => {
-      const { data } = await supabase.from('fee_payments').select('*');
-      return (data || []).map(p => ({
-        ...p,
-        studentId: p.student_id,
-        paidAt: p.paid_at,
-        voidReason: p.void_reason,
-        voidedAt: p.voided_at,
-      })) as FeePayment[];
-    }
-  });
-
-  const { data: feeStructures = [] } = useQuery({
-    queryKey: ['fee_structures'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('fee_structures').select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
   // Get user's permissions
   const { data: canEdit } = useQuery({
     queryKey: ['canEditStudents', user?.id],
@@ -144,7 +97,7 @@ function StudentsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Registry</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Student's Management</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Student's Profile</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {total} enrolled · Permanent roll numbers tracked per student.
           </p>
@@ -196,23 +149,23 @@ function StudentsPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Student</th>
+                  <th className="px-4 py-3 font-medium">Father's Name</th>
+                  <th className="px-4 py-3 font-medium">Male/Female</th>
+                  <th className="px-4 py-3 font-medium">Address</th>
+                  <th className="px-4 py-3 font-medium">Mobile No.</th>
                   <th className="px-4 py-3 font-medium">Admission No</th>
                   <th className="px-4 py-3 font-medium">Program</th>
                   <th className="px-4 py-3 font-medium">Year</th>
                   <th className="px-4 py-3 font-medium">Roll No.</th>
-                  <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {students.length === 0 && (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No students match your filters.</td></tr>
+                  <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">No students match your filters.</td></tr>
                 )}
                 {students.map((s: any) => {
                   const program = programs.find((p: any) => p.id === s.program_id);
-                  // Temporary local-storage balance computation. Will show 0 for new supabase students until fees are migrated.
-                  const t = studentTotals(s.id, s.current_semester, { charges, adjustments, payments, structures: feeStructures, student: s });
-                  
                   // Safe initial logic for students with single-word names
                   const parts = s.name.split(" ");
                   const initials = parts.length > 1 
@@ -232,17 +185,16 @@ function StudentsPage() {
                           </div>
                         </Link>
                       </td>
+                      <td className="px-4 py-3">{s.guardian || "—"}</td>
+                      <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
+                      <td className="px-4 py-3">
+                        <div className="max-w-[150px] truncate" title={s.address}>{s.address || "—"}</div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">{s.phone || "—"}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
                       <td className="px-4 py-3">{program?.name ?? "—"}</td>
                       <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
                       <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
-                      <td className="px-4 py-3 text-right">
-                        {t.balance > 0 ? (
-                          <Badge variant="destructive">{inr(t.balance)}</Badge>
-                        ) : (
-                          <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>
-                        )}
-                      </td>
                       <td className="px-4 py-3 text-right">
                         {canEdit && <StudentFormDialog programs={programs} student={s} />}
                       </td>
