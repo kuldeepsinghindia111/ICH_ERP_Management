@@ -483,6 +483,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   // local edits for the currently editing program row
   const [localFees, setLocalFees] = useState<Record<string, number>>({});
+  const [localProgramName, setLocalProgramName] = useState("");
 
   const startEdit = (pId: string) => {
     setEditingProgramId(pId);
@@ -493,11 +494,21 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
       m[col] = found ? found.amount : 0;
     });
     setLocalFees(m);
+    
+    const p = programs.find((prog) => prog.id === pId);
+    setLocalProgramName(p ? p.name : "");
   };
 
   const saveFees = useMutation({
     mutationFn: async (pId: string) => {
-      // delete existing first
+      // update program name if changed
+      const p = programs.find((prog) => prog.id === pId);
+      if (p && localProgramName && localProgramName !== p.name) {
+        const { error: nameError } = await supabase.from("programs").update({ name: localProgramName }).eq("id", pId);
+        if (nameError) throw nameError;
+      }
+
+      // delete existing fees first
       await supabase.from("fee_structures").delete().eq("program_id", pId).eq("semester", 1).in("fee_head", FEE_COLUMNS);
 
       const inserts = FEE_COLUMNS.map(col => ({
@@ -513,6 +524,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
       queryClient.invalidateQueries({ queryKey: ["fee_structures"] });
       setEditingProgramId(null);
       toast.success("Fees updated successfully");
@@ -561,7 +573,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Course/Class Name</TableHead>
+              <TableHead>Course Name</TableHead>
               {FEE_COLUMNS.map(col => <TableHead key={col}>{col} (Rs.)</TableHead>)}
               <TableHead>Total Fees (Rs.)</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -576,7 +588,17 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
 
               return (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {isEditing ? (
+                      <Input
+                        value={localProgramName}
+                        onChange={(e) => setLocalProgramName(e.target.value)}
+                        className="w-40 h-8 font-medium"
+                      />
+                    ) : (
+                      p.name
+                    )}
+                  </TableCell>
                   {FEE_COLUMNS.map(col => {
                     const existingAmt = feesForProgram.find(f => f.fee_head === col)?.amount || 0;
                     total += Number(existingAmt);
