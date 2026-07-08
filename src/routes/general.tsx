@@ -128,16 +128,6 @@ function GeneralManagementPage() {
     setAddingNewSession(false);
   };
 
-  const handleNewSessionChange = (newSessionId: string) => {
-    const session = sessions.find(s => s.id === newSessionId);
-    if (!session) return;
-    setNewSessionLocal({
-      sessionId: newSessionId,
-      startDate: session.start_date || "",
-      endDate: session.end_date || "",
-      admissionSeries: session.admission_series || "",
-    });
-  };
 
   // Save a single existing row
   const saveSettingsRow = useMutation({
