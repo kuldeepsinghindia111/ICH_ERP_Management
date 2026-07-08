@@ -90,11 +90,11 @@ function GeneralManagementPage() {
   const [settingsEditingIndex, setSettingsEditingIndex] = useState<number | null>(null);
   const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", name: "", startDate: "", endDate: "", admissionSeries: "" });
 
-  // Show ALL sessions so user can toggle active/inactive
-  const allSessions = sessions;
+  // The active sessions loaded from DB
+  const activeSessions = sessions.filter(s => s.is_active);
 
   const startSettingsEdit = (index: number) => {
-    const s = allSessions[index];
+    const s = activeSessions[index];
     if (!s) return;
     setSettingsEditingIndex(index);
     setSettingsLocal({
@@ -191,15 +191,15 @@ function GeneralManagementPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Delete a session row from DB
-  const deleteSettingsSession = useMutation({
+  // Remove from active settings (deactivate) without deleting from DB
+  const removeSessionFromSettings = useMutation({
     mutationFn: async (sessionId: string) => {
-      const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
+      const { error } = await supabase.from("sessions").update({ is_active: false }).eq("id", sessionId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      toast.success("Session deleted");
+      toast.success("Session removed from active settings");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -239,12 +239,11 @@ function GeneralManagementPage() {
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
                 <TableHead>Admission Series</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {allSessions.map((s, index) => {
+              {activeSessions.map((s, index) => {
                 const isEditing = settingsEditingIndex === index;
                 return (
                   <TableRow key={s.id}>
@@ -268,18 +267,6 @@ function GeneralManagementPage() {
                         <Input value={settingsLocal.admissionSeries} onChange={e => setSettingsLocal({ ...settingsLocal, admissionSeries: e.target.value })} placeholder="e.g. ADM-2027-0001" />
                       ) : (s.admission_series || "—")}
                     </TableCell>
-                    <TableCell>
-                      {canEdit ? (
-                        <button
-                          className={`text-sm font-medium cursor-pointer hover:underline ${s.is_active ? "text-primary" : "text-muted-foreground"}`}
-                          onClick={() => toggleSettingsStatus.mutate({ sessionId: s.id, currentStatus: s.is_active })}
-                        >
-                          {s.is_active ? "Active" : "Inactive"}
-                        </button>
-                      ) : (
-                        s.is_active ? <span className="text-primary font-medium">Active</span> : <span className="text-muted-foreground">Inactive</span>
-                      )}
-                    </TableCell>
                     <TableCell className="text-right">
                       {canEdit && (
                         isEditing ? (
@@ -290,7 +277,7 @@ function GeneralManagementPage() {
                         ) : (
                           <div className="flex justify-end gap-2">
                             <Button size="icon" variant="ghost" onClick={() => startSettingsEdit(index)}><Pencil className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this session permanently?")) deleteSettingsSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            <Button size="icon" variant="ghost" title="Remove from settings" onClick={() => { if (confirm("Remove this session from active settings?")) removeSessionFromSettings.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
                         )
                       )}
