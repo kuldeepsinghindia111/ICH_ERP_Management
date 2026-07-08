@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Building2, Copy, ShieldCheck, Search, CreditCard, Landmark,
   Smartphone, CheckCircle2, Download, Globe, Banknote, ArrowLeft,
-  Loader2
+  Loader2, Printer
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import {
   validatePaymentFields, referenceHint, type PaymentMethod,
 } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
-import { downloadReceiptPdf, generateReceiptPdf } from "@/lib/receipt";
+import { downloadReceiptPdf, generateReceiptPdf, printReceiptPdf } from "@/lib/receipt";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -592,6 +592,22 @@ function PayPage() {
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button onClick={() => window.open(previewUrl || "", "_blank")} variant="default">
                 <Download className="mr-2 h-4 w-4" /> Download PDF Receipt
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (!receipt || !student) return;
+                  const program = programs.find((p: any) => p.id === student.program_id);
+                  printReceiptPdf({
+                    college: paymentInfo,
+                    payment: { amount: receipt.amount, method: receipt.method, reference: receipt.ref, paidAt: receipt.paidAt },
+                    student: { name: student.name, guardian: student.guardian, admissionNo: student.admission_no, rollNo: (student.rolls && student.rolls[receipt.semester]) || "" },
+                    program: program ? { name: program.name, code: program.code } : undefined,
+                    semester: receipt.semester,
+                  });
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" /> Print Receipt
               </Button>
               <Button variant="outline" onClick={reset}>
                 Record another payment

@@ -281,8 +281,8 @@ export type ReceiptFormat = {
 
 export const DEFAULT_RECEIPT_FORMAT: ReceiptFormat = {
   prefix: "RCPT",
-  datePattern: "YYYYMMDD",
-  counterStart: 1,
+  datePattern: "",
+  counterStart: 101,
 };
 
 export function formatReceiptDate(pattern: string, d: Date): string {
@@ -300,8 +300,7 @@ export function nextReceiptNo(
   cfg: ReceiptFormat = DEFAULT_RECEIPT_FORMAT,
 ): string {
   const d = new Date(dateISO);
-  const dateStr = cfg.datePattern ? formatReceiptDate(cfg.datePattern, d) : "";
-  const prefix = dateStr ? `${cfg.prefix}-${dateStr}-` : `${cfg.prefix}-`;
+  const prefix = `${cfg.prefix}-`;
   
   const basePrefix = `${cfg.prefix}-`;
   let max = Math.max(0, cfg.counterStart - 1);

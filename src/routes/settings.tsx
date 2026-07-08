@@ -151,19 +151,14 @@ function CollegeSettingsCard({ canEdit }: { canEdit: boolean }) {
           ))}
         </div>
         
-        <div className="border-t pt-6 grid gap-4 sm:grid-cols-3">
-          <div className="sm:col-span-3">
+        <div className="border-t pt-6 grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <h4 className="font-medium text-sm">Receipt number format</h4>
           </div>
           <div>
             <Label>Prefix</Label>
             <Input value={draft.receipt_prefix || ""} disabled={!canEdit}
               onChange={(e) => setDraft((d: any) => ({ ...d, receipt_prefix: e.target.value }))} />
-          </div>
-          <div>
-            <Label>Date pattern</Label>
-            <Input className="font-mono" value={draft.receipt_date_pattern || ""} disabled={!canEdit}
-              onChange={(e) => setDraft((d: any) => ({ ...d, receipt_date_pattern: e.target.value }))} />
           </div>
           <div>
             <Label>Counter Starting No.</Label>

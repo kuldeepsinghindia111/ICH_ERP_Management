@@ -100,7 +100,7 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.text("Amount received", 44, y + 25);
-  doc.setFontSize(16);
+  doc.setFontSize(14);
   doc.text(inr(data.payment.amount), W - 44, y + 26, { align: "right" });
   y += 56;
 
@@ -134,4 +134,14 @@ export function downloadReceiptPdf(data: ReceiptData) {
   const doc = generateReceiptPdf(data);
   const safe = data.student.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   doc.save(`receipt-${safe}-sem${data.semester}-${(data.payment.reference || Date.now()).toString()}.pdf`);
+}
+
+export function printReceiptPdf(data: ReceiptData) {
+  const doc = generateReceiptPdf(data);
+  doc.autoPrint();
+  const url = doc.output("bloburl").toString();
+  const win = window.open(url, "_blank");
+  if (win) {
+    win.onload = () => { win.print(); };
+  }
 }

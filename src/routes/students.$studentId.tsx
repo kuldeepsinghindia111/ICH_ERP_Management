@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, nextReceiptNo, type FeeHead, type FeePayment } from "@/lib/store";
-import { downloadReceiptPdf } from "@/lib/receipt";
+import { downloadReceiptPdf, printReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -774,6 +774,22 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
     });
   };
 
+  const printReceipt = (p: FeePayment) => {
+    const rolls = student.rolls || {};
+    printReceiptPdf({
+      college: paymentInfo,
+      payment: p,
+      student: {
+        name: student.name,
+        guardian: student.guardian,
+        admissionNo: student.admission_no,
+        rollNo: rolls[p.semester] || "",
+      },
+      program: program ? { name: program.name, code: program.code } : undefined,
+      semester: p.semester,
+    });
+  };
+
   const exportCsv = () => {
     if (rows.length === 0) return toast.error("Nothing to export for these filters");
     const escape = (v: string | number | undefined) => {
@@ -975,8 +991,11 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" title="Re-print receipt (PDF)" onClick={() => downloadReceipt(p)}>
-                        <Printer className="h-4 w-4" />
+                      <Button size="icon" variant="ghost" title="Print receipt" onClick={() => printReceipt(p)}>
+                        <Printer className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button size="icon" variant="ghost" title="Download receipt (PDF)" onClick={() => downloadReceipt(p)}>
+                        <Download className="h-4 w-4" />
                       </Button>
                       {p.voided ? (
                         <Button
