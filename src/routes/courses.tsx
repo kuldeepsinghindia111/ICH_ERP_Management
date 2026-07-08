@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2, Pencil, Settings } from "lucide-react";
+import { Plus, Trash2, Pencil, Settings, Save, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
@@ -288,14 +288,17 @@ function EditCourseDialog({ course, programs, canEdit, onRemove, isRemoving }: {
 
 
 export function ManageProgramsDialog({ programs }: { programs: any[] }) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [semesters, setSemesters] = useState(6);
-  
-  const queryClient = useQueryClient();
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCode, setEditCode] = useState("");
+  
   const addProgram = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("programs").insert({ name, code, total_semesters: semesters });
@@ -308,6 +311,19 @@ export function ManageProgramsDialog({ programs }: { programs: any[] }) {
       setName("");
       setCode("");
       setSemesters(6);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const updateProgram = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("programs").update({ name: editName, code: editCode }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      toast.success("Program updated");
+      setEditingId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -339,17 +355,47 @@ export function ManageProgramsDialog({ programs }: { programs: any[] }) {
             <p className="text-sm text-muted-foreground">No programs found.</p>
           ) : (
             <div className="space-y-2">
-              {programs.map((p) => (
+              {programs.map((p) => {
+                const isEditing = editingId === p.id;
+                return (
                 <div key={p.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
-                  <div>
-                    <span className="font-medium">{p.name} ({p.code})</span>
-                    <span className="ml-2 text-muted-foreground">{p.total_semesters} Semesters</span>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => { if(confirm(`Remove ${p.name}?`)) removeProgram.mutate(p.id) }}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {isEditing ? (
+                    <div className="flex gap-2 flex-1 mr-2">
+                      <Input placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} />
+                      <Input placeholder="Code" value={editCode} onChange={e => setEditCode(e.target.value)} />
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="font-medium">{p.name} ({p.code})</span>
+                    </div>
+                  )}
+                  
+                  {isEditing ? (
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => updateProgram.mutate(p.id)}>
+                        <Save className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setEditingId(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        setEditingId(p.id);
+                        setEditName(p.name);
+                        setEditCode(p.code);
+                      }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { if(confirm(`Remove ${p.name}?`)) removeProgram.mutate(p.id) }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
