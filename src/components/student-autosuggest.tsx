@@ -6,7 +6,8 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useStore } from "@/lib/store";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 /**
  * Auto-suggest combobox for picking a student by name, admission no. or roll.
@@ -23,8 +24,23 @@ export function StudentAutosuggest({
   placeholder?: string;
   className?: string;
 }) {
-  const students = useStore((s) => s.students);
-  const programs = useStore((s) => s.programs);
+  const { data: students = [] } = useQuery({
+    queryKey: ['autosuggest_students'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ['autosuggest_programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -41,8 +57,8 @@ export function StudentAutosuggest({
     const base = t
       ? students.filter((s) =>
           s.name.toLowerCase().includes(t) ||
-          s.admissionNo.toLowerCase().includes(t) ||
-          (s.rollNumber && s.rollNumber.toLowerCase().includes(t)),
+          s.admission_no.toLowerCase().includes(t) ||
+          (s.roll_number && s.roll_number.toLowerCase().includes(t)),
         )
       : students;
     return base.slice(0, 8);
@@ -60,7 +76,7 @@ export function StudentAutosuggest({
         >
           <span className={cn("flex min-w-0 items-center gap-2 truncate", !selected && "text-muted-foreground")}>
             <Search className="h-3.5 w-3.5 shrink-0" />
-            {selected ? `${selected.name} · ${selected.admissionNo}` : placeholder}
+            {selected ? `${selected.name} · ${selected.admission_no}` : placeholder}
           </span>
           {selected ? (
             <X
@@ -83,7 +99,7 @@ export function StudentAutosuggest({
             <CommandEmpty>No students found.</CommandEmpty>
             <CommandGroup>
               {matches.map((s) => {
-                const prog = programs.find((p) => p.id === s.programId);
+                const prog = programs.find((p: any) => p.id === s.program_id);
                 return (
                   <CommandItem
                     key={s.id}
@@ -94,7 +110,7 @@ export function StudentAutosuggest({
                     <div className="flex min-w-0 flex-col">
                       <span className="truncate text-sm">{s.name}</span>
                       <span className="truncate text-xs text-muted-foreground">
-                        {s.admissionNo} · {prog?.code} · Sem {s.currentSemester}
+                        {s.admission_no} · {prog?.code} · Year {s.current_semester}
                       </span>
                     </div>
                   </CommandItem>

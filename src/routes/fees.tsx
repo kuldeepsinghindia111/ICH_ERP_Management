@@ -241,6 +241,7 @@ function FeesPage() {
                 <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Course</th>
+                  <th className="px-4 py-3 font-medium">Year</th>
                   <th className="px-4 py-3 text-right font-medium">Total Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
@@ -252,7 +253,7 @@ function FeesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 && (
-                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
                 {pageRows.map(({ st, sum }) => (
                   <tr key={st.id} className="hover:bg-accent/40">
@@ -260,6 +261,7 @@ function FeesPage() {
                       <p className="font-medium text-foreground">{st.name}</p>
                     </td>
                     <td className="px-4 py-3">{programs.find((p: any) => p.id === st.program_id)?.name}</td>
+                    <td className="px-4 py-3">{formatYear(st.current_semester)}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
