@@ -88,7 +88,7 @@ function GeneralManagementPage() {
 
   // --- Session & Key Settings: per-row edit/save/delete like Academic Sessions ---
   const [settingsEditingIndex, setSettingsEditingIndex] = useState<number | null>(null);
-  const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", startDate: "", endDate: "", admissionSeries: "" });
+  const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", name: "", startDate: "", endDate: "", admissionSeries: "" });
 
   // Show ALL sessions so user can toggle active/inactive
   const allSessions = sessions;
@@ -99,6 +99,7 @@ function GeneralManagementPage() {
     setSettingsEditingIndex(index);
     setSettingsLocal({
       sessionId: s.id,
+      name: s.name || "",
       startDate: s.start_date || "",
       endDate: s.end_date || "",
       admissionSeries: s.admission_series || "",
@@ -143,6 +144,7 @@ function GeneralManagementPage() {
   const saveSettingsRow = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("sessions").update({
+        name: settingsLocal.name,
         start_date: settingsLocal.startDate,
         end_date: settingsLocal.endDate,
         admission_series: settingsLocal.admissionSeries
@@ -189,15 +191,15 @@ function GeneralManagementPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Delete (deactivate) a row
-  const deactivateSession = useMutation({
+  // Delete a session row from DB
+  const deleteSettingsSession = useMutation({
     mutationFn: async (sessionId: string) => {
-      const { error } = await supabase.from("sessions").update({ is_active: false }).eq("id", sessionId);
+      const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      toast.success("Session deactivated");
+      toast.success("Session deleted");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -246,7 +248,11 @@ function GeneralManagementPage() {
                 const isEditing = settingsEditingIndex === index;
                 return (
                   <TableRow key={s.id}>
-                    <TableCell>{s.name}</TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input value={settingsLocal.name} onChange={e => setSettingsLocal({ ...settingsLocal, name: e.target.value })} />
+                      ) : s.name}
+                    </TableCell>
                     <TableCell>
                       {isEditing ? (
                         <Input type="date" value={settingsLocal.startDate} onChange={e => setSettingsLocal({ ...settingsLocal, startDate: e.target.value })} />
@@ -284,7 +290,7 @@ function GeneralManagementPage() {
                         ) : (
                           <div className="flex justify-end gap-2">
                             <Button size="icon" variant="ghost" onClick={() => startSettingsEdit(index)}><Pencil className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this session?")) deactivateSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete this session permanently?")) deleteSettingsSession.mutate(s.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
                         )
                       )}
