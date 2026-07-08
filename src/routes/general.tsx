@@ -91,7 +91,7 @@ function GeneralManagementPage() {
   const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", name: "", startDate: "", endDate: "", admissionSeries: "" });
 
   // The active sessions loaded from DB
-  const activeSessions = sessions.filter(s => s.is_active);
+  const activeSessions = sessions.filter(s => s.is_settings_active);
 
   const startSettingsEdit = (index: number) => {
     const s = activeSessions[index];
@@ -115,7 +115,7 @@ function GeneralManagementPage() {
   const [newSessionLocal, setNewSessionLocal] = useState({ sessionId: "", startDate: "", endDate: "", admissionSeries: "" });
 
   const startAddSession = () => {
-    const first = sessions[0];
+    const first = sessions.find(s => !s.is_settings_active) || sessions[0];
     setNewSessionLocal({
       sessionId: first?.id || "",
       startDate: first?.start_date || "",
@@ -163,7 +163,7 @@ function GeneralManagementPage() {
   const saveNewSettingsRow = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("sessions").update({
-        is_active: true,
+        is_settings_active: true,
         start_date: newSessionLocal.startDate,
         end_date: newSessionLocal.endDate,
         admission_series: newSessionLocal.admissionSeries
@@ -181,7 +181,7 @@ function GeneralManagementPage() {
   // Toggle active/inactive for a session in Session & Key Settings
   const toggleSettingsStatus = useMutation({
     mutationFn: async ({ sessionId, currentStatus }: { sessionId: string; currentStatus: boolean }) => {
-      const { error } = await supabase.from("sessions").update({ is_active: !currentStatus }).eq("id", sessionId);
+      const { error } = await supabase.from("sessions").update({ is_settings_active: !currentStatus }).eq("id", sessionId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -194,7 +194,7 @@ function GeneralManagementPage() {
   // Remove from active settings (deactivate) without deleting from DB
   const removeSessionFromSettings = useMutation({
     mutationFn: async (sessionId: string) => {
-      const { error } = await supabase.from("sessions").update({ is_active: false }).eq("id", sessionId);
+      const { error } = await supabase.from("sessions").update({ is_settings_active: false }).eq("id", sessionId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -208,7 +208,7 @@ function GeneralManagementPage() {
     return <div className="p-8 animate-pulse text-muted-foreground">Loading configuration...</div>;
   }
 
-  const activeSessionNames = sessions.filter(s => s.is_active).map(s => s.name).filter(Boolean);
+  const activeSessionNames = sessions.filter(s => s.is_settings_active).map(s => s.name).filter(Boolean);
   const activeSessionName = activeSessionNames.length > 0 ? activeSessionNames.join(", ") : "Not Set";
 
   return (
@@ -292,7 +292,7 @@ function GeneralManagementPage() {
                     <Select value={newSessionLocal.sessionId} onValueChange={handleNewSessionChange}>
                       <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
                       <SelectContent>
-                        {sessions.filter(s => !s.is_active).map(s => (
+                        {sessions.filter(s => !s.is_settings_active).map(s => (
                           <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
                       </SelectContent>
