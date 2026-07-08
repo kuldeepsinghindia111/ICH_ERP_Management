@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import {
   useStore, semesterSummary, inr, nextReceiptNo,
-  validatePaymentFields, referenceHint,
+  validatePaymentFields, referenceHint, formatYear
 } from "@/lib/store";
 import { generateReceiptPdf, type ReceiptData } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
@@ -305,12 +305,29 @@ export function CollectPaymentDialog({
             <div className="grid gap-4 py-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Semester</Label>
+                  <Label>Course</Label>
+                  <Input value={programs.find((p: any) => p.id === student.program_id)?.name || ""} disabled className="bg-muted text-muted-foreground" />
+                </div>
+                <div>
+                  <Label>Session</Label>
+                  <Select defaultValue="2024-2025">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2023-2024">2023-2024</SelectItem>
+                      <SelectItem value="2024-2025">2024-2025</SelectItem>
+                      <SelectItem value="2025-2026">2025-2026</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Year</Label>
                   <Select value={sem} onValueChange={setSem}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {semList.map((n) => (
-                        <SelectItem key={n} value={String(n)}>Sem {n}</SelectItem>
+                        <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
