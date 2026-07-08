@@ -180,7 +180,7 @@ function StudentsPage() {
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Year" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All years</SelectItem>
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              {[1, 2, 3].map((n) => (
                 <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
               ))}
             </SelectContent>
@@ -198,7 +198,7 @@ function StudentsPage() {
                   <th className="px-4 py-3 font-medium">Admission No</th>
                   <th className="px-4 py-3 font-medium">Program</th>
                   <th className="px-4 py-3 font-medium">Year</th>
-                  <th className="px-4 py-3 font-medium">Current roll</th>
+                  <th className="px-4 py-3 font-medium">Roll No.</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3"></th>
                 </tr>
