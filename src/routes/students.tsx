@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useStore, studentTotals, inr, formatYear, type FeeCharge, type FeeAdjustment, type FeePayment } from "@/lib/store";
@@ -120,7 +120,8 @@ function StudentsPage() {
       const { data, error, count } = await query;
       if (error) throw error;
       return { students: data, total: count || 0 };
-    }
+    },
+    placeholderData: keepPreviousData
   });
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
