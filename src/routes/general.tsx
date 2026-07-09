@@ -484,10 +484,14 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
   // local edits for the currently editing program row
   const [localFees, setLocalFees] = useState<Record<string, number>>({});
   const [localProgramName, setLocalProgramName] = useState("");
+  
+  const [selectedSession, setSelectedSession] = useState("2024-2025");
+  const [selectedProgram, setSelectedProgram] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("1");
 
   const startEdit = (pId: string) => {
     setEditingProgramId(pId);
-    const existing = feeStructures.filter(f => f.program_id === pId && f.semester === 1);
+    const existing = feeStructures.filter(f => f.program_id === pId && f.semester === Number(selectedYear));
     const m: Record<string, number> = {};
     FEE_COLUMNS.forEach(col => {
       const found = existing.find(f => f.fee_head === col);
@@ -509,11 +513,11 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
       }
 
       // delete existing fees first
-      await supabase.from("fee_structures").delete().eq("program_id", pId).eq("semester", 1).in("fee_head", FEE_COLUMNS);
+      await supabase.from("fee_structures").delete().eq("program_id", pId).eq("semester", Number(selectedYear)).in("fee_head", FEE_COLUMNS);
 
       const inserts = FEE_COLUMNS.map(col => ({
         program_id: pId,
-        semester: 1,
+        semester: Number(selectedYear),
         fee_head: col,
         amount: localFees[col] || 0
       })).filter(f => f.amount > 0);
@@ -566,14 +570,38 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Course & Fee Setup</CardTitle>
         <div className="flex items-center gap-2">
-          <Select defaultValue="2024-2025">
-            <SelectTrigger className="w-[140px] h-9">
+          <Select value={selectedSession} onValueChange={setSelectedSession}>
+            <SelectTrigger className="w-[120px] h-9">
               <SelectValue placeholder="Session" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="2023-2024">2023-2024</SelectItem>
               <SelectItem value="2024-2025">2024-2025</SelectItem>
               <SelectItem value="2025-2026">2025-2026</SelectItem>
+              <SelectItem value="2026-2027">2026-2027</SelectItem>
+              <SelectItem value="2027-2028">2027-2028</SelectItem>
+              <SelectItem value="2028-2029">2028-2029</SelectItem>
+              <SelectItem value="2029-2030">2029-2030</SelectItem>
+              <SelectItem value="2030-2031">2030-2031</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Course" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Courses</SelectItem>
+              {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[120px] h-9">
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1st Year</SelectItem>
+              <SelectItem value="2">2nd Year</SelectItem>
+              <SelectItem value="3">3rd Year</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="secondary" size="sm" asChild>
@@ -592,10 +620,12 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
             </TableRow>
           </TableHeader>
           <TableBody>
-            {programs.map(p => {
+            {programs
+              .filter(p => selectedProgram === "all" || p.id === selectedProgram)
+              .map(p => {
               const isEditing = editingProgramId === p.id;
 
-              const feesForProgram = feeStructures.filter(f => f.program_id === p.id && f.semester === 1);
+              const feesForProgram = feeStructures.filter(f => f.program_id === p.id && f.semester === Number(selectedYear));
               let total = 0;
 
               return (
