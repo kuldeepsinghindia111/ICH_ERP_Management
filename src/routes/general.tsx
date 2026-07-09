@@ -111,7 +111,7 @@ function GeneralManagementPage() {
   };
 
   // --- New session row state ---
-  const [headerSession, setHeaderSession] = useState("2026-27");
+  const [headerSession, setHeaderSession] = useState("2024-25");
   const [addingNewSession, setAddingNewSession] = useState(false);
   const [newSessionLocal, setNewSessionLocal] = useState({ name: "", startDate: "", endDate: "", admissionSeries: "" });
 
@@ -225,6 +225,8 @@ function GeneralManagementPage() {
                 <SelectValue placeholder="Session" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="2024-25">2024-25</SelectItem>
+                <SelectItem value="2025-26">2025-26</SelectItem>
                 <SelectItem value="2026-27">2026-27</SelectItem>
                 <SelectItem value="2027-28">2027-28</SelectItem>
                 <SelectItem value="2028-29">2028-29</SelectItem>
