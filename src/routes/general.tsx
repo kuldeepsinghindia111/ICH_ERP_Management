@@ -120,24 +120,6 @@ function GeneralManagementPage() {
     setSettingsEditingIndex(null);
   };
 
-  const [addingNewSession, setAddingNewSession] = useState(false);
-  const [newSessionLocal, setNewSessionLocal] = useState({ name: "", startDate: "", endDate: "", admissionSeries: "" });
-
-  const startAddSession = () => {
-    setNewSessionLocal({
-      name: "2027-28",
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      admissionSeries: "ADM-2027-0001",
-    });
-    setAddingNewSession(true);
-  };
-
-  const cancelAddSession = () => {
-    setAddingNewSession(false);
-  };
-
-
   // Save a single existing row
   const saveSettingsRow = useMutation({
     mutationFn: async () => {
@@ -153,26 +135,6 @@ function GeneralManagementPage() {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       setSettingsEditingIndex(null);
       toast.success("Session updated");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  // Save the new row (mark as active)
-  const saveNewSettingsRow = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("sessions").insert({
-        is_settings_active: true,
-        name: headerSession,
-        start_date: newSessionLocal.startDate,
-        end_date: newSessionLocal.endDate,
-        admission_series: newSessionLocal.admissionSeries
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      setAddingNewSession(false);
-      toast.success("Session added & activated");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -242,11 +204,6 @@ function GeneralManagementPage() {
                 <SelectItem value="2030-31">2030-31</SelectItem>
               </SelectContent>
             </Select>
-            {canEdit && (
-              <Button variant="secondary" size="sm" onClick={startAddSession}>
-                <Plus className="mr-2 h-4 w-4" /> Add session
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -298,25 +255,6 @@ function GeneralManagementPage() {
                 );
               })}
 
-              {addingNewSession && (
-                <TableRow>
-                  <TableCell>
-                    <Input type="date" value={newSessionLocal.startDate} onChange={e => setNewSessionLocal({ ...newSessionLocal, startDate: e.target.value })} />
-                  </TableCell>
-                  <TableCell>
-                    <Input type="date" value={newSessionLocal.endDate} onChange={e => setNewSessionLocal({ ...newSessionLocal, endDate: e.target.value })} />
-                  </TableCell>
-                  <TableCell>
-                    <Input value={newSessionLocal.admissionSeries} onChange={e => setNewSessionLocal({ ...newSessionLocal, admissionSeries: e.target.value })} placeholder="e.g. ADM-2027-0001" />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="icon" variant="ghost" onClick={() => saveNewSettingsRow.mutate()}><Save className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={cancelAddSession}>x</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </CardContent>
