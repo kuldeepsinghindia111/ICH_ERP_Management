@@ -315,7 +315,9 @@ function GeneralManagementPage() {
 function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit }: { configSessions: any[], realSessions: any[], programs: any[], canEdit: boolean }) {
   const queryClient = useQueryClient();
 
-  const [selectedSessionId, setSelectedSessionId] = useState<string>(realSessions[0]?.id || "");
+  const predefinedSessions = ["2026-27", "2027-28", "2028-29", "2029-30", "2030-31"];
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(predefinedSessions[0]);
+  const [selectedProgramFilter, setSelectedProgramFilter] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [localRollSeries, setLocalRollSeries] = useState("");
   const [localProgramId, setLocalProgramId] = useState("");
@@ -381,13 +383,22 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
         <CardTitle>Roll No. Management</CardTitle>
         <div className="flex items-center gap-4">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[140px] h-9">
               <SelectValue placeholder="Select Session" />
             </SelectTrigger>
             <SelectContent>
-              {realSessions.map(rs => (
-                <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>
+              {predefinedSessions.map(rs => (
+                <SelectItem key={rs} value={rs}>{rs}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedProgramFilter} onValueChange={setSelectedProgramFilter}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Course" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Courses</SelectItem>
+              {programs.map(pr => <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>)}
             </SelectContent>
           </Select>
           {canEdit && (
@@ -407,7 +418,10 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
             </TableRow>
           </TableHeader>
           <TableBody>
-            {configSessions.filter(s => s.name.startsWith(`Config_${selectedSessionId}`)).map(s => {
+            {configSessions
+              .filter(s => s.name.startsWith(`Config_${selectedSessionId}`))
+              .filter(s => selectedProgramFilter === "all" || s.program_id === selectedProgramFilter)
+              .map(s => {
               const isEditing = editingId === s.id;
               const p = programs.find(pr => pr.id === s.program_id);
               return (
