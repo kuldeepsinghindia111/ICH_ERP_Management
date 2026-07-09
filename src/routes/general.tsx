@@ -565,9 +565,21 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Course & Fee Setup</CardTitle>
-        <Button variant="secondary" size="sm" asChild>
-          <a href="/courses"><Plus className="mr-2 h-4 w-4" /> Add New Course/Class</a>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select defaultValue="2024-2025">
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Session" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2023-2024">2023-2024</SelectItem>
+              <SelectItem value="2024-2025">2024-2025</SelectItem>
+              <SelectItem value="2025-2026">2025-2026</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="secondary" size="sm" asChild>
+            <a href="/courses"><Plus className="mr-2 h-4 w-4" /> Add New Course/Class</a>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
