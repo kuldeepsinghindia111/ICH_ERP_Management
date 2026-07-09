@@ -314,7 +314,7 @@ function GeneralManagementPage() {
         </CardContent>
       </Card>
       <CourseFeeSetup programs={programs} feeStructures={feeStructures} canEdit={canEdit} />
-      <RollNoManagementSetup configSessions={sessions.filter(s => s.name.startsWith('Config'))} realSessions={sessions.filter(s => !s.name.startsWith('Config'))} programs={programs} canEdit={canEdit} />
+      <RollNoManagementSetup configSessions={sessions.filter(s => s.name?.startsWith('Config'))} realSessions={sessions.filter(s => !s.name?.startsWith('Config'))} programs={programs} canEdit={canEdit} />
 
     </div>
   );
@@ -427,7 +427,7 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
           </TableHeader>
           <TableBody>
             {configSessions
-              .filter(s => s.name.startsWith(`Config_${selectedSessionId}`))
+              .filter(s => s.name?.startsWith(`Config_${selectedSessionId}`))
               .filter(s => selectedProgramFilter === "all" || s.program_id === selectedProgramFilter)
               .map(s => {
               const isEditing = editingId === s.id;
