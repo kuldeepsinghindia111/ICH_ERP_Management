@@ -111,6 +111,7 @@ function GeneralManagementPage() {
   };
 
   // --- New session row state ---
+  const [headerSession, setHeaderSession] = useState("2026-27");
   const [addingNewSession, setAddingNewSession] = useState(false);
   const [newSessionLocal, setNewSessionLocal] = useState({ name: "", startDate: "", endDate: "", admissionSeries: "" });
 
@@ -218,11 +219,25 @@ function GeneralManagementPage() {
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle>Session & Admission Management</CardTitle>
-          {canEdit && (
-            <Button variant="secondary" size="sm" onClick={startAddSession}>
-              <Plus className="mr-2 h-4 w-4" /> Add session
-            </Button>
-          )}
+          <div className="flex items-center gap-4">
+            <Select value={headerSession} onValueChange={setHeaderSession}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Session" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2026-27">2026-27</SelectItem>
+                <SelectItem value="2027-28">2027-28</SelectItem>
+                <SelectItem value="2028-29">2028-29</SelectItem>
+                <SelectItem value="2029-30">2029-30</SelectItem>
+                <SelectItem value="2030-31">2030-31</SelectItem>
+              </SelectContent>
+            </Select>
+            {canEdit && (
+              <Button variant="secondary" size="sm" onClick={startAddSession}>
+                <Plus className="mr-2 h-4 w-4" /> Add session
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
