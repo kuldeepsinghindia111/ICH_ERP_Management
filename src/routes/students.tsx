@@ -53,17 +53,19 @@ function StudentsPage() {
 
   const [q, setQ] = useState("");
   const [programFilter, setProgramFilter] = useState<string>("all");
+  const [genderFilter, setGenderFilter] = useState<string>("all");
   const [sem, setSem] = useState<string>("all");
   const [page, setPage] = useState(1);
   const pageSize = 25;
 
   const { data: { students = [], total = 0 } = {}, isLoading: loadingStudents } = useQuery({
-    queryKey: ['students', page, q, programFilter, sem],
+    queryKey: ['students', page, q, programFilter, sem, genderFilter],
     queryFn: async () => {
       let query = supabase.from('students').select('*', { count: 'exact' }).order('created_at', { ascending: false });
       
       if (programFilter !== "all") query = query.eq('program_id', programFilter);
       if (sem !== "all") query = query.eq('current_semester', Number(sem));
+      if (genderFilter !== "all") query = query.eq('gender', genderFilter);
       if (q) {
         query = query.or(`name.ilike.%${q}%,admission_no.ilike.%${q}%,roll_number.ilike.%${q}%`);
       }
@@ -82,7 +84,7 @@ function StudentsPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [q, programFilter, sem]);
+  }, [q, programFilter, sem, genderFilter]);
 
   if (loadingPrograms || loadingStudents) {
     return (
@@ -121,6 +123,14 @@ function StudentsPage() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
+          <Select value={genderFilter} onValueChange={setGenderFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Gender" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All genders</SelectItem>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={programFilter} onValueChange={setProgramFilter}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Program" /></SelectTrigger>
             <SelectContent>
