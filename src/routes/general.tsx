@@ -28,6 +28,13 @@ export const Route = createFileRoute("/general")({
     ],
   }),
   component: GeneralManagementPage,
+  errorComponent: ({ error }) => (
+    <div className="p-8 text-red-500">
+      <h1 className="font-bold text-2xl">Page Crashed</h1>
+      <pre className="mt-4 p-4 bg-red-100 rounded overflow-auto">{error.message}</pre>
+      <pre className="mt-4 p-4 bg-red-100 rounded overflow-auto text-xs">{error.stack}</pre>
+    </div>
+  )
 });
 
 const FEE_COLUMNS = ["Admission Fee", "Tuition Fee", "Library Fee", "Exam Fee", "Other Fees"];
