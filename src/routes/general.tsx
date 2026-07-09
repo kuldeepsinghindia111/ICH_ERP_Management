@@ -91,7 +91,7 @@ function GeneralManagementPage() {
   const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", name: "", startDate: "", endDate: "", admissionSeries: "" });
 
   // The active sessions loaded from DB
-  const activeSessions = sessions.filter(s => s.is_settings_active);
+  const activeSessions = sessions.filter(s => s.name === headerSession);
 
   const startSettingsEdit = (index: number) => {
     const s = activeSessions[index];
@@ -154,7 +154,7 @@ function GeneralManagementPage() {
     mutationFn: async () => {
       const { error } = await supabase.from("sessions").insert({
         is_settings_active: true,
-        name: newSessionLocal.name,
+        name: headerSession,
         start_date: newSessionLocal.startDate,
         end_date: newSessionLocal.endDate,
         admission_series: newSessionLocal.admissionSeries
@@ -245,7 +245,6 @@ function GeneralManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Session Name</TableHead>
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
                 <TableHead>Admission Series</TableHead>
@@ -257,11 +256,6 @@ function GeneralManagementPage() {
                 const isEditing = settingsEditingIndex === index;
                 return (
                   <TableRow key={s.id}>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input value={settingsLocal.name} onChange={e => setSettingsLocal({ ...settingsLocal, name: e.target.value })} />
-                      ) : s.name}
-                    </TableCell>
                     <TableCell>
                       {isEditing ? (
                         <Input type="date" value={settingsLocal.startDate} onChange={e => setSettingsLocal({ ...settingsLocal, startDate: e.target.value })} />
@@ -298,9 +292,6 @@ function GeneralManagementPage() {
 
               {addingNewSession && (
                 <TableRow>
-                  <TableCell>
-                    <Input value={newSessionLocal.name} onChange={e => setNewSessionLocal({ ...newSessionLocal, name: e.target.value })} placeholder="e.g. 2026-27" />
-                  </TableCell>
                   <TableCell>
                     <Input type="date" value={newSessionLocal.startDate} onChange={e => setNewSessionLocal({ ...newSessionLocal, startDate: e.target.value })} />
                   </TableCell>
