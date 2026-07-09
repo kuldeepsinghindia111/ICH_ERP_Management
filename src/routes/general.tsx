@@ -97,6 +97,9 @@ function GeneralManagementPage() {
   const [settingsEditingIndex, setSettingsEditingIndex] = useState<number | null>(null);
   const [settingsLocal, setSettingsLocal] = useState({ sessionId: "", name: "", startDate: "", endDate: "", admissionSeries: "" });
 
+  // --- New session row state ---
+  const [headerSession, setHeaderSession] = useState("2024-25");
+
   // The active sessions loaded from DB
   const activeSessions = sessions.filter(s => s.name === headerSession);
 
@@ -117,8 +120,6 @@ function GeneralManagementPage() {
     setSettingsEditingIndex(null);
   };
 
-  // --- New session row state ---
-  const [headerSession, setHeaderSession] = useState("2024-25");
   const [addingNewSession, setAddingNewSession] = useState(false);
   const [newSessionLocal, setNewSessionLocal] = useState({ name: "", startDate: "", endDate: "", admissionSeries: "" });
 
