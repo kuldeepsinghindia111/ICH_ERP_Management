@@ -42,6 +42,7 @@ export type Student = {
   guardianPhone?: string;
   joinedYear: number;
   status: "active" | "graduated" | "dropped";
+  photoUrl?: string;
   gender?: Gender;
   dob?: string;
   address?: string;

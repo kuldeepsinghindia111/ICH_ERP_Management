@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download, Camera } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
@@ -32,6 +32,88 @@ export const Route = createFileRoute("/students/$studentId")({
     <div className="p-8 text-sm text-muted-foreground">Student not found.</div>
   ),
 });
+
+function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !canEdit) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      // 1. Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${student.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('student_photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('student_photos')
+        .getPublicUrl(filePath);
+
+      // 3. Update student record
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ photo_url: publicUrl })
+        .eq('id', student.id);
+
+      if (updateError) throw updateError;
+
+      toast.success("Photo updated successfully");
+      queryClient.invalidateQueries({ queryKey: ['student', student.id] });
+    } catch (error: any) {
+      toast.error("Error uploading photo: " + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="relative group h-16 w-16 flex-shrink-0">
+      {student.photo_url ? (
+        <img 
+          src={student.photo_url} 
+          alt={student.name} 
+          className="h-16 w-16 rounded-full object-cover border border-primary/20 shadow-sm"
+        />
+      ) : (
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-display text-xl font-semibold text-primary border border-primary/20 shadow-sm">
+          {student.name.split(" ").map((p: string) => p[0]).slice(0, 2).join("")}
+        </div>
+      )}
+
+      {canEdit && (
+        <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 text-white animate-spin" />
+          ) : (
+            <Camera className="h-5 w-5 text-white" />
+          )}
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            onChange={handleFileChange} 
+            disabled={isUploading}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
 
 function StudentDetail() {
   const { studentId } = Route.useParams();
@@ -179,9 +261,7 @@ function StudentDetail() {
         <Card className="lg:col-span-2">
           <CardContent className="flex flex-wrap items-start justify-between gap-6 p-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-display text-xl font-semibold text-primary">
-                {student.name.split(" ").map((p: string) => p[0]).slice(0, 2).join("")}
-              </div>
+              <StudentAvatar student={student} canEdit={canEditStudents ?? false} />
               <div>
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
                   {program?.name} · Joined {student.joined_year}
@@ -242,7 +322,14 @@ function StudentDetail() {
         </Card>
       </div>
 
-      <Card>
+      <Tabs defaultValue="overview" className="mt-6">
+        <TabsList className="bg-background border">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="id-card">ID Card Preview</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6 mt-6">
+          <Card>
         <CardHeader>
           <CardTitle className="font-display text-lg">Roll Number</CardTitle>
           <p className="text-xs text-muted-foreground">
@@ -302,15 +389,91 @@ function StudentDetail() {
         </CardContent>
       </Card>
 
-      <PaymentHistory 
-        student={student} 
-        program={program}
-        payments={payments} 
-        canEditPayments={canEditPayments ?? false}
-        userRole={userRole}
-      />
+          <PaymentHistory 
+            student={student} 
+            program={program}
+            payments={payments} 
+            canEditPayments={canEditPayments ?? false}
+            userRole={userRole}
+          />
+        </TabsContent>
+
+        <TabsContent value="id-card" className="mt-6">
+          <IDCardPreview student={student} program={program} />
+        </TabsContent>
+      </Tabs>
     </div>
 
+  );
+}
+
+function IDCardPreview({ student, program }: { student: any, program: any }) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="font-display text-lg">ID Card Preview</CardTitle>
+          <p className="text-xs text-muted-foreground">Preview and print student identity card.</p>
+        </div>
+        <Button onClick={() => window.print()} variant="secondary" size="sm">
+          <Printer className="mr-2 h-4 w-4" /> Print ID Card
+        </Button>
+      </CardHeader>
+      <CardContent className="flex justify-center py-10 bg-slate-50 rounded-b-lg border-t">
+        {/* The ID Card Visual Wrapper */}
+        <div className="w-[300px] h-[450px] bg-white rounded-xl shadow-xl border overflow-hidden flex flex-col relative print:shadow-none print:border-black">
+          
+          {/* Header */}
+          <div className="bg-primary text-primary-foreground p-4 text-center">
+            <h2 className="font-display font-bold text-lg tracking-tight leading-tight">IMPERIAL COLLEGE</h2>
+            <p className="text-[10px] opacity-90 font-medium tracking-widest mt-1 uppercase">Student Identity Card</p>
+          </div>
+
+          {/* Photo */}
+          <div className="flex justify-center mt-6">
+            <div className="h-28 w-28 rounded-xl overflow-hidden border-4 border-white shadow-md bg-slate-100 flex items-center justify-center relative">
+              {student.photo_url ? (
+                <img src={student.photo_url} className="w-full h-full object-cover" alt="Student" />
+              ) : (
+                <span className="text-xs text-muted-foreground">No Photo</span>
+              )}
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 px-6 pt-4 pb-6 flex flex-col items-center text-center">
+            <h3 className="font-bold text-lg leading-tight uppercase">{student.name}</h3>
+            <p className="text-sm font-semibold text-primary mt-1">{program?.name || "Program"}</p>
+            
+            <div className="w-full h-px bg-slate-100 my-3"></div>
+
+            <div className="w-full text-left space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Roll No.</span>
+                <span className="font-bold font-mono">{student.roll_number || "N/A"}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">DOB</span>
+                <span className="font-bold">{student.dob ? new Date(student.dob).toLocaleDateString() : "N/A"}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Blood Group</span>
+                <span className="font-bold">{student.blood_group || "N/A"}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Valid Till</span>
+                <span className="font-bold">2028</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-slate-900 text-white p-2 text-center">
+            <p className="text-[9px]">IF FOUND, RETURN TO IMPERIAL COLLEGE ADMINISTRATION</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
