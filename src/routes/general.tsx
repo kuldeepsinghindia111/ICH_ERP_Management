@@ -212,7 +212,7 @@ function GeneralManagementPage() {
               <TableRow>
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
-                <TableHead>Admission Series</TableHead>
+                <TableHead>Admission No. Series</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
