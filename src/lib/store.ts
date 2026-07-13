@@ -53,6 +53,15 @@ export type Student = {
   bloodGroup?: string;
 };
 
+export type StudentDocument = {
+  id: string;
+  student_id: string;
+  name: string;
+  file_url: string;
+  uploaded_by?: string;
+  created_at: string;
+};
+
 export type CollegePaymentInfo = {
   collegeName: string;
   accountName: string;

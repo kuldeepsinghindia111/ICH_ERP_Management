@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download, Camera } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download, Camera, FileText, Eye, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
@@ -326,6 +326,7 @@ function StudentDetail() {
         <TabsList className="bg-background border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="id-card">ID Card Preview</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 mt-6">
@@ -400,6 +401,10 @@ function StudentDetail() {
 
         <TabsContent value="id-card" className="mt-6">
           <IDCardPreview student={student} program={program} />
+        </TabsContent>
+
+        <TabsContent value="documents" className="mt-6">
+          <StudentDocuments studentId={student.id} canEdit={canEditStudents ?? false} user={user} />
         </TabsContent>
       </Tabs>
     </div>
@@ -1271,5 +1276,179 @@ function VoidPaymentDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function StudentDocuments({ studentId, canEdit, user }: { studentId: string; canEdit: boolean; user: any }) {
+  const queryClient = useQueryClient();
+  const [isUploading, setIsUploading] = useState(false);
+  const [docName, setDocName] = useState("");
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+
+  const { data: documents = [], isLoading } = useQuery({
+    queryKey: ['student_documents', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('student_documents')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!docName.trim()) throw new Error("Please enter a document name");
+      
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${studentId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('student_documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('student_documents')
+        .getPublicUrl(filePath);
+
+      // Save metadata to database
+      const { error: dbError } = await supabase
+        .from('student_documents')
+        .insert({
+          student_id: studentId,
+          name: docName,
+          file_url: publicUrl,
+          uploaded_by: user?.id
+        });
+
+      if (dbError) throw dbError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student_documents', studentId] });
+      toast.success("Document uploaded successfully");
+      setIsUploadDialogOpen(false);
+      setDocName("");
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+    onSettled: () => setIsUploading(false)
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (doc: any) => {
+      if (!confirm("Are you sure you want to delete this document?")) throw new Error("Cancelled");
+      
+      // We don't necessarily delete the file from storage right away (can be done with edge function)
+      // but we will delete the db record.
+      const { error } = await supabase.from('student_documents').delete().eq('id', doc.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student_documents', studentId] });
+      toast.success("Document deleted");
+    },
+    onError: (e: any) => {
+      if (e.message !== "Cancelled") toast.error(e.message);
+    }
+  });
+
+  const handleFileSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const file = formData.get("file") as File;
+    if (!file || file.size === 0) {
+      toast.error("Please select a file to upload");
+      return;
+    }
+    setIsUploading(true);
+    uploadMutation.mutate(file);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+        <div>
+          <CardTitle className="font-display text-lg">Document Vault</CardTitle>
+          <p className="text-xs text-muted-foreground">Securely store student documents and records.</p>
+        </div>
+        {canEdit && (
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Upload className="mr-2 h-4 w-4" /> Upload Document
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload New Document</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleFileSubmit} className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Document Name</Label>
+                  <Input 
+                    placeholder="e.g. Aadhar Card, Previous Marksheet" 
+                    value={docName} 
+                    onChange={e => setDocName(e.target.value)} 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>File</Label>
+                  <Input type="file" name="file" accept=".pdf,image/*" required />
+                  <p className="text-[10px] text-muted-foreground">Accepted formats: PDF, JPG, PNG.</p>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={isUploading}>
+                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Upload"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </CardHeader>
+      <CardContent className="pt-6">
+        {isLoading ? (
+          <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : documents.length === 0 ? (
+          <div className="text-center p-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+            No documents uploaded yet.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {documents.map((doc: any) => (
+              <div key={doc.id} className="group relative flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <h4 className="truncate text-sm font-medium" title={doc.name}>{doc.name}</h4>
+                  <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" title="View Document">
+                      <Eye className="h-4 w-4" />
+                    </a>
+                  </Button>
+                  {canEdit && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutate(doc)} title="Delete Document">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
