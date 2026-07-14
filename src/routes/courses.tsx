@@ -1,40 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Plus, Trash2, Pencil, Settings, Save, X } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, Pencil, Save, X, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useStore, formatYear } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/courses")({
   head: () => ({
     meta: [
       { title: "Courses — Imperial CMS" },
-      { name: "description", content: "Program, semester and course catalog." },
+      { name: "description", content: "Manage courses (programs) and duration." },
     ],
   }),
   component: CoursesPage,
 });
 
+type Program = {
+  id: string;
+  name: string;
+  code: string;
+  total_semesters: number;
+};
+
 function CoursesPage() {
-  const [programFilter, setProgramFilter] = useState("all");
   const { can } = useAuth();
   const canEdit = can("courses", "edit");
   const queryClient = useQueryClient();
 
-  const { data: programs = [] } = useQuery({
+  const { data: courses = [], isLoading } = useQuery<Program[]>({
     queryKey: ["programs"],
     queryFn: async () => {
       const { data, error } = await supabase.from("programs").select("*").order("name");
@@ -43,36 +52,11 @@ function CoursesPage() {
     },
   });
 
-  const { data: courses = [], isLoading } = useQuery({
-    queryKey: ["courses"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const [addingCourse, setAddingCourse] = useState<Partial<Program> | null>(null);
 
-  const removeCourse = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("courses").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      toast.success("Removed");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const grouped = useMemo(() => {
-    const filtered = programFilter === "all" ? courses : courses.filter((c) => c.program_id === programFilter);
-    const map: Record<string, typeof courses> = {};
-    filtered.forEach((c) => {
-      const key = `${c.program_id}::${c.semester}`;
-      (map[key] = map[key] ?? []).push(c);
-    });
-    return map;
-  }, [courses, programFilter]);
+  const handleAddClick = () => {
+    setAddingCourse({ name: "", code: "", total_semesters: 6 });
+  };
 
   if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading courses...</div>;
 
@@ -82,366 +66,241 @@ function CoursesPage() {
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Academics</p>
           <h1 className="font-display text-3xl font-semibold text-foreground">Course Management</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Program & semester-wise course catalog.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Manage courses and their durations.</p>
         </div>
         <div className="flex gap-2">
-          <Select value={programFilter} onValueChange={setProgramFilter}>
-            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All programs</SelectItem>
-              {programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {canEdit && <ManageProgramsDialog programs={programs} />}
-          {canEdit && <AddCourseDialog programs={programs} />}
+          {canEdit && (
+            <Button onClick={handleAddClick} disabled={addingCourse !== null}>
+              <Plus className="mr-2 h-4 w-4" /> Add course
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="space-y-6">
-        {Object.entries(grouped).length === 0 && (
-          <p className="text-sm text-muted-foreground">No courses yet.</p>
-        )}
-        {Object.entries(grouped)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([key, list]) => {
-            const [pid, sem] = key.split("::");
-            const prog = programs.find((p) => p.id === pid);
-            return (
-              <Card key={key}>
-                <CardContent className="p-0">
-                  <div className="flex items-center justify-between border-b border-border px-5 py-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">{prog?.name}</p>
-                      <h3 className="font-display text-lg font-semibold">{formatYear(Number(sem))}</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{list.length} courses</p>
-                  </div>
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-border">
-                      {list.map((c) => (
-                        <tr key={c.id}>
-                          <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{c.code}</td>
-                          <td className="px-5 py-3 font-medium">{c.title}</td>
-                          <td className="px-5 py-3 text-right text-muted-foreground">{c.credits} cr.</td>
-                          <td className="px-5 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <EditCourseDialog 
-                                course={c} 
-                                programs={programs} 
-                                canEdit={canEdit}
-                                onRemove={() => removeCourse.mutate(c.id)}
-                                isRemoving={removeCourse.isPending}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
-            );
-          })}
-      </div>
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500 border-b">
+                <tr>
+                  <th className="px-5 py-3 text-left font-medium w-32">Course Code</th>
+                  <th className="px-5 py-3 text-left font-medium">Name of the Course</th>
+                  <th className="px-5 py-3 text-left font-medium w-32 whitespace-nowrap">No. of Semesters</th>
+                  <th className="px-5 py-3 text-left font-medium w-32 whitespace-nowrap">Duration (Years)</th>
+                  <th className="px-5 py-3 text-right font-medium w-32">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {addingCourse && (
+                  <InlineCourseRow 
+                    course={addingCourse} 
+                    isNew={true} 
+                    onCancel={() => setAddingCourse(null)} 
+                  />
+                )}
+                {courses.length === 0 && !addingCourse && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                      No courses found. Add a new course to get started.
+                    </td>
+                  </tr>
+                )}
+                {courses.map((c) => (
+                  <InlineCourseRow key={c.id} course={c} isNew={false} canEdit={canEdit} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function AddCourseDialog({ programs }: { programs: any[] }) {
+function InlineCourseRow({ 
+  course, 
+  isNew, 
+  onCancel,
+  canEdit = true
+}: { 
+  course: Partial<Program>, 
+  isNew: boolean, 
+  onCancel?: () => void,
+  canEdit?: boolean
+}) {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [c, setC] = useState({
-    program_id: programs[0]?.id ?? "",
-    semester: 1, code: "", title: "", credits: 4,
-  });
+  const [isEditing, setIsEditing] = useState(isNew);
+  const [editState, setEditState] = useState(course);
 
-  const addCourse = useMutation({
-    mutationFn: async (course: any) => {
-      const { error } = await supabase.from("courses").insert([course]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      toast.success("Course added");
-      setOpen(false);
-      setC({ ...c, code: "", title: "" });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const p = programs.find((prog) => prog.id === c.program_id);
-  const maxSemesters = p ? p.total_semesters : 8;
-  const semOptions = Array.from({ length: maxSemesters }, (_, i) => i + 1);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button><Plus className="mr-1 h-4 w-4" /> Add course</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle className="font-display">Add course</DialogTitle></DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <Label>Program</Label>
-            <Select value={c.program_id} onValueChange={(v) => {
-              setC({ ...c, program_id: v, semester: 1 });
-            }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Year</Label>
-            <Select value={String(c.semester)} onValueChange={(v) => setC({ ...c, semester: Number(v) })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Course code</Label><Input value={c.code} onChange={(e) => setC({ ...c, code: e.target.value })} /></div>
-          <div><Label>Credits</Label><Input type="number" min={1} value={c.credits} onChange={(e) => setC({ ...c, credits: Number(e.target.value) })} /></div>
-          <div className="sm:col-span-2"><Label>Title</Label><Input value={c.title} onChange={(e) => setC({ ...c, title: e.target.value })} /></div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button disabled={addCourse.isPending} onClick={() => {
-            if (!c.title.trim() || !c.code.trim()) return toast.error("Code and title required");
-            addCourse.mutate(c);
-          }}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditCourseDialog({ course, programs, canEdit, onRemove, isRemoving }: { course: any, programs: any[], canEdit: boolean, onRemove: () => void, isRemoving: boolean }) {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [c, setC] = useState({ ...course });
-
-  const editCourse = useMutation({
-    mutationFn: async (updatedCourse: any) => {
-      const { id, ...updates } = updatedCourse;
-      const { error } = await supabase.from("courses").update(updates).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      toast.success("Course updated");
-      setOpen(false);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const p = programs.find((prog) => prog.id === c.program_id);
-  const maxSemesters = p ? p.total_semesters : 8;
-  const semOptions = Array.from({ length: maxSemesters }, (_, i) => i + 1);
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => {
-      setOpen(o);
-      if (o) setC({ ...course });
-    }}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" disabled={!canEdit}>
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle className="font-display">Edit course</DialogTitle></DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <Label>Program</Label>
-            <Select value={c.program_id} onValueChange={(v) => {
-              setC({ ...c, program_id: v, semester: 1 });
-            }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Year</Label>
-            <Select value={String(c.semester)} onValueChange={(v) => setC({ ...c, semester: Number(v) })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{semOptions.map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Course code</Label><Input value={c.code} onChange={(e) => setC({ ...c, code: e.target.value })} /></div>
-          <div><Label>Credits</Label><Input type="number" min={1} value={c.credits} onChange={(e) => setC({ ...c, credits: Number(e.target.value) })} /></div>
-          <div className="sm:col-span-2"><Label>Title</Label><Input value={c.title} onChange={(e) => setC({ ...c, title: e.target.value })} /></div>
-        </div>
-        <DialogFooter className="sm:justify-between">
-          <Button variant="destructive" disabled={!canEdit || isRemoving} onClick={onRemove}>
-            Delete
-          </Button>
-          <div className="flex justify-end gap-2 mt-2 sm:mt-0">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={editCourse.isPending} onClick={() => {
-              if (!c.title.trim() || !c.code.trim()) return toast.error("Code and title required");
-              editCourse.mutate(c);
-            }}>Save changes</Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-
-export function ManageProgramsDialog({ programs }: { programs: any[] }) {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [semesters, setSemesters] = useState(6);
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editCode, setEditCode] = useState("");
-  
-  const addProgram = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("programs").insert({ name, code, total_semesters: semesters });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      toast.success("Program added");
-      setAdding(false);
-      setName("");
-      setCode("");
-      setSemesters(6);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const updateProgram = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("programs").update({ name: editName, code: editCode }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      toast.success("Program updated");
-      setEditingId(null);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const removeProgram = useMutation({
-    mutationFn: async (id: string) => {
-      // Check if program is in use by students
-      const { count: studentCount, error: studentError } = await supabase
-        .from("students")
-        .select("*", { count: "exact", head: true })
-        .eq("program_id", id);
-        
-      if (studentError) throw studentError;
-      if (studentCount && studentCount > 0) {
-        throw new Error(`Cannot delete: ${studentCount} student(s) are currently enrolled in this program.`);
+  const saveMutation = useMutation({
+    mutationFn: async (data: Partial<Program>) => {
+      if (isNew) {
+        const { error } = await supabase.from("programs").insert({ 
+          name: data.name, 
+          code: data.code, 
+          total_semesters: data.total_semesters 
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("programs").update({ 
+          name: data.name, 
+          code: data.code, 
+          total_semesters: data.total_semesters 
+        }).eq("id", data.id);
+        if (error) throw error;
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      toast.success(isNew ? "Course added" : "Course updated");
+      if (isNew && onCancel) {
+        onCancel();
+      } else {
+        setIsEditing(false);
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
-      // Cascade delete fee structures and courses
-      await supabase.from("fee_structures").delete().eq("program_id", id);
-      await supabase.from("courses").delete().eq("program_id", id);
-
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from("programs").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs"] });
-      queryClient.invalidateQueries({ queryKey: ["fee_structures"] });
-      toast.success("Program removed");
+      toast.success("Course deleted");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Course Settings</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Manage Programs</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          {programs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No programs found.</p>
-          ) : (
-            <div className="space-y-2">
-              {programs.map((p) => {
-                const isEditing = editingId === p.id;
-                return (
-                <div key={p.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
-                  {isEditing ? (
-                    <div className="flex gap-2 flex-1 mr-2">
-                      <Input placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} />
-                      <Input placeholder="Code" value={editCode} onChange={e => setEditCode(e.target.value)} />
-                    </div>
-                  ) : (
-                    <div>
-                      <span className="font-medium">{p.name} ({p.code})</span>
-                    </div>
-                  )}
-                  
-                  {isEditing ? (
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => updateProgram.mutate(p.id)}>
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setEditingId(null)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        setEditingId(p.id);
-                        setEditName(p.name);
-                        setEditCode(p.code);
-                      }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => { if(confirm(`Remove ${p.name}?`)) removeProgram.mutate(p.id) }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                );
-              })}
-            </div>
-          )}
+  const handleSave = () => {
+    if (!editState.name?.trim() || !editState.code?.trim()) {
+      toast.error("Course Code and Name are required");
+      return;
+    }
+    saveMutation.mutate(editState);
+  };
 
-          {adding ? (
-            <div className="space-y-3 rounded-md border bg-muted/50 p-3 mt-4">
-              <h4 className="text-sm font-medium">New Program</h4>
-              <div className="grid gap-2">
-                <Label>Program Name (e.g. Bachelor of Arts)</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Program Code (e.g. BA)</Label>
-                <Input value={code} onChange={e => setCode(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Total Years</Label>
-                <Input type="number" value={semesters} onChange={e => setSemesters(Number(e.target.value))} />
-              </div>
-              <div className="flex gap-2 justify-end mt-2">
-                <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
-                <Button disabled={!name || !code || addProgram.isPending} onClick={() => addProgram.mutate()}>Save</Button>
-              </div>
-            </div>
-          ) : (
-            <Button variant="outline" className="w-full mt-4" onClick={() => setAdding(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Add Program
+  const handleCancel = () => {
+    if (isNew && onCancel) {
+      onCancel();
+    } else {
+      setEditState(course);
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <tr className="bg-slate-50/50">
+        <td className="px-5 py-3 align-top">
+          <Input 
+            value={editState.code} 
+            onChange={(e) => setEditState({ ...editState, code: e.target.value })} 
+            placeholder="e.g. BCA"
+            className="h-9 font-mono"
+            autoFocus={isNew}
+          />
+        </td>
+        <td className="px-5 py-3 align-top">
+          <Input 
+            value={editState.name} 
+            onChange={(e) => setEditState({ ...editState, name: e.target.value })} 
+            placeholder="e.g. Bachelor of Computer Applications"
+            className="h-9"
+          />
+        </td>
+        <td className="px-5 py-3 align-top">
+          <Input 
+            type="number" 
+            min={1} 
+            value={editState.total_semesters} 
+            onChange={(e) => setEditState({ ...editState, total_semesters: Number(e.target.value) })} 
+            className="h-9 w-24"
+          />
+        </td>
+        <td className="px-5 py-3 align-top pt-5 text-muted-foreground whitespace-nowrap">
+          {Math.ceil((editState.total_semesters || 1) / 2)} Years
+        </td>
+        <td className="px-5 py-3 text-right align-top">
+          <div className="flex justify-end gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-green-600 hover:text-green-700 hover:bg-green-50"
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             </Button>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-slate-500 hover:text-slate-700"
+              onClick={handleCancel}
+              disabled={saveMutation.isPending}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="group hover:bg-slate-50/50 transition-colors">
+      <td className="px-5 py-3 font-mono text-muted-foreground">{course.code}</td>
+      <td className="px-5 py-3 font-medium">{course.name}</td>
+      <td className="px-5 py-3">{course.total_semesters}</td>
+      <td className="px-5 py-3 text-muted-foreground">{Math.ceil((course.total_semesters || 1) / 2)} Years</td>
+      <td className="px-5 py-3 text-right">
+        {canEdit ? (
+          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              onClick={() => setIsEditing(true)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete the course <strong>{course.name}</strong>? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => course.id && deleteMutation.mutate(course.id)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-xs">Read-only</span>
+        )}
+      </td>
+    </tr>
   );
 }
