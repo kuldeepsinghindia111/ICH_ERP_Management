@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/students")({
+export const Route = createFileRoute("/students/")({
   head: () => ({
     meta: [
       { title: "Student Management — Imperial CMS" },
@@ -209,20 +209,22 @@ function StudentsPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           {canEdit && (
-                            <a 
-                              href={`/students/${s.id}`}
+                            <Link 
+                              to="/students/$studentId" 
+                              params={{ studentId: s.id }}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               title="View Full Profile"
                             >
                               <Pencil className="h-4 w-4" />
-                            </a>
+                            </Link>
                           )}
-                          <a 
-                            href={`/students/${s.id}`}
+                          <Link 
+                            to="/students/$studentId" 
+                            params={{ studentId: s.id }}
                             className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
                           >
                             View Profile
-                          </a>
+                          </Link>
                         </div>
                       </td>
                     </tr>
