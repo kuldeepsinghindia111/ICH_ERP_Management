@@ -150,6 +150,9 @@ export function CollectPaymentDialog({
   const [amount, setAmount] = useState("");
   const [concession, setConcession] = useState("");
   const [scholarship, setScholarship] = useState("");
+  const [lateFee, setLateFee] = useState("");
+  const [fine, setFine] = useState("");
+  const [otherCharge, setOtherCharge] = useState("");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
@@ -174,6 +177,9 @@ export function CollectPaymentDialog({
       setAmount(String(Math.max(sum.balance, 0)));
       setConcession("");
       setScholarship("");
+      setLateFee("");
+      setFine("");
+      setOtherCharge("");
     }
   }, [open, sem]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -254,15 +260,37 @@ export function CollectPaymentDialog({
         const { error: adjErr } = await supabase.from('fee_adjustments').insert(adjustmentsToInsert);
         if (adjErr) throw adjErr;
       }
+
+      const chargesToInsert = [];
+      if (data.lateFee > 0) {
+        chargesToInsert.push({ student_id: data.studentId, semester: data.semester, head: "late", amount: data.lateFee, label: "Added during payment" });
+      }
+      if (data.fine > 0) {
+        chargesToInsert.push({ student_id: data.studentId, semester: data.semester, head: "fine", amount: data.fine, label: "Added during payment" });
+      }
+      if (data.otherCharge > 0) {
+        chargesToInsert.push({ student_id: data.studentId, semester: data.semester, head: "other", amount: data.otherCharge, label: "Added during payment" });
+      }
+      if (chargesToInsert.length > 0) {
+        const { error: chgErr } = await supabase.from('fee_charges').insert(chargesToInsert);
+        if (chgErr) throw chgErr;
+      }
       
       if (userRole && student) {
+        let summaryParts = [`Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})`];
+        if (data.concession) summaryParts.push(`+ ₹${data.concession} Concession`);
+        if (data.scholarship) summaryParts.push(`+ ₹${data.scholarship} Scholarship`);
+        if (data.lateFee) summaryParts.push(`+ ₹${data.lateFee} Late Fee`);
+        if (data.fine) summaryParts.push(`+ ₹${data.fine} Fine`);
+        if (data.otherCharge) summaryParts.push(`+ ₹${data.otherCharge} Other Charges`);
+
         await supabase.from('audit_logs').insert([{
           actor_user_id: userRole.id,
           actor_name: userRole.name,
           actor_code: userRole.user_code,
           actor_role: userRole.role,
           event: 'payment.collected',
-          summary: `Collected ₹${data.amount} via ${data.method.toUpperCase()} for ${student.name} (Sem ${data.semester})` + (data.concession ? ` + ₹${data.concession} Concession` : '') + (data.scholarship ? ` + ₹${data.scholarship} Scholarship` : ''),
+          summary: summaryParts.join(" "),
           student_id: data.studentId,
         }]);
       }
@@ -271,6 +299,7 @@ export function CollectPaymentDialog({
       toast.success("Payment recorded successfully");
       queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
       queryClient.invalidateQueries({ queryKey: ['fee_adjustments'] });
+      queryClient.invalidateQueries({ queryKey: ['fee_charges'] });
       // Generate receipt
       const amt = Number(amount);
       const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
@@ -291,6 +320,7 @@ export function CollectPaymentDialog({
 
   const resetForm = () => {
     setReference(""); setNote(""); setAmount(""); setTouched({});
+    setLateFee(""); setFine(""); setOtherCharge("");
   };
 
   const closeAll = () => {
@@ -303,9 +333,12 @@ export function CollectPaymentDialog({
     const amt = Number(amount);
     const conc = Number(concession);
     const schol = Number(scholarship);
+    const lf = Number(lateFee);
+    const f = Number(fine);
+    const oc = Number(otherCharge);
     
-    if ((!amt || amt <= 0) && (!conc || conc <= 0) && (!schol || schol <= 0)) {
-      return toast.error("Enter a valid payment, concession, or scholarship amount");
+    if ((!amt || amt <= 0) && (!conc || conc <= 0) && (!schol || schol <= 0) && (!lf || lf <= 0) && (!f || f <= 0) && (!oc || oc <= 0)) {
+      return toast.error("Enter a valid payment, concession, scholarship, or charge amount");
     }
     
     const hasPayment = amt > 0;
@@ -327,7 +360,10 @@ export function CollectPaymentDialog({
       note: note || undefined, 
       paidAt: iso,
       concession: conc,
-      scholarship: schol
+      scholarship: schol,
+      lateFee: lf,
+      fine: f,
+      otherCharge: oc
     });
   };
 
@@ -352,7 +388,7 @@ export function CollectPaymentDialog({
             </DialogHeader>
 
             {sum && (
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
+              <div className="grid grid-cols-3 gap-2 mt-4">
                 <div className="rounded-md bg-muted/60 p-2 text-center">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Billed</p>
                   <p className="mt-1 font-semibold text-sm">{inr(sum.netPayable)}</p>
@@ -366,18 +402,6 @@ export function CollectPaymentDialog({
                   <p className={`mt-1 font-semibold text-sm ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
                     {inr(sum.balance)}
                   </p>
-                </div>
-                <div className="rounded-md bg-muted/60 p-2 text-center">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Late Fees</p>
-                  <p className="mt-1 font-semibold text-sm text-muted-foreground">{inr(sum.totalLate)}</p>
-                </div>
-                <div className="rounded-md bg-muted/60 p-2 text-center">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Fine</p>
-                  <p className="mt-1 font-semibold text-sm text-muted-foreground">{inr(sum.totalFine)}</p>
-                </div>
-                <div className="rounded-md bg-muted/60 p-2 text-center">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Other</p>
-                  <p className="mt-1 font-semibold text-sm text-muted-foreground">{inr(sum.totalOther)}</p>
                 </div>
               </div>
             )}
@@ -424,6 +448,20 @@ export function CollectPaymentDialog({
                 <div>
                   <Label>Scholarship (INR)</Label>
                   <Input type="number" min={0} step="0.01" value={scholarship} onChange={(e) => setScholarship(e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label>Late Fee (INR)</Label>
+                  <Input type="number" min={0} step="0.01" value={lateFee} onChange={(e) => setLateFee(e.target.value)} placeholder="0.00" />
+                </div>
+                <div>
+                  <Label>Fine (INR)</Label>
+                  <Input type="number" min={0} step="0.01" value={fine} onChange={(e) => setFine(e.target.value)} placeholder="0.00" />
+                </div>
+                <div>
+                  <Label>Other (INR)</Label>
+                  <Input type="number" min={0} step="0.01" value={otherCharge} onChange={(e) => setOtherCharge(e.target.value)} placeholder="0.00" />
                 </div>
               </div>
               <div>
