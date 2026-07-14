@@ -209,22 +209,20 @@ function StudentsPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           {canEdit && (
-                            <Link 
-                              to="/students/$studentId" 
-                              params={{ studentId: s.id }}
+                            <a 
+                              href={`/students/${s.id}`}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               title="View Full Profile"
                             >
                               <Pencil className="h-4 w-4" />
-                            </Link>
+                            </a>
                           )}
-                          <Link 
-                            to="/students/$studentId" 
-                            params={{ studentId: s.id }}
+                          <a 
+                            href={`/students/${s.id}`}
                             className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
                           >
                             View Profile
-                          </Link>
+                          </a>
                         </div>
                       </td>
                     </tr>
