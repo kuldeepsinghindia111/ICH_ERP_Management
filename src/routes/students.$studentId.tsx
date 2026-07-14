@@ -462,7 +462,7 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
           
           {/* Header */}
           <div className="bg-primary text-primary-foreground p-4 text-center">
-            <h2 className="font-display font-bold text-lg tracking-tight leading-tight">IMPERIAL COLLEGE</h2>
+            <h2 className="font-display font-bold text-lg tracking-tight leading-tight">IMPERIAL COLLEGE, HISAR</h2>
             <p className="text-[10px] opacity-90 font-medium tracking-widest mt-1 uppercase">Student Identity Card</p>
           </div>
 
@@ -506,7 +506,7 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
 
           {/* Footer */}
           <div className="bg-slate-900 text-white p-2 text-center">
-            <p className="text-[9px]">IF FOUND, RETURN TO IMPERIAL COLLEGE ADMINISTRATION</p>
+            <p className="text-[9px]">IF FOUND, RETURN TO IMPERIAL COLLEGE, Dabra Road, Contact No. 90504228858</p>
           </div>
         </div>
       </CardContent>
