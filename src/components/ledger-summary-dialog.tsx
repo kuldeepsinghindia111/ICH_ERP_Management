@@ -17,7 +17,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
           <div className="rounded-md bg-muted/60 p-3 text-center">
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Billed</p>
             <p className="mt-1 font-display text-lg font-semibold">{inr(sum.netPayable)}</p>
@@ -31,6 +31,18 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
             <p className={`mt-1 font-display text-lg font-semibold ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
               {inr(sum.balance)}
             </p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-3 text-center">
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Late Fees</p>
+            <p className="mt-1 font-display text-lg font-semibold text-muted-foreground">{inr(sum.totalLate)}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-3 text-center">
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Fine</p>
+            <p className="mt-1 font-display text-lg font-semibold text-muted-foreground">{inr(sum.totalFine)}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-3 text-center">
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Other</p>
+            <p className="mt-1 font-display text-lg font-semibold text-muted-foreground">{inr(sum.totalOther)}</p>
           </div>
         </div>
 

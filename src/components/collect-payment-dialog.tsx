@@ -350,6 +350,37 @@ export function CollectPaymentDialog({
                 Record a fee payment for <strong>{student.name}</strong>.
               </DialogDescription>
             </DialogHeader>
+
+            {sum && (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
+                <div className="rounded-md bg-muted/60 p-2 text-center">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Billed</p>
+                  <p className="mt-1 font-semibold text-sm">{inr(sum.netPayable)}</p>
+                </div>
+                <div className="rounded-md bg-muted/60 p-2 text-center">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Paid</p>
+                  <p className="mt-1 font-semibold text-sm text-success">{inr(sum.totalPaid)}</p>
+                </div>
+                <div className="rounded-md bg-muted/60 p-2 text-center">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</p>
+                  <p className={`mt-1 font-semibold text-sm ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
+                    {inr(sum.balance)}
+                  </p>
+                </div>
+                <div className="rounded-md bg-muted/60 p-2 text-center">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Late Fees</p>
+                  <p className="mt-1 font-semibold text-sm text-muted-foreground">{inr(sum.totalLate)}</p>
+                </div>
+                <div className="rounded-md bg-muted/60 p-2 text-center">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Fine</p>
+                  <p className="mt-1 font-semibold text-sm text-muted-foreground">{inr(sum.totalFine)}</p>
+                </div>
+                <div className="rounded-md bg-muted/60 p-2 text-center">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Other</p>
+                  <p className="mt-1 font-semibold text-sm text-muted-foreground">{inr(sum.totalOther)}</p>
+                </div>
+              </div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
