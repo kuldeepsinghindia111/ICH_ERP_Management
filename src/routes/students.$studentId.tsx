@@ -34,7 +34,7 @@ export const Route = createFileRoute("/students/$studentId")({
   ),
 });
 
-function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean }) {
+function usePhotoUpload(student: any, canEdit: boolean) {
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
 
@@ -49,7 +49,6 @@ function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean })
 
     try {
       setIsUploading(true);
-      // 1. Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${student.id}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -60,12 +59,10 @@ function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean })
 
       if (uploadError) throw uploadError;
 
-      // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('student_photos')
         .getPublicUrl(filePath);
 
-      // 3. Update student record
       const { error: updateError } = await supabase
         .from('students')
         .update({ photo_url: publicUrl })
@@ -81,6 +78,12 @@ function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean })
       setIsUploading(false);
     }
   };
+
+  return { handleFileChange, isUploading };
+}
+
+function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean }) {
+  const { handleFileChange, isUploading } = usePhotoUpload(student, canEdit);
 
   return (
     <div className="relative group h-16 w-16 flex-shrink-0">
@@ -112,6 +115,28 @@ function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean })
           />
         </label>
       )}
+    </div>
+  );
+}
+
+function PhotoUploadButton({ student, canEdit }: { student: any, canEdit: boolean }) {
+  const { handleFileChange, isUploading } = usePhotoUpload(student, canEdit);
+
+  if (!canEdit) return null;
+
+  return (
+    <div className="relative">
+      <Button variant="outline" size="sm" disabled={isUploading}>
+        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+        {isUploading ? "Uploading..." : "Upload Photo"}
+      </Button>
+      <input 
+        type="file" 
+        accept="image/*" 
+        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+        onChange={handleFileChange} 
+        disabled={isUploading}
+      />
     </div>
   );
 }
@@ -248,7 +273,7 @@ function StudentDetail() {
   const totals = studentTotals(student.id, currentSemester, { charges, adjustments, payments, structures: feeStructures, student });
   const activeSemValue = activeSem ?? String(currentSemester);
 
-  const semesters = Array.from({ length: program?.total_semesters ?? 6 }, (_, i) => i + 1);
+  const semesters = Array.from({ length: Math.ceil((program?.total_semesters ?? 6) / 2) }, (_, i) => i + 1);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -311,7 +336,10 @@ function StudentDetail() {
                 <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
               )}
               {canEditStudents && (
-                <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
+                <div className="flex gap-2">
+                  <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
+                  <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
+                </div>
               )}
             </div>
           </CardContent>
