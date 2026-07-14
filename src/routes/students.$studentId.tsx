@@ -458,7 +458,7 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
       </CardHeader>
       <CardContent className="flex justify-center py-10 bg-slate-50 rounded-b-lg border-t">
         {/* The ID Card Visual Wrapper */}
-        <div className="w-[300px] h-[450px] bg-white rounded-xl shadow-xl border overflow-hidden flex flex-col relative print:shadow-none print:border-black">
+        <div className="w-[300px] min-h-[470px] bg-white rounded-xl shadow-xl border overflow-hidden flex flex-col relative print:shadow-none print:border-black">
           
           {/* Header */}
           <div className="bg-primary text-primary-foreground p-4 text-center">
