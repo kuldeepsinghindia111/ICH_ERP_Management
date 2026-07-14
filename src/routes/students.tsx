@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -209,16 +209,12 @@ function StudentsPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           {canEdit && (
-                            <Button variant="ghost" size="icon" title="View Full Profile" asChild>
-                              <Link to="/students/$studentId" params={{ studentId: s.id }}>
-                                <Pencil className="h-4 w-4" />
-                              </Link>
+                            <Button variant="ghost" size="icon" title="View Full Profile" onClick={() => navigate({ to: "/students/$studentId", params: { studentId: s.id } })}>
+                              <Pencil className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button variant="outline" size="sm" asChild>
-                            <Link to="/students/$studentId" params={{ studentId: s.id }}>
-                              View Profile
-                            </Link>
+                          <Button variant="outline" size="sm" onClick={() => navigate({ to: "/students/$studentId", params: { studentId: s.id } })}>
+                            View Profile
                           </Button>
                         </div>
                       </td>
