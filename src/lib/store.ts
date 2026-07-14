@@ -838,6 +838,10 @@ export function semesterSummary(
     prescribedFee = structs.reduce((sum, s) => sum + Number(s.amount), 0);
   }
 
+  const totalLate = charges.filter((c) => c.head === "late").reduce((s, c) => s + c.amount, 0);
+  const totalFine = charges.filter((c) => c.head === "fine").reduce((s, c) => s + c.amount, 0);
+  const totalOther = charges.filter((c) => c.head === "other").reduce((s, c) => s + c.amount, 0);
+  
   const manualCharges = charges.reduce((s, c) => s + c.amount, 0);
   const totalCharged = prescribedFee + manualCharges;
 
@@ -847,7 +851,7 @@ export function semesterSummary(
   const netPayable = totalCharged - totalAdjustment;
   const totalPaid = payments.filter((p) => !p.voided).reduce((s, p) => s + p.amount, 0);
   const balance = netPayable - totalPaid;
-  return { charges, adjustments, payments, prescribedFee, manualCharges, totalCharged, totalConcession, totalScholarship, totalAdjustment, netPayable, totalPaid, balance };
+  return { charges, adjustments, payments, prescribedFee, manualCharges, totalLate, totalFine, totalOther, totalCharged, totalConcession, totalScholarship, totalAdjustment, netPayable, totalPaid, balance };
 }
 
 export function studentTotals(
@@ -855,6 +859,7 @@ export function studentTotals(
   data: Pick<State, "charges" | "adjustments" | "payments"> & { structures?: any[], student?: any },
 ) {
   let netPayable = 0, totalPaid = 0, balance = 0, totalCharged = 0, totalConcession = 0, totalScholarship = 0;
+  let totalLate = 0, totalFine = 0, totalOther = 0;
   const allCharges: any[] = [];
   const allAdjustments: any[] = [];
   const allPayments: any[] = [];
@@ -863,12 +868,14 @@ export function studentTotals(
     const sum = semesterSummary(studentId, s, data);
     netPayable += sum.netPayable; totalPaid += sum.totalPaid; balance += sum.balance;
     totalCharged += sum.totalCharged; totalConcession += sum.totalConcession; totalScholarship += sum.totalScholarship;
+    totalLate += sum.totalLate; totalFine += sum.totalFine; totalOther += sum.totalOther;
     allCharges.push(...sum.charges);
     allAdjustments.push(...sum.adjustments);
     allPayments.push(...sum.payments);
   }
   return { 
     netPayable, totalPaid, balance, totalCharged, totalConcession, totalScholarship,
+    totalLate, totalFine, totalOther,
     charges: allCharges,
     adjustments: allAdjustments,
     payments: allPayments

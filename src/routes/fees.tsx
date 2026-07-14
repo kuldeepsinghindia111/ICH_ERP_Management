@@ -244,6 +244,9 @@ function FeesPage() {
                   <th className="px-4 py-3 font-medium">Course</th>
                   <th className="px-4 py-3 font-medium">Year</th>
                   <th className="px-4 py-3 text-right font-medium">Total Fees</th>
+                  <th className="px-4 py-3 text-right font-medium">Late Fees</th>
+                  <th className="px-4 py-3 text-right font-medium">Fine</th>
+                  <th className="px-4 py-3 text-right font-medium">Other</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
                   <th className="px-4 py-3 text-right font-medium">Net</th>
@@ -254,7 +257,7 @@ function FeesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 && (
-                  <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
+                  <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
                 {pageRows.map(({ st, sum }) => (
                   <tr key={st.id} className="hover:bg-accent/40">
@@ -264,6 +267,9 @@ function FeesPage() {
                     <td className="px-4 py-3">{programs.find((p: any) => p.id === st.program_id)?.name}</td>
                     <td className="px-4 py-3">{formatYear(st.current_semester)}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
+                    <td className="px-4 py-3 text-right">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
+                    <td className="px-4 py-3 text-right">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
+                    <td className="px-4 py-3 text-right">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
                     <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
                     <td className="px-4 py-3 text-right font-medium">{inr(sum.netPayable)}</td>
