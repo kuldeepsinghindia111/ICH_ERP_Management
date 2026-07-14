@@ -392,7 +392,7 @@ function StudentDetail() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-lg">Semester fee ledger</CardTitle>
+          <CardTitle className="font-display text-lg">Fee Ledger</CardTitle>
           <p className="text-xs text-muted-foreground">
             Charges, concessions / scholarships and payments per semester.
           </p>
