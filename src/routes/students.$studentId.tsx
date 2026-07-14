@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { StudentFormDialog } from "@/components/StudentFormDialog";
 
 
 export const Route = createFileRoute("/students/$studentId")({
@@ -308,6 +309,9 @@ function StudentDetail() {
                 </Select>
               ) : (
                 <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
+              )}
+              {canEditStudents && (
+                <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
               )}
             </div>
           </CardContent>
