@@ -481,6 +481,7 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
           <div className="flex-1 px-6 pt-4 pb-6 flex flex-col items-center text-center">
             <h3 className="font-bold text-lg leading-tight uppercase">{student.name}</h3>
             <p className="text-sm font-semibold text-primary mt-1">{program?.name || "Program"}</p>
+            <p className="text-xs font-medium text-muted-foreground mt-0.5">Admission No: {student.admission_no}</p>
             
             <div className="w-full h-px bg-slate-100 my-3"></div>
 
