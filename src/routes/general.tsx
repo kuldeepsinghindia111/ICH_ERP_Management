@@ -37,7 +37,7 @@ export const Route = createFileRoute("/general")({
   )
 });
 
-const FEE_COLUMNS = ["Admission Fee", "Tuition Fee", "Library Fee", "Exam Fee", "Other Fees"];
+const FEE_COLUMNS = ["Admission Fee", "Tuition Fee", "Library Fee", "Exam Fee", "Late Fees", "Fine", "Other Charges"];
 
 function GeneralManagementPage() {
   const { can } = useAuth();
