@@ -5,17 +5,14 @@ import {
   Wallet,
   AlertTriangle,
   TrendingUp,
-  Users,
-  BookOpen,
   ArrowRight,
 } from "lucide-react";
-
-import { useStore, studentTotals, inr, formatYear } from "@/lib/store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+
+import { inr } from "@/lib/store";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,13 +25,23 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const students = useStore((s) => s.students);
-  const programs = useStore((s) => s.programs);
-  const faculty = useStore((s) => s.faculty);
-  const courses = useStore((s) => s.courses);
-  const charges = useStore((s) => s.charges);
-  const adjustments = useStore((s) => s.adjustments);
-  const payments = useStore((s) => s.payments);
+  const { data: programs = [] } = useQuery({
+    queryKey: ['programs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const { data: feeStructures = [] } = useQuery({
     queryKey: ['fee_structures'],
@@ -45,37 +52,102 @@ function Dashboard() {
     }
   });
 
-  const totals = useMemo(() => {
-    let netPayable = 0, totalPaid = 0, balance = 0;
+  const { data: feeCharges = [] } = useQuery({
+    queryKey: ['fee_charges'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_charges').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: feeAdjustments = [] } = useQuery({
+    queryKey: ['fee_adjustments'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_adjustments').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: feePayments = [] } = useQuery({
+    queryKey: ['fee_payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('fee_payments').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const isLoading = loadingStudents;
+
+  const { pending, totals } = useMemo(() => {
+    let netPayableAll = 0, totalPaidAll = 0, balanceAll = 0;
     let studentsWithDues = 0;
+    
+    const pendingList: any[] = [];
+
     students.forEach((st) => {
-      const t = studentTotals(st.id, st.currentSemester, { charges, adjustments, payments, structures: feeStructures, student: st });
-      netPayable += t.netPayable;
-      totalPaid += t.totalPaid;
-      balance += t.balance;
-      if (t.balance > 0) studentsWithDues++;
+      const stId = st.id;
+      const currentSem = st.current_semester || 1;
+      
+      let stNetPayable = 0;
+      let stTotalPaid = 0;
+      let stBalance = 0;
+
+      for (let s = 1; s <= currentSem; s++) {
+        const charges = feeCharges.filter(c => c.student_id === stId && c.semester === s);
+        const adjustments = feeAdjustments.filter(a => a.student_id === stId && a.semester === s);
+        const payments = feePayments.filter(p => p.student_id === stId && p.semester === s);
+        
+        let prescribedFee = 0;
+        const structs = feeStructures.filter(fs => fs.program_id === st.program_id && fs.semester === s);
+        prescribedFee = structs.reduce((sum, fs) => sum + Number(fs.amount), 0);
+        
+        const manualCharges = charges.reduce((sum, c) => sum + Number(c.amount), 0);
+        const totalCharged = prescribedFee + manualCharges;
+        
+        const totalConcession = adjustments.filter(a => a.type === "concession").reduce((sum, a) => sum + Number(a.amount), 0);
+        const totalScholarship = adjustments.filter(a => a.type === "scholarship").reduce((sum, a) => sum + Number(a.amount), 0);
+        const totalAdjustment = totalConcession + totalScholarship;
+        
+        const netPayable = totalCharged - totalAdjustment;
+        const totalPaid = payments.filter(p => !p.voided).reduce((sum, p) => sum + Number(p.amount), 0);
+        const balance = netPayable - totalPaid;
+        
+        stNetPayable += netPayable;
+        stTotalPaid += totalPaid;
+        stBalance += balance;
+      }
+
+      netPayableAll += stNetPayable;
+      totalPaidAll += stTotalPaid;
+      balanceAll += stBalance;
+
+      if (stBalance > 0) {
+        studentsWithDues++;
+        pendingList.push({
+          student: st,
+          balance: stBalance,
+          netPayable: stNetPayable
+        });
+      }
     });
-    return { netPayable, totalPaid, balance, studentsWithDues };
-  }, [students, charges, adjustments, payments, feeStructures]);
+
+    pendingList.sort((a, b) => b.balance - a.balance);
+    const topPending = pendingList.slice(0, 5);
+
+    return {
+      totals: { netPayable: netPayableAll, totalPaid: totalPaidAll, balance: balanceAll, studentsWithDues },
+      pending: topPending
+    };
+  }, [students, feeCharges, feeAdjustments, feePayments, feeStructures]);
 
   const collectionRate = totals.netPayable
     ? Math.round((totals.totalPaid / totals.netPayable) * 100)
     : 0;
 
-  const recentPayments = [...payments]
-    .sort((a, b) => (a.paidAt < b.paidAt ? 1 : -1))
-    .slice(0, 6);
-
-  const pending = useMemo(() => {
-    return students
-      .map((st) => ({
-        st,
-        totals: studentTotals(st.id, st.currentSemester, { charges, adjustments, payments, structures: feeStructures, student: st }),
-      }))
-      .filter((r) => r.totals.balance > 0)
-      .sort((a, b) => b.totals.balance - a.totals.balance)
-      .slice(0, 5);
-  }, [students, charges, adjustments, payments, feeStructures]);
+  if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading dashboard...</div>;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
@@ -86,7 +158,7 @@ function Dashboard() {
             Welcome back, Registrar's Office
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            A snapshot of enrolment, collections and pending dues across all programs.
+            A snapshot of enrolment, collections and pending dues across all courses.
           </p>
         </div>
         <div className="flex gap-2">
@@ -100,7 +172,7 @@ function Dashboard() {
           icon={<GraduationCap className="h-4 w-4" />}
           label="Active students"
           value={students.filter((s) => s.status === "active").length.toString()}
-          hint={`${programs.length} programs`}
+          hint={`${programs.length} courses`}
         />
         <StatCard
           icon={<Wallet className="h-4 w-4" />}
@@ -140,29 +212,33 @@ function Dashboard() {
               {pending.length === 0 && (
                 <div className="p-6 text-sm text-muted-foreground">All students are fully paid.</div>
               )}
-              {pending.map(({ st, totals: t }) => {
-                const program = programs.find((p) => p.id === st.programId);
+              {pending.map(({ student, balance }) => {
+                const program = programs.find((p) => p.id === student.program_id);
                 return (
                   <Link
-                    key={st.id}
+                    key={student.id}
                     to="/students/$studentId"
-                    params={{ studentId: st.id }}
+                    params={{ studentId: student.id }}
                     className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-accent/40"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-medium text-primary">
-                        {st.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-                      </div>
+                      {student.photo_url ? (
+                        <img src={student.photo_url} alt="" className="h-10 w-10 rounded-full object-cover border" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
+                          {student.name.split(" ").map((p: string) => p[0]).slice(0, 2).join("")}
+                        </div>
+                      )}
                       <div>
-                        <p className="font-medium text-foreground">{st.name}</p>
+                        <p className="font-medium">{student.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {program?.name} · {formatYear(st.currentSemester)} · Roll {st.rollNumber || "—"}
+                          {program?.name} • Sem {student.current_semester}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-display text-lg font-semibold text-destructive">{inr(t.balance)}</p>
-                      <p className="text-xs text-muted-foreground">Paid {inr(t.totalPaid)}</p>
+                      <p className="font-medium text-destructive">{inr(balance)}</p>
+                      <p className="text-xs text-muted-foreground">due</p>
                     </div>
                   </Link>
                 );
@@ -170,106 +246,46 @@ function Dashboard() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display text-lg">Recent payments</CardTitle>
-            <p className="text-xs text-muted-foreground">Last transactions recorded</p>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {recentPayments.length === 0 && (
-                <div className="p-6 text-sm text-muted-foreground">No payments yet.</div>
-              )}
-              {recentPayments.map((p) => {
-                const st = students.find((s) => s.id === p.studentId);
-                return (
-                  <div key={p.id} className="flex items-center justify-between p-4">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{st?.name ?? "Unknown"}</p>
-                      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                        {formatYear(p.semester)} · {p.method}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-success">{inr(p.amount)}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {new Date(p.paidAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <MiniCard icon={<Users className="h-4 w-4" />} label="Faculty" value={faculty.length} to="/faculty" />
-        <MiniCard icon={<BookOpen className="h-4 w-4" />} label="Courses" value={courses.length} to="/courses" />
-        <MiniCard
-          icon={<GraduationCap className="h-4 w-4" />}
-          label="Programs offered"
-          value={programs.length}
-          to="/students"
-        />
       </div>
     </div>
   );
 }
 
 function StatCard({
-  icon,
   label,
   value,
+  icon,
   hint,
   tone = "default",
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
+  icon: React.ReactNode;
   hint?: string;
   tone?: "default" | "success" | "warning";
 }) {
-  const toneClass =
-    tone === "success"
-      ? "text-success"
-      : tone === "warning"
-      ? "text-warning"
-      : "text-foreground";
+  const colors = {
+    default: "text-foreground",
+    success: "text-emerald-600",
+    warning: "text-amber-600",
+  };
+  const iconColors = {
+    default: "text-muted-foreground",
+    success: "text-emerald-500",
+    warning: "text-amber-500",
+  };
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="flex items-center justify-between text-muted-foreground">
-          <span className="text-xs uppercase tracking-widest">{label}</span>
-          <span className="rounded-md bg-secondary p-1.5 text-secondary-foreground">{icon}</span>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <div className={iconColors[tone]}>{icon}</div>
         </div>
-        <p className={`mt-3 font-display text-2xl font-semibold ${toneClass}`}>{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        <div className="mt-3">
+          <p className={`text-2xl font-bold font-display tracking-tight ${colors[tone]}`}>{value}</p>
+          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        </div>
       </CardContent>
     </Card>
-  );
-}
-
-function MiniCard({
-  icon, label, value, to,
-}: { icon: React.ReactNode; label: string; value: number; to: string }) {
-  return (
-    <Link
-      to={to}
-      className="group flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
-    >
-      <div className="flex items-center gap-3">
-        <span className="rounded-md bg-primary/10 p-2 text-primary">{icon}</span>
-        <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">{label}</p>
-          <p className="font-display text-xl font-semibold text-foreground">{value}</p>
-        </div>
-      </div>
-      <Badge variant="secondary" className="opacity-0 transition-opacity group-hover:opacity-100">
-        Open
-      </Badge>
-    </Link>
   );
 }
