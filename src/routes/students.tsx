@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -209,13 +209,22 @@ function StudentsPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           {canEdit && (
-                            <Button variant="ghost" size="icon" title="View Full Profile" onClick={() => navigate({ to: "/students/$studentId", params: { studentId: s.id } })}>
+                            <Link 
+                              to="/students/$studentId" 
+                              params={{ studentId: s.id }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
+                              title="View Full Profile"
+                            >
                               <Pencil className="h-4 w-4" />
-                            </Button>
+                            </Link>
                           )}
-                          <Button variant="outline" size="sm" onClick={() => navigate({ to: "/students/$studentId", params: { studentId: s.id } })}>
+                          <Link 
+                            to="/students/$studentId" 
+                            params={{ studentId: s.id }}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                          >
                             View Profile
-                          </Button>
+                          </Link>
                         </div>
                       </td>
                     </tr>
