@@ -257,7 +257,7 @@ function InlineCourseRow({
       <td className="px-5 py-3 text-muted-foreground">{Math.ceil((course.total_semesters || 1) / 2)} Years</td>
       <td className="px-5 py-3 text-right">
         {canEdit ? (
-          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex justify-end gap-1">
             <Button 
               variant="ghost" 
               size="icon" 
