@@ -102,6 +102,10 @@ function FacultyProfilePage() {
                 <span className="text-muted-foreground">Blood Group</span>
                 <span className="font-medium">{faculty.blood_group || "—"}</span>
               </div>
+              <div className="grid grid-cols-2">
+                <span className="text-muted-foreground">Aadhar No.</span>
+                <span className="font-medium">{faculty.aadhar_number || "—"}</span>
+              </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">Address</span>
                 <span className="font-medium mt-1">{faculty.address || "—"}</span>
@@ -265,6 +269,7 @@ function EditFacultyFullDialog({ faculty, onRemove, isRemoving }: { faculty: any
           </div>
           <div><Label>Date of Birth</Label><Input type="date" value={f.dob || ""} onChange={(e) => setF({ ...f, dob: e.target.value })} /></div>
           <div><Label>Blood Group</Label><Input value={f.blood_group || ""} onChange={(e) => setF({ ...f, blood_group: e.target.value })} /></div>
+          <div><Label>Aadhar No.</Label><Input value={f.aadhar_number || ""} onChange={(e) => setF({ ...f, aadhar_number: e.target.value })} /></div>
           <div className="sm:col-span-2"><Label>Address</Label><Input value={f.address || ""} onChange={(e) => setF({ ...f, address: e.target.value })} /></div>
         </div>
 

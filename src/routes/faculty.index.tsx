@@ -117,7 +117,8 @@ function AddFacultyDialog() {
     employee_id: "",
     gender: "male",
     status: "Active",
-    role_type: "Teaching"
+    role_type: "Teaching",
+    aadhar_number: ""
   });
 
   const addFaculty = useMutation({
@@ -129,7 +130,7 @@ function AddFacultyDialog() {
       queryClient.invalidateQueries({ queryKey: ["faculty"] });
       toast.success("Faculty added");
       setOpen(false);
-      setF({ name: "", email: "", department: "", designation: "", phone: "", employee_id: "", gender: "male", status: "Active", role_type: "Teaching" });
+      setF({ name: "", email: "", department: "", designation: "", phone: "", employee_id: "", gender: "male", status: "Active", role_type: "Teaching", aadhar_number: "" });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -148,6 +149,7 @@ function AddFacultyDialog() {
           <div><Label>Designation</Label><Input value={f.designation} onChange={(e) => setF({ ...f, designation: e.target.value })} /></div>
           <div><Label>Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
           <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
+          <div><Label>Aadhar No.</Label><Input value={f.aadhar_number} onChange={(e) => setF({ ...f, aadhar_number: e.target.value })} /></div>
           <div>
             <Label>Role Type</Label>
             <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={f.role_type} onChange={(e) => setF({ ...f, role_type: e.target.value })}>
