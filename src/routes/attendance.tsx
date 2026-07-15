@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -68,7 +68,8 @@ function AttendancePage() {
   });
 
   // Sync db attendance to local state when db data changes
-  useMemo(() => {
+  useEffect(() => {
+    if (!attendanceRecords) return;
     const newLocal: Record<string, string> = {};
     attendanceRecords.forEach((r: any) => {
       newLocal[r.student_id] = r.status;
