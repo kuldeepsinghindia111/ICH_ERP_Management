@@ -82,7 +82,7 @@ export const COLLEGE_PAYMENT_INFO: CollegePaymentInfo = {
   ifsc: "HDFC0001234",
   bankName: "HDFC Bank — Hisar Branch",
   branch: "Hisar, Haryana, India",
-  upiId: "imperial.principal@hdfcbank",
+  upiId: "hisarimperial@gmail.com",
   upiName: "Imperial College Hisar",
   supportEmail: "hisarimperial@gmail.com",
   supportPhone: "+91 98100 00000",
