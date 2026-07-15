@@ -35,7 +35,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
     guardianPhone: "",
     gender: "male",
     dob: "",
-    category: "General",
+    category: "GENERAL",
     bloodGroup: "",
     address: "",
     city: "",
@@ -59,7 +59,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
         guardianPhone: student.guardian_phone || "",
         gender: student.gender || "male",
         dob: student.dob || "",
-        category: student.category || "General",
+        category: student.category || "GENERAL",
         bloodGroup: student.blood_group || "",
         address: student.address || "",
         city: student.city || "",
@@ -80,7 +80,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
         guardianPhone: "",
         gender: "male",
         dob: "",
-        category: "General",
+        category: "GENERAL",
         bloodGroup: "",
         address: "",
         city: "",
@@ -350,7 +350,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
             <Select value={form.category} onValueChange={(v) => setField('category', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["General", "OBC", "SC", "ST", "EWS"].map((c) => (
+                {["GENERAL", "OBC", "S.C.", "Others"].map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>

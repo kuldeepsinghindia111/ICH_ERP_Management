@@ -162,6 +162,7 @@ function StudentsPage() {
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Father's Name</th>
                   <th className="px-4 py-3 font-medium">Male/Female</th>
+                  <th className="px-4 py-3 font-medium">Category</th>
                   <th className="px-4 py-3 font-medium">Address</th>
                   <th className="px-4 py-3 font-medium">Mobile No.</th>
                   <th className="px-4 py-3 font-medium">Admission No</th>
@@ -198,6 +199,7 @@ function StudentsPage() {
                       </td>
                       <td className="px-4 py-3">{s.guardian || "—"}</td>
                       <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
+                      <td className="px-4 py-3">{s.category || "—"}</td>
                       <td className="px-4 py-3">
                         <div className="max-w-[150px] truncate" title={s.address}>{s.address || "—"}</div>
                       </td>
