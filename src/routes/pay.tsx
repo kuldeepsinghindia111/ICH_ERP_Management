@@ -5,6 +5,7 @@ import {
   Smartphone, CheckCircle2, Download, Globe, Banknote, ArrowLeft,
   Loader2, Printer
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -497,9 +498,12 @@ function PayPage() {
                     <div className="p-5 text-center">
                       {onlineMethod === "upi" && (
                         <div className="space-y-4">
-                          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30">
-                            <Smartphone className="h-12 w-12 text-muted-foreground/50" />
-                            <span className="sr-only">QR Code Placeholder</span>
+                          <div className="mx-auto flex w-fit items-center justify-center rounded-lg border-2 border-dashed border-border bg-white p-2">
+                            <QRCodeCanvas 
+                              value={`upi://pay?pa=${paymentInfo.upiId}&pn=${encodeURIComponent(paymentInfo.accountName)}&am=${amount || 0}&cu=INR`}
+                              size={150}
+                              level="H"
+                            />
                           </div>
                           <div className="flex items-center justify-center gap-2">
                             <span className="font-mono text-sm">{paymentInfo.upiId}</span>
