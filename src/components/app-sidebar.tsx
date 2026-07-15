@@ -11,6 +11,7 @@ import {
   Settings,
   ScrollText,
   ShieldCheck,
+  CalendarCheck,
 } from "lucide-react";
 
 import {
@@ -32,6 +33,7 @@ const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?:
   { title: "General Management", url: "/general", icon: Settings, section: "settings" },
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Student's Profile", url: "/students", icon: GraduationCap, section: "students" },
+  { title: "Attendance", url: "/attendance", icon: CalendarCheck, section: "students" },
   { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
   { title: "Make Payment", url: "/pay", icon: CreditCard, section: "payments" },
   { title: "Reports", url: "/reports", icon: BarChart3, section: "reports" },

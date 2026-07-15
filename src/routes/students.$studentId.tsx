@@ -357,6 +357,7 @@ function StudentDetail() {
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="bg-background border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="id-card">ID Card Preview</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
@@ -429,6 +430,10 @@ function StudentDetail() {
             canEditPayments={canEditPayments ?? false}
             userRole={userRole}
           />
+        </TabsContent>
+
+        <TabsContent value="attendance" className="mt-6">
+          <StudentAttendance studentId={student.id} />
         </TabsContent>
 
         <TabsContent value="id-card" className="mt-6">
@@ -1483,5 +1488,78 @@ function StudentDocuments({ studentId, canEdit, user }: { studentId: string; can
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function StudentAttendance({ studentId }: { studentId: string }) {
+  const { data: attendance = [], isLoading } = useQuery({
+    queryKey: ['attendance', 'student', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('attendance').select('*').eq('student_id', studentId).order('date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading attendance records...</div>;
+
+  const presentDays = attendance.filter((a: any) => a.status === 'Present').length;
+  const totalDays = attendance.length;
+  const percentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-muted-foreground">Overall Attendance</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold">{percentage}%</h2>
+              <span className="text-sm text-muted-foreground">({presentDays} / {totalDays} days)</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Attendance Log</CardTitle>
+          <CardDescription>Recent attendance records</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {attendance.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No attendance records found for this student.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-4 py-3 text-left font-medium">Date</th>
+                    <th className="px-4 py-3 text-left font-medium">Semester / Class</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {attendance.map((record: any) => (
+                    <tr key={record.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-3 whitespace-nowrap">{new Date(record.date).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">{record.semester}</td>
+                      <td className="px-4 py-3">
+                        <Badge 
+                          variant={record.status === 'Present' ? 'default' : record.status === 'Absent' ? 'destructive' : 'secondary'}
+                          className={record.status === 'Present' ? 'bg-green-100 text-green-700 hover:bg-green-100 border-green-200' : ''}
+                        >
+                          {record.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
