@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/faculty")({
+export const Route = createFileRoute("/faculty/")({
   head: () => ({
     meta: [
       { title: "Faculty — Imperial CMS" },
@@ -84,12 +84,9 @@ function FacultyPage() {
                   </div>
                 </div>
                 <div>
-                  <EditFacultyDialog 
-                    faculty={f} 
-                    canEdit={canEdit}
-                    onRemove={() => { if (confirm(`Remove ${f.name}?`)) { removeFaculty.mutate(f.id); } }}
-                    isRemoving={removeFaculty.isPending}
-                  />
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/faculty/$facultyId" params={{ facultyId: f.id }}>View Profile</Link>
+                  </Button>
                 </div>
               </div>
               <div className="mt-4 space-y-1 text-xs text-muted-foreground">
@@ -111,7 +108,17 @@ function FacultyPage() {
 function AddFacultyDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: "", email: "", department: "", designation: "", phone: "" });
+  const [f, setF] = useState({
+    name: "",
+    email: "",
+    department: "",
+    designation: "",
+    phone: "",
+    employee_id: "",
+    gender: "male",
+    status: "Active",
+    role_type: "Teaching"
+  });
 
   const addFaculty = useMutation({
     mutationFn: async (fac: any) => {
@@ -122,7 +129,7 @@ function AddFacultyDialog() {
       queryClient.invalidateQueries({ queryKey: ["faculty"] });
       toast.success("Faculty added");
       setOpen(false);
-      setF({ name: "", email: "", department: "", designation: "", phone: "" });
+      setF({ name: "", email: "", department: "", designation: "", phone: "", employee_id: "", gender: "male", status: "Active", role_type: "Teaching" });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -132,14 +139,22 @@ function AddFacultyDialog() {
       <DialogTrigger asChild>
         <Button><Plus className="mr-1 h-4 w-4" /> Add faculty</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">Add faculty</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label>Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div><Label>Employee ID</Label><Input value={f.employee_id} onChange={(e) => setF({ ...f, employee_id: e.target.value })} /></div>
           <div><Label>Department</Label><Input value={f.department} onChange={(e) => setF({ ...f, department: e.target.value })} /></div>
           <div><Label>Designation</Label><Input value={f.designation} onChange={(e) => setF({ ...f, designation: e.target.value })} /></div>
           <div><Label>Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
           <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
+          <div>
+            <Label>Role Type</Label>
+            <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={f.role_type} onChange={(e) => setF({ ...f, role_type: e.target.value })}>
+              <option value="Teaching">Teaching</option>
+              <option value="Non-Teaching">Non-Teaching</option>
+            </select>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -153,58 +168,4 @@ function AddFacultyDialog() {
   );
 }
 
-function EditFacultyDialog({ faculty, canEdit, onRemove, isRemoving }: { faculty: any, canEdit: boolean, onRemove: () => void, isRemoving: boolean }) {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ ...faculty });
-
-  const editFaculty = useMutation({
-    mutationFn: async (fac: any) => {
-      const { id, ...updates } = fac;
-      const { error } = await supabase.from("faculty").update(updates).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["faculty"] });
-      toast.success("Faculty updated");
-      setOpen(false);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => {
-      setOpen(o);
-      if (o) setF({ ...faculty }); // Reset to current data on open
-    }}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" disabled={!canEdit}>
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle className="font-display">Edit faculty</DialogTitle></DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2"><Label>Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
-          <div><Label>Department</Label><Input value={f.department} onChange={(e) => setF({ ...f, department: e.target.value })} /></div>
-          <div><Label>Designation</Label><Input value={f.designation} onChange={(e) => setF({ ...f, designation: e.target.value })} /></div>
-          <div><Label>Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
-          <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
-        </div>
-        <DialogFooter className="sm:justify-between">
-          <Button variant="destructive" disabled={!canEdit || isRemoving} onClick={onRemove}>
-            Delete
-          </Button>
-          <div className="flex justify-end gap-2 mt-2 sm:mt-0">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={editFaculty.isPending} onClick={() => {
-              if (!f.name.trim()) return toast.error("Name required");
-              editFaculty.mutate(f);
-            }}>Save changes</Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 

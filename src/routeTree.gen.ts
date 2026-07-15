@@ -16,12 +16,13 @@ import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GeneralRouteImport } from './routes/general'
 import { Route as FeesRouteImport } from './routes/fees'
-import { Route as FacultyRouteImport } from './routes/faculty'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentsIndexRouteImport } from './routes/students.index'
+import { Route as FacultyIndexRouteImport } from './routes/faculty.index'
 import { Route as StudentsStudentIdRouteImport } from './routes/students.$studentId'
+import { Route as FacultyFacultyIdRouteImport } from './routes/faculty.$facultyId'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -58,11 +59,6 @@ const FeesRoute = FeesRouteImport.update({
   path: '/fees',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FacultyRoute = FacultyRouteImport.update({
-  id: '/faculty',
-  path: '/faculty',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CoursesRoute = CoursesRouteImport.update({
   id: '/courses',
   path: '/courses',
@@ -83,9 +79,19 @@ const StudentsIndexRoute = StudentsIndexRouteImport.update({
   path: '/students/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FacultyIndexRoute = FacultyIndexRouteImport.update({
+  id: '/faculty/',
+  path: '/faculty/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudentsStudentIdRoute = StudentsStudentIdRouteImport.update({
   id: '/students/$studentId',
   path: '/students/$studentId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacultyFacultyIdRoute = FacultyFacultyIdRouteImport.update({
+  id: '/faculty/$facultyId',
+  path: '/faculty/$facultyId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -93,7 +99,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/courses': typeof CoursesRoute
-  '/faculty': typeof FacultyRoute
   '/fees': typeof FeesRoute
   '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
@@ -101,14 +106,15 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/faculty/$facultyId': typeof FacultyFacultyIdRoute
   '/students/$studentId': typeof StudentsStudentIdRoute
+  '/faculty/': typeof FacultyIndexRoute
   '/students/': typeof StudentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/courses': typeof CoursesRoute
-  '/faculty': typeof FacultyRoute
   '/fees': typeof FeesRoute
   '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
@@ -116,7 +122,9 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/faculty/$facultyId': typeof FacultyFacultyIdRoute
   '/students/$studentId': typeof StudentsStudentIdRoute
+  '/faculty': typeof FacultyIndexRoute
   '/students': typeof StudentsIndexRoute
 }
 export interface FileRoutesById {
@@ -124,7 +132,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/courses': typeof CoursesRoute
-  '/faculty': typeof FacultyRoute
   '/fees': typeof FeesRoute
   '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
@@ -132,7 +139,9 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/faculty/$facultyId': typeof FacultyFacultyIdRoute
   '/students/$studentId': typeof StudentsStudentIdRoute
+  '/faculty/': typeof FacultyIndexRoute
   '/students/': typeof StudentsIndexRoute
 }
 export interface FileRouteTypes {
@@ -141,7 +150,6 @@ export interface FileRouteTypes {
     | '/'
     | '/audit'
     | '/courses'
-    | '/faculty'
     | '/fees'
     | '/general'
     | '/login'
@@ -149,14 +157,15 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/users'
+    | '/faculty/$facultyId'
     | '/students/$studentId'
+    | '/faculty/'
     | '/students/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/audit'
     | '/courses'
-    | '/faculty'
     | '/fees'
     | '/general'
     | '/login'
@@ -164,14 +173,15 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/users'
+    | '/faculty/$facultyId'
     | '/students/$studentId'
+    | '/faculty'
     | '/students'
   id:
     | '__root__'
     | '/'
     | '/audit'
     | '/courses'
-    | '/faculty'
     | '/fees'
     | '/general'
     | '/login'
@@ -179,7 +189,9 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/users'
+    | '/faculty/$facultyId'
     | '/students/$studentId'
+    | '/faculty/'
     | '/students/'
   fileRoutesById: FileRoutesById
 }
@@ -187,7 +199,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditRoute: typeof AuditRoute
   CoursesRoute: typeof CoursesRoute
-  FacultyRoute: typeof FacultyRoute
   FeesRoute: typeof FeesRoute
   GeneralRoute: typeof GeneralRoute
   LoginRoute: typeof LoginRoute
@@ -195,7 +206,9 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
+  FacultyFacultyIdRoute: typeof FacultyFacultyIdRoute
   StudentsStudentIdRoute: typeof StudentsStudentIdRoute
+  FacultyIndexRoute: typeof FacultyIndexRoute
   StudentsIndexRoute: typeof StudentsIndexRoute
 }
 
@@ -250,13 +263,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/faculty': {
-      id: '/faculty'
-      path: '/faculty'
-      fullPath: '/faculty'
-      preLoaderRoute: typeof FacultyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/courses': {
       id: '/courses'
       path: '/courses'
@@ -285,11 +291,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faculty/': {
+      id: '/faculty/'
+      path: '/faculty'
+      fullPath: '/faculty/'
+      preLoaderRoute: typeof FacultyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/students/$studentId': {
       id: '/students/$studentId'
       path: '/students/$studentId'
       fullPath: '/students/$studentId'
       preLoaderRoute: typeof StudentsStudentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faculty/$facultyId': {
+      id: '/faculty/$facultyId'
+      path: '/faculty/$facultyId'
+      fullPath: '/faculty/$facultyId'
+      preLoaderRoute: typeof FacultyFacultyIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -299,7 +319,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditRoute: AuditRoute,
   CoursesRoute: CoursesRoute,
-  FacultyRoute: FacultyRoute,
   FeesRoute: FeesRoute,
   GeneralRoute: GeneralRoute,
   LoginRoute: LoginRoute,
@@ -307,7 +326,9 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
+  FacultyFacultyIdRoute: FacultyFacultyIdRoute,
   StudentsStudentIdRoute: StudentsStudentIdRoute,
+  FacultyIndexRoute: FacultyIndexRoute,
   StudentsIndexRoute: StudentsIndexRoute,
 }
 export const routeTree = rootRouteImport
