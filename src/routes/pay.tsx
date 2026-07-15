@@ -126,7 +126,28 @@ function PayPage() {
     }
   });
 
-  const paymentInfo = useStore((s) => s.paymentInfo);
+  const { data: collegeSettings } = useQuery({
+    queryKey: ['college_settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('college_settings').select('*').limit(1).single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    }
+  });
+
+  const storePaymentInfo = useStore((s) => s.paymentInfo);
+  const paymentInfo = useMemo(() => {
+    return {
+      ...storePaymentInfo,
+      accountNumber: collegeSettings?.account_number || storePaymentInfo.accountNumber,
+      ifsc: collegeSettings?.ifsc || storePaymentInfo.ifsc,
+      accountName: collegeSettings?.account_name || storePaymentInfo.accountName,
+      upiId: collegeSettings?.upi_id || storePaymentInfo.upiId,
+      upiName: collegeSettings?.upi_name || storePaymentInfo.upiName,
+      bankName: collegeSettings?.bank_name || storePaymentInfo.bankName,
+      branch: collegeSettings?.branch || storePaymentInfo.branch,
+    };
+  }, [storePaymentInfo, collegeSettings]);
   const receiptFormat = useStore((s) => s.receiptFormat);
 
   const [mode, setMode] = useState<Mode>("online");
