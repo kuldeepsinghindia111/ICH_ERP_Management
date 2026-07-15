@@ -90,7 +90,7 @@ export const COLLEGE_PAYMENT_INFO: CollegePaymentInfo = {
 
 export type FeeHead =
   | "tuition" | "exam" | "library" | "lab" | "sports"
-  | "hostel" | "transport" | "fine" | "other";
+  | "hostel" | "transport" | "late" | "fine" | "other";
 
 export const FEE_HEADS: { key: FeeHead; label: string }[] = [
   { key: "tuition", label: "Tuition" },
@@ -100,6 +100,7 @@ export const FEE_HEADS: { key: FeeHead; label: string }[] = [
   { key: "sports", label: "Sports" },
   { key: "hostel", label: "Hostel" },
   { key: "transport", label: "Transport" },
+  { key: "late", label: "Late Fees" },
   { key: "fine", label: "Fine" },
   { key: "other", label: "Other" },
 ];
