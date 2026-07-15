@@ -1180,7 +1180,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
             <thead className="bg-muted/50 text-xs uppercase tracking-widest text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 text-left">Date</th>
-                <th className="px-3 py-2 text-left">Sem</th>
+                <th className="px-3 py-2 text-left">Class</th>
                 <th className="px-3 py-2 text-left">Method</th>
                 <th className="px-3 py-2 text-left">Reference</th>
                 <th className="px-3 py-2 text-right">Amount</th>
