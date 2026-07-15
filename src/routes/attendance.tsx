@@ -46,8 +46,8 @@ function AttendancePage() {
     queryKey: ["students", programId, semester],
     queryFn: async () => {
       let q = supabase.from("students").select("*").eq("status", "active").order("name");
-      if (programId !== "all") q = q.eq("programId", programId);
-      if (semester !== "all") q = q.eq("currentSemester", parseInt(semester));
+      if (programId !== "all") q = q.eq("program_id", programId);
+      if (semester !== "all") q = q.eq("current_semester", parseInt(semester));
       const { data, error } = await q;
       if (error) throw error;
       return data;
@@ -77,8 +77,8 @@ function AttendancePage() {
   }, [attendanceRecords]);
 
   const filteredStudents = students.filter((s: any) => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || 
-    s.rollNumber.toLowerCase().includes(search.toLowerCase())
+    s.name?.toLowerCase().includes(search.toLowerCase()) || 
+    (s.roll_number || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const saveAttendance = useMutation({
@@ -225,7 +225,7 @@ function AttendancePage() {
                       const currentStatus = localAttendance[s.id];
                       return (
                         <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 text-muted-foreground font-mono">{s.rollNumber}</td>
+                          <td className="px-4 py-3 text-muted-foreground font-mono">{s.roll_number || "—"}</td>
                           <td className="px-4 py-3 font-medium">{s.name}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
