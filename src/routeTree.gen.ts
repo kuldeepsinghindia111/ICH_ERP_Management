@@ -15,6 +15,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LeavesRouteImport } from './routes/leaves'
 import { Route as FeesRouteImport } from './routes/fees'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -57,6 +58,11 @@ const PayRoute = PayRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeavesRoute = LeavesRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/fees': typeof FeesRoute
   '/leaves': typeof LeavesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/fees': typeof FeesRoute
   '/leaves': typeof LeavesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/fees': typeof FeesRoute
   '/leaves': typeof LeavesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/fees'
     | '/leaves'
+    | '/library'
     | '/login'
     | '/pay'
     | '/reports'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/fees'
     | '/leaves'
+    | '/library'
     | '/login'
     | '/pay'
     | '/reports'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/fees'
     | '/leaves'
+    | '/library'
     | '/login'
     | '/pay'
     | '/reports'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   FeesRoute: typeof FeesRoute
   LeavesRoute: typeof LeavesRoute
+  LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   PayRoute: typeof PayRoute
   ReportsRoute: typeof ReportsRoute
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaves': {
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   FeesRoute: FeesRoute,
   LeavesRoute: LeavesRoute,
+  LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   PayRoute: PayRoute,
   ReportsRoute: ReportsRoute,

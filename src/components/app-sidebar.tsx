@@ -36,6 +36,7 @@ const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?:
   { title: "Examinations", url: "/exams", icon: BookOpen, section: "students" },
   { title: "Timetable", url: "/timetable", icon: CalendarCheck, section: "students" },
   { title: "Leaves", url: "/leaves", icon: ScrollText, section: "students" },
+  { title: "Library", url: "/library", icon: BookOpen, section: "students" },
   { title: "Attendance", url: "/attendance", icon: CalendarCheck, section: "students" },
   { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
   { title: "Make Payment", url: "/pay", icon: CreditCard, section: "payments" },
