@@ -154,6 +154,7 @@ export function CollectPaymentDialog({
   const [fine, setFine] = useState("");
   const [otherCharge, setOtherCharge] = useState("");
   const [reference, setReference] = useState("");
+  const [transactionId, setTransactionId] = useState("");
   const [note, setNote] = useState("");
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
   const [touched, setTouched] = useState<{ amount?: boolean; reference?: boolean }>({});
@@ -303,10 +304,11 @@ export function CollectPaymentDialog({
       // Generate receipt
       const amt = Number(amount);
       const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
+      const finalTx = method !== "cash" && transactionId.trim() ? transactionId.trim() : undefined;
       const program = programs.find((p: any) => p.id === student.program_id);
       generatePreview({
         college: paymentInfo,
-        payment: { amount: amt, method, reference: ref, paidAt: new Date(paidAt).toISOString() },
+        payment: { amount: amt, method, reference: ref, transactionId: finalTx, paidAt: new Date(paidAt).toISOString() } as any,
         student: { name: student.name, admissionNo: student.admission_no, rollNo: (student.rolls && student.rolls[Number(sem)]) || "" },
         program: program ? { name: program.name, code: program.code } : undefined,
         semester: Number(sem),
@@ -319,7 +321,7 @@ export function CollectPaymentDialog({
   if (!canEditPayments) return null;
 
   const resetForm = () => {
-    setReference(""); setNote(""); setAmount(""); setTouched({});
+    setReference(""); setTransactionId(""); setNote(""); setAmount(""); setTouched({});
     setLateFee(""); setFine(""); setOtherCharge("");
   };
 
@@ -351,13 +353,19 @@ export function CollectPaymentDialog({
     const ref = reference.trim() || nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat);
     const iso = new Date(paidAt).toISOString();
     
+    let finalNote = note;
+    if (method !== "cash" && transactionId.trim()) {
+      const prefix = method === "cheque" ? "CHEQUE:" : "UTR:";
+      finalNote = `${prefix}${transactionId.trim()}\n${note}`;
+    }
+    
     savePaymentMutation.mutate({
       studentId: student.id, 
       semester: Number(sem), 
       amount: amt,
       method, 
       reference: ref, 
-      note: note || undefined, 
+      note: finalNote || undefined, 
       paidAt: iso,
       concession: conc,
       scholarship: schol,
@@ -498,7 +506,7 @@ export function CollectPaymentDialog({
 
                 <div>
                   <div className="mb-1 flex items-center justify-between">
-                    <Label className={touched.reference && errors.reference ? "text-destructive" : ""}>Reference / Receipt No.</Label>
+                    <Label className={touched.reference && errors.reference ? "text-destructive" : ""}>Receipt No.</Label>
                     <button type="button" onClick={regenReceipt} className="text-muted-foreground hover:text-primary">
                       <RefreshCcw className="h-3 w-3" />
                     </button>
@@ -507,15 +515,24 @@ export function CollectPaymentDialog({
                     className={touched.reference && errors.reference ? "border-destructive focus-visible:ring-destructive" : ""}
                     value={reference}
                     onChange={(e) => { setReference(e.target.value); setTouched({ ...touched, reference: true }); }}
-                    placeholder={referenceHint(method)}
+                    placeholder="Auto-generated if empty"
                   />
-                  {touched.reference && errors.reference ? (
+                  {touched.reference && errors.reference && (
                     <p className="mt-1 text-[10px] text-destructive">{errors.reference}</p>
-                  ) : (
-                    <p className="mt-1 text-[10px] text-muted-foreground">{referenceHint(method)}</p>
                   )}
                 </div>
               </div>
+
+              {method !== "cash" && (
+                <div>
+                  <Label>{method === "cheque" ? "Cheque No." : "Reference / UTR No."}</Label>
+                  <Input
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    placeholder={method === "cheque" ? "Enter cheque number" : "Enter transaction UTR"}
+                  />
+                </div>
+              )}
 
               <div>
                 <Label>Notes (Optional)</Label>

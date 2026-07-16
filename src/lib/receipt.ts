@@ -34,6 +34,16 @@ function getYearString(sem: number) {
 }
 
 export function generateReceiptPdf(data: ReceiptData): jsPDF {
+  let transactionId = (data.payment as any).transactionId;
+  let cleanNote = data.payment.note;
+  if (!transactionId && cleanNote) {
+    const match = cleanNote.match(/^(CHEQUE|UTR):(.+?)(?:\n|$)/);
+    if (match) {
+      transactionId = match[2];
+      cleanNote = cleanNote.replace(/^(CHEQUE|UTR):.+?(?:\n|$)/, "").trim();
+    }
+  }
+
   // A5 format portrait (which is exactly half of A4)
   const doc = new jsPDF({ unit: "pt", format: "a5", orientation: "portrait" });
   const W = doc.internal.pageSize.getWidth();
@@ -87,6 +97,13 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.setTextColor(...textColor);
   doc.text("Student Details", 30, y);
   
+  if (transactionId && data.payment.method !== "cash") {
+    const refLabel = data.payment.method === "cheque" ? "Cheque No:" : "Reference / UTR No:";
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`${refLabel} ${transactionId}`, W - 30, y, { align: "right" });
+  }
+  
   y += 15;
 
   // Student Information Box
@@ -127,6 +144,7 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.text("Payment Details", 30, y);
   
   y += 20;
+
   // Table Header (Normal Black Fonts, no strip)
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
@@ -174,13 +192,13 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   // Footer Notes (Shifted right below the line)
   doc.setFontSize(9);
   doc.setTextColor(...textColor);
-  doc.text(`Support: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, W / 2, y, { align: "center" });
+  doc.text(`Support: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, 30, y, { align: "left" });
 
   y += 14;
   doc.setFontSize(8);
   doc.setTextColor(...mutedColor);
-  doc.text("Note: Exam fees will be charged separately at the time of exam forms.", W / 2, y, { align: "center" });
-  doc.text("This is a computer-generated document and does not require a physical signature.", W / 2, y + 12, { align: "center" });
+  doc.text("Note: Exam fees will be charged separately at the time of exam forms.", 30, y, { align: "left" });
+  doc.text("This is a computer-generated document and does not require a physical signature.", 30, y + 12, { align: "left" });
 
   return doc;
 }
