@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import { inr, type FeePayment, type Student, type Program } from "@/lib/store";
+import { type FeePayment, type Student, type Program } from "@/lib/store";
 
 export type CollegeInfo = {
   collegeName: string;
@@ -22,11 +22,21 @@ export type ReceiptData = {
   semester: number;
 };
 
+function formatRs(amount: number) {
+  return "Rs. " + amount.toLocaleString("en-IN");
+}
+
+function getYearString(sem: number) {
+  if (sem <= 2) return "1st Year";
+  if (sem <= 4) return "2nd Year";
+  if (sem <= 6) return "3rd Year";
+  return `${sem}th Sem`;
+}
+
 export function generateReceiptPdf(data: ReceiptData): jsPDF {
   // A5 format portrait (which is exactly half of A4)
   const doc = new jsPDF({ unit: "pt", format: "a5", orientation: "portrait" });
   const W = doc.internal.pageSize.getWidth();
-  const H = doc.internal.pageSize.getHeight();
   let y = 40;
 
   const textColor: [number, number, number] = [0, 0, 0]; // black
@@ -54,8 +64,9 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
 
   // Receipt Meta Info (Receipt No & Date)
   const ref = data.payment.reference || data.payment.id || "N/A";
+  // Remove time, just keep date
   const dt = new Date(data.payment.paidAt).toLocaleString('en-IN', { 
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+    day: '2-digit', month: 'short', year: 'numeric'
   });
   
   doc.setFont("helvetica", "bold");
@@ -102,7 +113,7 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   sy += 12;
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...textColor);
-  const progText = data.program ? `${data.program.name} (Sem ${data.semester})` : `Semester ${data.semester}`;
+  const progText = data.program ? `${data.program.name} (${getYearString(data.semester)})` : getYearString(data.semester);
   doc.text(progText, 45, sy);
   doc.text(data.student.admissionNo, W / 2, sy);
 
@@ -120,8 +131,8 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.setFont("helvetica", "bold");
   doc.text("Description", 40, y);
   doc.text("Method", W / 2, y);
-  // Shifting Amount column slightly left
-  const amountX = W - 70;
+  // Align Amount header perfectly with the numbers on the right
+  const amountX = W - 40;
   doc.text("Amount", amountX, y, { align: "right" });
   
   y += 8;
@@ -133,14 +144,12 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   // Table Row
   doc.setFont("helvetica", "normal");
   
-  const descText = data.payment.note ? `Tuition Fee - ${data.payment.note}` : `Tuition Fee (Sem ${data.semester})`;
+  const descText = data.payment.note ? `Tuition Fee - ${data.payment.note}` : `Tuition Fee (${getYearString(data.semester)})`;
   doc.text(doc.splitTextToSize(descText, (W / 2) - 50), 40, y);
   doc.text(data.payment.method.toUpperCase(), W / 2, y);
   
-  // Writing amount in normal black font
-  // Ensure the amount format is clean without strange spaces
-  // inr() format adds Rupee symbol and commas (e.g. ₹ 2,000)
-  doc.text(inr(data.payment.amount), amountX, y, { align: "right" });
+  // Amount
+  doc.text(formatRs(data.payment.amount), amountX, y, { align: "right" });
   
   y += 16;
   doc.line(30, y, W - 30, y);
@@ -151,22 +160,16 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.setFontSize(11);
   doc.text("Total Received", W / 2, y);
   doc.setFontSize(12);
-  doc.text(inr(data.payment.amount), amountX, y, { align: "right" });
+  doc.text(formatRs(data.payment.amount), amountX, y, { align: "right" });
 
-  // Signatures
-  y += 70;
-  doc.setDrawColor(150, 150, 150);
-  doc.setLineWidth(0.5);
-  doc.line(W - 140, y, W - 30, y);
-  
   y += 12;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...mutedColor);
-  doc.text("Authorized Signatory", W - 85, y, { align: "center" });
+  // Draw line after Total Received
+  doc.setDrawColor(200, 200, 200);
+  doc.line(30, y, W - 30, y);
+
+  y += 30;
   
-  // Footer Notes (Email & Phone moved here)
-  y = H - 50;
+  // Footer Notes (Shifted right below the line)
   doc.setFontSize(9);
   doc.setTextColor(...textColor);
   doc.text(`Support: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, W / 2, y, { align: "center" });
