@@ -81,17 +81,19 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
 
   y += 25;
 
+  // Student Details Header
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...textColor);
+  doc.text("Student Details", 30, y);
+  
+  y += 15;
+
   // Student Information Box
   doc.setDrawColor(200, 200, 200);
-  doc.roundedRect(30, y, W - 60, 90, 4, 4, 'S'); // Just stroke, no fill
+  doc.roundedRect(30, y, W - 60, 75, 4, 4, 'S'); // Reduced height from 90 to 75
   
-  let sy = y + 20;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...textColor);
-  doc.text("Student Details", 45, sy);
-  
-  sy += 20;
+  let sy = y + 18;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
@@ -104,7 +106,7 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.text(data.student.name.toUpperCase(), 45, sy);
   doc.text(data.student.rollNo || "—", W / 2, sy);
   
-  sy += 20;
+  sy += 18;
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...mutedColor);
   doc.text("Program/Class:", 45, sy);
@@ -117,7 +119,7 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.text(progText, 45, sy);
   doc.text(data.student.admissionNo, W / 2, sy);
 
-  y += 115;
+  y += 100; // Adjusted spacing for the next section
 
   // Payment Details Section
   doc.setFont("helvetica", "bold");
