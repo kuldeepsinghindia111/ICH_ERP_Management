@@ -14,8 +14,8 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as GeneralRouteImport } from './routes/general'
 import { Route as FeesRouteImport } from './routes/fees'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as AttendanceRouteImport } from './routes/attendance'
@@ -50,14 +50,14 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GeneralRoute = GeneralRouteImport.update({
-  id: '/general',
-  path: '/general',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FeesRoute = FeesRouteImport.update({
   id: '/fees',
   path: '/fees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesRoute = CoursesRouteImport.update({
@@ -106,8 +106,8 @@ export interface FileRoutesByFullPath {
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
   '/courses': typeof CoursesRoute
+  '/dashboard': typeof DashboardRoute
   '/fees': typeof FeesRoute
-  '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -123,8 +123,8 @@ export interface FileRoutesByTo {
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
   '/courses': typeof CoursesRoute
+  '/dashboard': typeof DashboardRoute
   '/fees': typeof FeesRoute
-  '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -141,8 +141,8 @@ export interface FileRoutesById {
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
   '/courses': typeof CoursesRoute
+  '/dashboard': typeof DashboardRoute
   '/fees': typeof FeesRoute
-  '/general': typeof GeneralRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
@@ -160,8 +160,8 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/audit'
     | '/courses'
+    | '/dashboard'
     | '/fees'
-    | '/general'
     | '/login'
     | '/pay'
     | '/reports'
@@ -177,8 +177,8 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/audit'
     | '/courses'
+    | '/dashboard'
     | '/fees'
-    | '/general'
     | '/login'
     | '/pay'
     | '/reports'
@@ -194,8 +194,8 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/audit'
     | '/courses'
+    | '/dashboard'
     | '/fees'
-    | '/general'
     | '/login'
     | '/pay'
     | '/reports'
@@ -212,8 +212,8 @@ export interface RootRouteChildren {
   AttendanceRoute: typeof AttendanceRoute
   AuditRoute: typeof AuditRoute
   CoursesRoute: typeof CoursesRoute
+  DashboardRoute: typeof DashboardRoute
   FeesRoute: typeof FeesRoute
-  GeneralRoute: typeof GeneralRoute
   LoginRoute: typeof LoginRoute
   PayRoute: typeof PayRoute
   ReportsRoute: typeof ReportsRoute
@@ -262,18 +262,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/general': {
-      id: '/general'
-      path: '/general'
-      fullPath: '/general'
-      preLoaderRoute: typeof GeneralRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/fees': {
       id: '/fees'
       path: '/fees'
       fullPath: '/fees'
       preLoaderRoute: typeof FeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses': {
@@ -340,8 +340,8 @@ const rootRouteChildren: RootRouteChildren = {
   AttendanceRoute: AttendanceRoute,
   AuditRoute: AuditRoute,
   CoursesRoute: CoursesRoute,
+  DashboardRoute: DashboardRoute,
   FeesRoute: FeesRoute,
-  GeneralRoute: GeneralRoute,
   LoginRoute: LoginRoute,
   PayRoute: PayRoute,
   ReportsRoute: ReportsRoute,

@@ -30,8 +30,8 @@ import { type Section } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
-  { title: "General Management", url: "/general", icon: Settings, section: "settings" },
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "General Management", url: "/", icon: Settings, section: "settings" },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Student's Profile", url: "/students", icon: GraduationCap, section: "students" },
   { title: "Attendance", url: "/attendance", icon: CalendarCheck, section: "students" },
   { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
