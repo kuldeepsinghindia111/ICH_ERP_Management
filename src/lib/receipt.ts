@@ -23,49 +23,34 @@ export type ReceiptData = {
 };
 
 export function generateReceiptPdf(data: ReceiptData): jsPDF {
-  // A5 format portrait
+  // A5 format portrait (which is exactly half of A4)
   const doc = new jsPDF({ unit: "pt", format: "a5", orientation: "portrait" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  let y = 0;
+  let y = 40;
 
-  // Colors
-  const primaryColor: [number, number, number] = [23, 37, 84]; // dark blue
-  const accentColor: [number, number, number] = [241, 245, 249]; // slate-100
-  const textColor: [number, number, number] = [30, 41, 59]; // slate-800
-  const mutedColor: [number, number, number] = [100, 116, 139]; // slate-500
+  const textColor: [number, number, number] = [0, 0, 0]; // black
+  const mutedColor: [number, number, number] = [80, 80, 80]; // dark grey for slight contrast
 
-  // Top Header Banner
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, W, 50, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("FEE RECEIPT", W / 2, 32, { align: "center", renderingMode: "fill" });
-  
-  y = 75;
-
-  // College Name & Info
+  // College Name & Info Centered
   doc.setTextColor(...textColor);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(data.college.collegeName.toUpperCase(), 30, y);
+  doc.setFontSize(18);
+  doc.text(data.college.collegeName.toUpperCase(), W / 2, y, { align: "center" });
   
-  y += 14;
+  y += 18;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...mutedColor);
-  doc.text(`Email: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, 30, y);
+  doc.setFontSize(11);
+  doc.text("Official Fee Payment Receipt", W / 2, y, { align: "center" });
   
-  y += 20;
+  y += 15;
   
   // Subtle separator
-  doc.setDrawColor(226, 232, 240); // slate-200
+  doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(1);
   doc.line(30, y, W - 30, y);
   
-  y += 25;
+  y += 20;
 
   // Receipt Meta Info (Receipt No & Date)
   const ref = data.payment.reference || data.payment.id || "N/A";
@@ -75,7 +60,6 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(...textColor);
   doc.text("Receipt No:", 30, y);
   doc.text("Date:", W - 30, y, { align: "right" });
   
@@ -87,8 +71,8 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   y += 25;
 
   // Student Information Box
-  doc.setFillColor(...accentColor);
-  doc.roundedRect(30, y, W - 60, 90, 6, 6, 'F');
+  doc.setDrawColor(200, 200, 200);
+  doc.roundedRect(30, y, W - 60, 90, 4, 4, 'S'); // Just stroke, no fill
   
   let sy = y + 20;
   doc.setFont("helvetica", "bold");
@@ -129,55 +113,65 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.setFontSize(11);
   doc.text("Payment Details", 30, y);
   
-  y += 15;
-  // Table Header
-  doc.setFillColor(...primaryColor);
-  doc.rect(30, y, W - 60, 25, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.text("Description", 40, y + 16);
-  doc.text("Method", W / 2, y + 16);
-  doc.text("Amount", W - 40, y + 16, { align: "right" });
+  y += 20;
+  // Table Header (Normal Black Fonts, no strip)
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("Description", 40, y);
+  doc.text("Method", W / 2, y);
+  // Shifting Amount column slightly left
+  const amountX = W - 70;
+  doc.text("Amount", amountX, y, { align: "right" });
   
-  y += 25;
+  y += 8;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(30, y, W - 30, y);
+  
+  y += 16;
   
   // Table Row
-  doc.setTextColor(...textColor);
   doc.setFont("helvetica", "normal");
   
-  doc.setDrawColor(226, 232, 240);
-  doc.rect(30, y, W - 60, 35, 'D');
-  
   const descText = data.payment.note ? `Tuition Fee - ${data.payment.note}` : `Tuition Fee (Sem ${data.semester})`;
-  doc.text(doc.splitTextToSize(descText, (W / 2) - 50), 40, y + 16);
-  doc.text(data.payment.method.toUpperCase(), W / 2, y + 16);
-  doc.text(inr(data.payment.amount), W - 40, y + 16, { align: "right" });
+  doc.text(doc.splitTextToSize(descText, (W / 2) - 50), 40, y);
+  doc.text(data.payment.method.toUpperCase(), W / 2, y);
   
-  y += 35;
+  // Writing amount in normal black font
+  // Ensure the amount format is clean without strange spaces
+  // inr() format adds Rupee symbol and commas (e.g. ₹ 2,000)
+  doc.text(inr(data.payment.amount), amountX, y, { align: "right" });
+  
+  y += 16;
+  doc.line(30, y, W - 30, y);
 
+  y += 20;
   // Total Box
-  doc.setFillColor(...accentColor);
-  doc.rect(30, y, W - 60, 35, 'F');
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("Total Received", W / 2, y + 22);
+  doc.text("Total Received", W / 2, y);
   doc.setFontSize(12);
-  doc.text(inr(data.payment.amount), W - 40, y + 22, { align: "right" });
+  doc.text(inr(data.payment.amount), amountX, y, { align: "right" });
 
   // Signatures
-  y += 80;
-  doc.setDrawColor(148, 163, 184);
+  y += 70;
+  doc.setDrawColor(150, 150, 150);
   doc.setLineWidth(0.5);
-  doc.line(W - 150, y, W - 30, y);
+  doc.line(W - 140, y, W - 30, y);
   
   y += 12;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
-  doc.text("Authorized Signatory", W - 90, y, { align: "center" });
+  doc.text("Authorized Signatory", W - 85, y, { align: "center" });
   
-  // Footer Notes
-  y = H - 40;
+  // Footer Notes (Email & Phone moved here)
+  y = H - 50;
+  doc.setFontSize(9);
+  doc.setTextColor(...textColor);
+  doc.text(`Support: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, W / 2, y, { align: "center" });
+
+  y += 14;
   doc.setFontSize(8);
   doc.setTextColor(...mutedColor);
   doc.text("Note: Exam fees will be charged separately at the time of exam forms.", W / 2, y, { align: "center" });
