@@ -264,6 +264,7 @@ export function validatePaymentFields(
       (errors as any)[errKey] = `Invalid format for ${input.method.toUpperCase()}. ${rule.hint}`;
     }
   }
+  const ref = input.reference?.trim() ?? "";
   if (!errors.reference && ref) {
     const day = (input.paidAt ? new Date(input.paidAt) : new Date()).toISOString().slice(0, 10);
     const dup = existing.some(
