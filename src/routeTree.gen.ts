@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PayRouteImport } from './routes/pay'
@@ -22,12 +23,19 @@ import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentsIndexRouteImport } from './routes/students.index'
 import { Route as FacultyIndexRouteImport } from './routes/faculty.index'
+import { Route as ExamsIndexRouteImport } from './routes/exams.index'
 import { Route as StudentsStudentIdRouteImport } from './routes/students.$studentId'
 import { Route as FacultyFacultyIdRouteImport } from './routes/faculty.$facultyId'
+import { Route as ExamsExamIdRouteImport } from './routes/exams.$examId'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimetableRoute = TimetableRouteImport.update({
+  id: '/timetable',
+  path: '/timetable',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -90,6 +98,11 @@ const FacultyIndexRoute = FacultyIndexRouteImport.update({
   path: '/faculty/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExamsIndexRoute = ExamsIndexRouteImport.update({
+  id: '/exams/',
+  path: '/exams/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudentsStudentIdRoute = StudentsStudentIdRouteImport.update({
   id: '/students/$studentId',
   path: '/students/$studentId',
@@ -98,6 +111,11 @@ const StudentsStudentIdRoute = StudentsStudentIdRouteImport.update({
 const FacultyFacultyIdRoute = FacultyFacultyIdRouteImport.update({
   id: '/faculty/$facultyId',
   path: '/faculty/$facultyId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExamsExamIdRoute = ExamsExamIdRouteImport.update({
+  id: '/exams/$examId',
+  path: '/exams/$examId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -112,9 +130,12 @@ export interface FileRoutesByFullPath {
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/timetable': typeof TimetableRoute
   '/users': typeof UsersRoute
+  '/exams/$examId': typeof ExamsExamIdRoute
   '/faculty/$facultyId': typeof FacultyFacultyIdRoute
   '/students/$studentId': typeof StudentsStudentIdRoute
+  '/exams/': typeof ExamsIndexRoute
   '/faculty/': typeof FacultyIndexRoute
   '/students/': typeof StudentsIndexRoute
 }
@@ -129,9 +150,12 @@ export interface FileRoutesByTo {
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/timetable': typeof TimetableRoute
   '/users': typeof UsersRoute
+  '/exams/$examId': typeof ExamsExamIdRoute
   '/faculty/$facultyId': typeof FacultyFacultyIdRoute
   '/students/$studentId': typeof StudentsStudentIdRoute
+  '/exams': typeof ExamsIndexRoute
   '/faculty': typeof FacultyIndexRoute
   '/students': typeof StudentsIndexRoute
 }
@@ -147,9 +171,12 @@ export interface FileRoutesById {
   '/pay': typeof PayRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/timetable': typeof TimetableRoute
   '/users': typeof UsersRoute
+  '/exams/$examId': typeof ExamsExamIdRoute
   '/faculty/$facultyId': typeof FacultyFacultyIdRoute
   '/students/$studentId': typeof StudentsStudentIdRoute
+  '/exams/': typeof ExamsIndexRoute
   '/faculty/': typeof FacultyIndexRoute
   '/students/': typeof StudentsIndexRoute
 }
@@ -166,9 +193,12 @@ export interface FileRouteTypes {
     | '/pay'
     | '/reports'
     | '/settings'
+    | '/timetable'
     | '/users'
+    | '/exams/$examId'
     | '/faculty/$facultyId'
     | '/students/$studentId'
+    | '/exams/'
     | '/faculty/'
     | '/students/'
   fileRoutesByTo: FileRoutesByTo
@@ -183,9 +213,12 @@ export interface FileRouteTypes {
     | '/pay'
     | '/reports'
     | '/settings'
+    | '/timetable'
     | '/users'
+    | '/exams/$examId'
     | '/faculty/$facultyId'
     | '/students/$studentId'
+    | '/exams'
     | '/faculty'
     | '/students'
   id:
@@ -200,9 +233,12 @@ export interface FileRouteTypes {
     | '/pay'
     | '/reports'
     | '/settings'
+    | '/timetable'
     | '/users'
+    | '/exams/$examId'
     | '/faculty/$facultyId'
     | '/students/$studentId'
+    | '/exams/'
     | '/faculty/'
     | '/students/'
   fileRoutesById: FileRoutesById
@@ -218,9 +254,12 @@ export interface RootRouteChildren {
   PayRoute: typeof PayRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
+  TimetableRoute: typeof TimetableRoute
   UsersRoute: typeof UsersRoute
+  ExamsExamIdRoute: typeof ExamsExamIdRoute
   FacultyFacultyIdRoute: typeof FacultyFacultyIdRoute
   StudentsStudentIdRoute: typeof StudentsStudentIdRoute
+  ExamsIndexRoute: typeof ExamsIndexRoute
   FacultyIndexRoute: typeof FacultyIndexRoute
   StudentsIndexRoute: typeof StudentsIndexRoute
 }
@@ -232,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timetable': {
+      id: '/timetable'
+      path: '/timetable'
+      fullPath: '/timetable'
+      preLoaderRoute: typeof TimetableRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -318,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FacultyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/exams/': {
+      id: '/exams/'
+      path: '/exams'
+      fullPath: '/exams/'
+      preLoaderRoute: typeof ExamsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/students/$studentId': {
       id: '/students/$studentId'
       path: '/students/$studentId'
@@ -330,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/faculty/$facultyId'
       fullPath: '/faculty/$facultyId'
       preLoaderRoute: typeof FacultyFacultyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exams/$examId': {
+      id: '/exams/$examId'
+      path: '/exams/$examId'
+      fullPath: '/exams/$examId'
+      preLoaderRoute: typeof ExamsExamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -346,9 +406,12 @@ const rootRouteChildren: RootRouteChildren = {
   PayRoute: PayRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
+  TimetableRoute: TimetableRoute,
   UsersRoute: UsersRoute,
+  ExamsExamIdRoute: ExamsExamIdRoute,
   FacultyFacultyIdRoute: FacultyFacultyIdRoute,
   StudentsStudentIdRoute: StudentsStudentIdRoute,
+  ExamsIndexRoute: ExamsIndexRoute,
   FacultyIndexRoute: FacultyIndexRoute,
   StudentsIndexRoute: StudentsIndexRoute,
 }

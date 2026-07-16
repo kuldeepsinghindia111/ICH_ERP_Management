@@ -33,6 +33,8 @@ const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?:
   { title: "General Management", url: "/", icon: Settings, section: "settings" },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Student's Profile", url: "/students", icon: GraduationCap, section: "students" },
+  { title: "Examinations", url: "/exams", icon: BookOpen, section: "students" },
+  { title: "Timetable", url: "/timetable", icon: CalendarCheck, section: "students" },
   { title: "Attendance", url: "/attendance", icon: CalendarCheck, section: "students" },
   { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
   { title: "Make Payment", url: "/pay", icon: CreditCard, section: "payments" },
