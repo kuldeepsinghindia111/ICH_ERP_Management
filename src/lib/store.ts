@@ -245,19 +245,24 @@ export type PaymentFieldErrors = {
 };
 
 export function validatePaymentFields(
-  input: { amount: number; method: PaymentMethod; reference?: string; paidAt?: string },
+  input: { amount: number; method: PaymentMethod; reference?: string; transactionId?: string; paidAt?: string },
   existing: FeePayment[],
-): PaymentFieldErrors {
+): PaymentFieldErrors & { transactionId?: string } {
   const errors: PaymentFieldErrors = {};
   if (!Number.isFinite(input.amount)) errors.amount = "Enter a valid amount";
   else if (input.amount <= 0) errors.amount = "Amount must be greater than zero";
 
   const rule = REF_RULES[input.method];
-  const ref = input.reference?.trim() ?? "";
-  if (rule.required && !ref) {
-    errors.reference = `Reference is required for ${input.method.toUpperCase()} payments`;
-  } else if (ref && rule.regex && !rule.regex.test(ref)) {
-    errors.reference = `Invalid format for ${input.method.toUpperCase()}. ${rule.hint}`;
+  const txToCheck = input.transactionId !== undefined ? input.transactionId : (input.reference ?? "");
+  const tx = txToCheck.trim();
+  
+  if (input.method !== "cash") {
+    let errKey = input.transactionId !== undefined ? "transactionId" : "reference";
+    if (rule.required && !tx) {
+      (errors as any)[errKey] = `Required for ${input.method.toUpperCase()} payments`;
+    } else if (tx && rule.regex && !rule.regex.test(tx)) {
+      (errors as any)[errKey] = `Invalid format for ${input.method.toUpperCase()}. ${rule.hint}`;
+    }
   }
   if (!errors.reference && ref) {
     const day = (input.paidAt ? new Date(input.paidAt) : new Date()).toISOString().slice(0, 10);
@@ -273,11 +278,11 @@ export function validatePaymentFields(
 }
 
 export function validatePaymentInput(
-  input: { amount: number; method: PaymentMethod; reference?: string; paidAt?: string },
+  input: { amount: number; method: PaymentMethod; reference?: string; transactionId?: string; paidAt?: string },
   existing: FeePayment[],
 ): string | null {
   const e = validatePaymentFields(input, existing);
-  return e.amount ?? e.reference ?? e.method ?? null;
+  return e.amount ?? e.reference ?? e.transactionId ?? e.method ?? null;
 }
 
 // ---------- Receipt number format ----------

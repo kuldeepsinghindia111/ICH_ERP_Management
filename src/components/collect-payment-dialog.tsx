@@ -219,10 +219,10 @@ export function CollectPaymentDialog({
 
   const errors = useMemo(
     () => validatePaymentFields(
-      { amount: Number(amount), method, reference, paidAt: new Date(paidAt).toISOString() },
+      { amount: Number(amount), method, reference, transactionId, paidAt: new Date(paidAt).toISOString() },
       payments,
     ),
-    [amount, method, reference, paidAt, payments],
+    [amount, method, reference, transactionId, paidAt, payments],
   );
 
   const savePaymentMutation = useMutation({
@@ -525,12 +525,16 @@ export function CollectPaymentDialog({
 
               {method !== "cash" && (
                 <div>
-                  <Label>{method === "cheque" ? "Cheque No." : "Reference / UTR No."}</Label>
+                  <Label className={touched.transactionId && errors.transactionId ? "text-destructive" : ""}>{method === "cheque" ? "Cheque No." : "Reference / UTR No."}</Label>
                   <Input
+                    className={touched.transactionId && errors.transactionId ? "border-destructive focus-visible:ring-destructive" : ""}
                     value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
+                    onChange={(e) => { setTransactionId(e.target.value); setTouched({ ...touched, transactionId: true }); }}
                     placeholder={method === "cheque" ? "Enter cheque number" : "Enter transaction UTR"}
                   />
+                  {touched.transactionId && errors.transactionId && (
+                    <p className="mt-1 text-[10px] text-destructive">{errors.transactionId}</p>
+                  )}
                 </div>
               )}
 
