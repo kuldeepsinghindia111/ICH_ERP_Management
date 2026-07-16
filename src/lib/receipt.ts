@@ -23,109 +23,165 @@ export type ReceiptData = {
 };
 
 export function generateReceiptPdf(data: ReceiptData): jsPDF {
+  // A5 format portrait
   const doc = new jsPDF({ unit: "pt", format: "a5", orientation: "portrait" });
   const W = doc.internal.pageSize.getWidth();
-  let y = 40;
+  const H = doc.internal.pageSize.getHeight();
+  let y = 0;
 
-  // Header
+  // Colors
+  const primaryColor: [number, number, number] = [23, 37, 84]; // dark blue
+  const accentColor: [number, number, number] = [241, 245, 249]; // slate-100
+  const textColor: [number, number, number] = [30, 41, 59]; // slate-800
+  const mutedColor: [number, number, number] = [100, 116, 139]; // slate-500
+
+  // Top Header Banner
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, W, 50, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("FEE RECEIPT", W / 2, 32, { align: "center", renderingMode: "fill" });
+  
+  y = 75;
+
+  // College Name & Info
+  doc.setTextColor(...textColor);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(data.college.collegeName, W / 2, y, { align: "center" });
-  y += 18;
+  doc.text(data.college.collegeName.toUpperCase(), 30, y);
+  
+  y += 14;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text("Official Fee Payment Receipt", W / 2, y, { align: "center" });
-  y += 8;
-  doc.setDrawColor(180);
-  doc.line(30, y, W - 30, y);
+  doc.setTextColor(...mutedColor);
+  doc.text(`Email: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, 30, y);
+  
   y += 20;
+  
+  // Subtle separator
+  doc.setDrawColor(226, 232, 240); // slate-200
+  doc.setLineWidth(1);
+  doc.line(30, y, W - 30, y);
+  
+  y += 25;
 
-  // Receipt meta
+  // Receipt Meta Info (Receipt No & Date)
+  const ref = data.payment.reference || data.payment.id || "N/A";
+  const dt = new Date(data.payment.paidAt).toLocaleString('en-IN', { 
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+  });
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...textColor);
+  doc.text("Receipt No:", 30, y);
+  doc.text("Date:", W - 30, y, { align: "right" });
+  
+  y += 14;
+  doc.setFont("helvetica", "normal");
+  doc.text(ref, 30, y);
+  doc.text(dt, W - 30, y, { align: "right" });
+
+  y += 25;
+
+  // Student Information Box
+  doc.setFillColor(...accentColor);
+  doc.roundedRect(30, y, W - 60, 90, 6, 6, 'F');
+  
+  let sy = y + 20;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...textColor);
+  doc.text("Student Details", 45, sy);
+  
+  sy += 20;
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  const ref = data.payment.reference || data.payment.id || "—";
-  const dt = new Date(data.payment.paidAt).toLocaleString();
-  doc.text(`Receipt No: ${ref}`, 30, y);
-  doc.text(`Date: ${dt}`, W - 30, y, { align: "right" });
-  y += 20;
-
-  // Student box
-  doc.setFont("helvetica", "bold");
-  doc.text("Student", 30, y);
+  doc.setTextColor(...mutedColor);
+  doc.text("Name:", 45, sy);
+  doc.text("Roll No:", W / 2, sy);
+  
+  sy += 12;
   doc.setFont("helvetica", "normal");
-  y += 14;
-  const lines: [string, string][] = [
-    ["Name", data.student.name],
-    ["Father/Guardian", data.student.guardian || "—"],
-    ["Admission No.", data.student.admissionNo],
-    ["Roll No.", data.student.rollNo || "—"],
-    ...(data.program ? [["Program", `${data.program.name} (${data.program.code})`] as [string, string]] : []),
-  ];
-  lines.forEach(([k, v]) => {
-    doc.setTextColor(120);
-    doc.text(k, 30, y);
-    doc.setTextColor(20);
-    doc.text(String(v), 130, y);
-    y += 14;
-  });
-
-  y += 8;
-  doc.setDrawColor(220);
-  doc.line(30, y, W - 30, y);
-  y += 18;
-
-  // Payment
+  doc.setTextColor(...textColor);
+  doc.text(data.student.name.toUpperCase(), 45, sy);
+  doc.text(data.student.rollNo || "—", W / 2, sy);
+  
+  sy += 20;
   doc.setFont("helvetica", "bold");
-  doc.text("Payment", 30, y);
+  doc.setTextColor(...mutedColor);
+  doc.text("Program/Class:", 45, sy);
+  doc.text("Admission No:", W / 2, sy);
+  
+  sy += 12;
   doc.setFont("helvetica", "normal");
-  y += 14;
+  doc.setTextColor(...textColor);
+  const progText = data.program ? `${data.program.name} (Sem ${data.semester})` : `Semester ${data.semester}`;
+  doc.text(progText, 45, sy);
+  doc.text(data.student.admissionNo, W / 2, sy);
 
-  const pay: [string, string][] = [
-    ["Method", data.payment.method.toUpperCase()],
-    ...(data.payment.note ? [["Note", data.payment.note] as [string, string]] : []),
-  ];
-  pay.forEach(([k, v]) => {
-    doc.setTextColor(120);
-    doc.text(k, 30, y);
-    doc.setTextColor(20);
-    const wrapped = doc.splitTextToSize(String(v), W - 160);
-    doc.text(wrapped, 130, y);
-    y += 14 * wrapped.length;
-  });
+  y += 115;
 
-  y += 6;
-  // Amount box
-  doc.setDrawColor(200);
-  doc.rect(30, y, W - 60, 40);
-  doc.setTextColor(20);
+  // Payment Details Section
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("Amount received", 44, y + 25);
-  doc.setFontSize(14);
-  doc.text(inr(data.payment.amount), W - 44, y + 26, { align: "right" });
-  y += 56;
-
-
-  doc.setTextColor(120);
-  doc.setFontSize(7);
-  doc.text(
-    `Support: ${data.college.supportEmail} · ${data.college.supportPhone}`,
-    30,
-    y,
-  );
-  y += 10;
-  doc.setFont("helvetica", "bold");
-  doc.text(
-    "Note: Exam fees will be charged separately at the time of exam forms.",
-    30,
-    y,
-  );
+  doc.setFontSize(11);
+  doc.text("Payment Details", 30, y);
+  
+  y += 15;
+  // Table Header
+  doc.setFillColor(...primaryColor);
+  doc.rect(30, y, W - 60, 25, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.text("Description", 40, y + 16);
+  doc.text("Method", W / 2, y + 16);
+  doc.text("Amount", W - 40, y + 16, { align: "right" });
+  
+  y += 25;
+  
+  // Table Row
+  doc.setTextColor(...textColor);
   doc.setFont("helvetica", "normal");
-  y += 10;
-  doc.text(
-    "This is a system-generated receipt.",
-    30,
-    y,
-  );
+  
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(30, y, W - 60, 35, 'D');
+  
+  const descText = data.payment.note ? `Tuition Fee - ${data.payment.note}` : `Tuition Fee (Sem ${data.semester})`;
+  doc.text(doc.splitTextToSize(descText, (W / 2) - 50), 40, y + 16);
+  doc.text(data.payment.method.toUpperCase(), W / 2, y + 16);
+  doc.text(inr(data.payment.amount), W - 40, y + 16, { align: "right" });
+  
+  y += 35;
+
+  // Total Box
+  doc.setFillColor(...accentColor);
+  doc.rect(30, y, W - 60, 35, 'F');
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Total Received", W / 2, y + 22);
+  doc.setFontSize(12);
+  doc.text(inr(data.payment.amount), W - 40, y + 22, { align: "right" });
+
+  // Signatures
+  y += 80;
+  doc.setDrawColor(148, 163, 184);
+  doc.setLineWidth(0.5);
+  doc.line(W - 150, y, W - 30, y);
+  
+  y += 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...mutedColor);
+  doc.text("Authorized Signatory", W - 90, y, { align: "center" });
+  
+  // Footer Notes
+  y = H - 40;
+  doc.setFontSize(8);
+  doc.setTextColor(...mutedColor);
+  doc.text("Note: Exam fees will be charged separately at the time of exam forms.", W / 2, y, { align: "center" });
+  doc.text("This is a computer-generated document and does not require a physical signature.", W / 2, y + 12, { align: "center" });
 
   return doc;
 }
