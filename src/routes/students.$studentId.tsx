@@ -995,7 +995,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
       student: {
         name: student.name,
         admissionNo: student.admission_no,
-        rollNo: rolls[p.semester] || "",
+        rollNo: student.roll_number || "",
       },
       program: program ? { name: program.name, code: program.code } : undefined,
       semester: p.semester,
@@ -1011,7 +1011,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
         name: student.name,
         guardian: student.guardian,
         admissionNo: student.admission_no,
-        rollNo: rolls[p.semester] || "",
+        rollNo: student.roll_number || "",
       },
       program: program ? { name: program.name, code: program.code } : undefined,
       semester: p.semester,

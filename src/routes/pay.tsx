@@ -299,7 +299,7 @@ function PayPage() {
     const doc = generateReceiptPdf({
       college: paymentInfo,
       payment: { amount: receipt.amount, method: receipt.method, reference: receipt.ref, paidAt: receipt.paidAt },
-      student: { name: student.name, admissionNo: student.admission_no, rollNo: (student.rolls && student.rolls[receipt.semester]) || "" },
+      student: { name: student.name, admissionNo: student.admission_no, rollNo: student.roll_number || "" },
       program: program ? { name: program.name, code: program.code } : undefined,
       semester: receipt.semester,
     });
@@ -626,7 +626,7 @@ function PayPage() {
                   printReceiptPdf({
                     college: paymentInfo,
                     payment: { amount: receipt.amount, method: receipt.method, reference: receipt.ref, paidAt: receipt.paidAt },
-                    student: { name: student.name, guardian: student.guardian, admissionNo: student.admission_no, rollNo: (student.rolls && student.rolls[receipt.semester]) || "" },
+                    student: { name: student.name, guardian: student.guardian, admissionNo: student.admission_no, rollNo: student.roll_number || "" },
                     program: program ? { name: program.name, code: program.code } : undefined,
                     semester: receipt.semester,
                   });
