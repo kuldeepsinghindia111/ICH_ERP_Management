@@ -167,7 +167,7 @@ export function generateReceiptPdf(data: ReceiptData): jsPDF {
   doc.setDrawColor(200, 200, 200);
   doc.line(30, y, W - 30, y);
 
-  y += 30;
+  y += 15;
   
   // Footer Notes (Shifted right below the line)
   doc.setFontSize(9);
