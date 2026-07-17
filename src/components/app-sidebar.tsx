@@ -12,6 +12,7 @@ import {
   ScrollText,
   ShieldCheck,
   CalendarCheck,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -45,6 +46,7 @@ const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?:
 
 const admin: { title: string; url: string; icon: typeof Users; section: Section }[] = [
   { title: "Faculty Management", url: "/faculty", icon: Users, section: "faculty" },
+  { title: "Payroll & Salary", url: "/payroll", icon: FileText, section: "faculty" },
   { title: "Course Management", url: "/courses", icon: BookOpen, section: "courses" },
   { title: "Users & Roles", url: "/users", icon: ShieldCheck, section: "users" },
   { title: "Audit Log", url: "/audit", icon: ScrollText, section: "audit" },

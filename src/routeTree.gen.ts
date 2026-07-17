@@ -13,6 +13,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PayrollRouteImport } from './routes/payroll'
 import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
@@ -48,6 +49,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PayrollRoute = PayrollRouteImport.update({
+  id: '/payroll',
+  path: '/payroll',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PayRoute = PayRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
+  '/payroll': typeof PayrollRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
+  '/payroll': typeof PayrollRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
+  '/payroll': typeof PayrollRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/pay'
+    | '/payroll'
     | '/reports'
     | '/settings'
     | '/timetable'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/pay'
+    | '/payroll'
     | '/reports'
     | '/settings'
     | '/timetable'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/pay'
+    | '/payroll'
     | '/reports'
     | '/settings'
     | '/timetable'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   PayRoute: typeof PayRoute
+  PayrollRoute: typeof PayrollRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   TimetableRoute: typeof TimetableRoute
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payroll': {
+      id: '/payroll'
+      path: '/payroll'
+      fullPath: '/payroll'
+      preLoaderRoute: typeof PayrollRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pay': {
@@ -446,6 +466,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   PayRoute: PayRoute,
+  PayrollRoute: PayrollRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   TimetableRoute: TimetableRoute,
