@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StudentFormDialog } from "@/components/StudentFormDialog";
+import { StudentImportDialog } from "@/components/StudentImportDialog";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -109,7 +110,12 @@ function StudentsPage() {
           <Button asChild variant="outline">
             <Link to="/settings"><Settings className="mr-1 h-4 w-4" /> Settings</Link>
           </Button>
-          {canEdit && <StudentFormDialog programs={programs} />}
+          {canEdit && (
+            <>
+              <StudentImportDialog programs={programs} />
+              <StudentFormDialog programs={programs} />
+            </>
+          )}
         </div>
       </div>
 
