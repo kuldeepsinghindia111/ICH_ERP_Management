@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { LibraryImportDialog } from "@/components/LibraryImportDialog";
 import {
   Dialog,
   DialogContent,
@@ -190,6 +191,7 @@ function LibraryPage() {
           <Button onClick={() => setIsIssueBookOpen(true)} variant="secondary" className="gap-2">
             <UserCheck className="h-4 w-4" /> Issue Book
           </Button>
+          <LibraryImportDialog />
           <Button onClick={() => setIsAddBookOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" /> Add Book
           </Button>
