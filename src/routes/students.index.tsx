@@ -30,6 +30,7 @@ export const Route = createFileRoute("/students/")({
 
 function StudentsPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   // Get user's permissions
   const { data: canEdit } = useQuery({
@@ -79,6 +80,18 @@ function StudentsPage() {
       return { students: data, total: count || 0 };
     },
     placeholderData: keepPreviousData
+  });
+
+  const removeStudent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('students').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success("Student deleted successfully");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -233,6 +246,21 @@ function StudentsPage() {
                           >
                             View Profile
                           </Link>
+                          {canEdit && (
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-9 w-9"
+                              onClick={() => {
+                                if (window.confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
+                                  removeStudent.mutate(s.id);
+                                }
+                              }}
+                              title="Delete Student"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
