@@ -864,6 +864,7 @@ export function semesterSummary(
 export function studentTotals(
   studentId: string, currentSemester: number,
   data: Pick<State, "charges" | "adjustments" | "payments"> & { structures?: any[], student?: any },
+  includePrevious: boolean = false
 ) {
   let netPayable = 0, totalPaid = 0, balance = 0, totalCharged = 0, totalConcession = 0, totalScholarship = 0;
   let totalLate = 0, totalFine = 0, totalOther = 0;
@@ -871,7 +872,8 @@ export function studentTotals(
   const allAdjustments: any[] = [];
   const allPayments: any[] = [];
   
-  for (let s = 1; s <= currentSemester; s++) {
+  const startSem = includePrevious ? 1 : currentSemester;
+  for (let s = startSem; s <= currentSemester; s++) {
     const sum = semesterSummary(studentId, s, data);
     netPayable += sum.netPayable; totalPaid += sum.totalPaid; balance += sum.balance;
     totalCharged += sum.totalCharged; totalConcession += sum.totalConcession; totalScholarship += sum.totalScholarship;

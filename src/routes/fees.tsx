@@ -117,6 +117,7 @@ function FeesPage() {
   const [sem, setSem] = useState("all");
   const [status, setStatus] = useState<"all" | "pending" | "cleared">("all");
   const [pickStudentId, setPickStudentId] = useState<string | null>(null);
+  const [includePrevious, setIncludePrevious] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
 
@@ -124,7 +125,7 @@ function FeesPage() {
     const t = setTimeout(() => setDebouncedQ(q), 180);
     return () => clearTimeout(t);
   }, [q]);
-  useEffect(() => { setPage(1); }, [debouncedQ, program, sem, status, pickStudentId]);
+  useEffect(() => { setPage(1); }, [debouncedQ, program, sem, status, pickStudentId, includePrevious]);
 
   const rows = useMemo(() => {
     const items: {
@@ -146,13 +147,13 @@ function FeesPage() {
         if (!hit) return;
       }
       
-      const sum = studentTotals(st.id, st.current_semester, { charges, adjustments, payments, structures: feeStructures, student: st });
+      const sum = studentTotals(st.id, st.current_semester, { charges, adjustments, payments, structures: feeStructures, student: st }, includePrevious);
       if (status === "pending" && sum.balance <= 0) return;
       if (status === "cleared" && sum.balance > 0) return;
       items.push({ st, sum });
     });
     return items;
-  }, [students, debouncedQ, program, sem, status, pickStudentId, charges, adjustments, payments, feeStructures]);
+  }, [students, debouncedQ, program, sem, status, pickStudentId, charges, adjustments, payments, feeStructures, includePrevious]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -160,11 +161,11 @@ function FeesPage() {
   const totals = useMemo(() => {
     let paid = 0, balance = 0, billed = 0;
     students.forEach((st: any) => {
-      const t = studentTotals(st.id, st.current_semester, { charges, adjustments, payments, structures: feeStructures, student: st });
+      const t = studentTotals(st.id, st.current_semester, { charges, adjustments, payments, structures: feeStructures, student: st }, includePrevious);
       billed += t.netPayable; paid += t.totalPaid; balance += t.balance;
     });
     return { billed, paid, balance };
-  }, [students, charges, adjustments, payments, feeStructures]);
+  }, [students, charges, adjustments, payments, feeStructures, includePrevious]);
 
   if (isLoading) {
     return (
@@ -201,7 +202,7 @@ function FeesPage() {
       </div>
 
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
           <div className="relative sm:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder="Search student…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -212,6 +213,13 @@ function FeesPage() {
             <SelectContent>
               <SelectItem value="all">All programs</SelectItem>
               {programs.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={includePrevious ? "all" : "current"} onValueChange={(v) => setIncludePrevious(v === "all")}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current">Current Year</SelectItem>
+              <SelectItem value="all">All Years</SelectItem>
             </SelectContent>
           </Select>
           <div className="grid grid-cols-2 gap-2">
