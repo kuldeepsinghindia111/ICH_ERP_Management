@@ -28,7 +28,8 @@ export const Route = createFileRoute("/users")({
 });
 
 const ROLE_LABEL: Record<UserRole, string> = {
-  admin: "Admin", accountant: "Accountant", faculty: "Faculty", management: "Management"
+  admin: "Admin", accountant: "Accountant", faculty: "Faculty", management: "Management",
+  chief_coordinator: "Chief-Coordinator", academic_coordinator: "Academic Coordinator"
 };
 
 function UsersPage() {
@@ -397,6 +398,8 @@ function AddUserDialog() {
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
+                <SelectItem value="chief_coordinator">Chief-Coordinator</SelectItem>
+                <SelectItem value="academic_coordinator">Academic Coordinator</SelectItem>
                 <SelectItem value="accountant">Accountant</SelectItem>
                 <SelectItem value="faculty">Faculty</SelectItem>
               </SelectContent>
@@ -470,6 +473,8 @@ function EditUserDialog({ user, onSave, isPending, onDelete, isDeleting, canDele
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
+                <SelectItem value="chief_coordinator">Chief-Coordinator</SelectItem>
+                <SelectItem value="academic_coordinator">Academic Coordinator</SelectItem>
                 <SelectItem value="accountant">Accountant</SelectItem>
                 <SelectItem value="faculty">Faculty</SelectItem>
               </SelectContent>

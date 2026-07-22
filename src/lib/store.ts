@@ -143,7 +143,7 @@ export type FeePayment = {
 
 // ---- Roles / users / permissions ----
 
-export type UserRole = "admin" | "management" | "accountant" | "faculty";
+export type UserRole = "admin" | "management" | "chief_coordinator" | "academic_coordinator" | "accountant" | "faculty";
 
 export type Section =
   | "students" | "fees" | "payments" | "reports"
@@ -182,7 +182,7 @@ function makePerms(fn: (s: Section) => Permission): Permissions {
 
 export function defaultPermissionsFor(role: UserRole): Permissions {
   if (role === "admin") return makePerms(() => ({ view: true, edit: true }));
-  if (role === "management") return makePerms(() => ({ view: true, edit: false }));
+  if (role === "management" || role === "chief_coordinator" || role === "academic_coordinator") return makePerms(() => ({ view: true, edit: false }));
   if (role === "accountant")
     return makePerms((s) => {
       if (s === "users") return { view: false, edit: false };
@@ -476,7 +476,11 @@ function seedUsers(): AppUser[] { return []; }
 const initialUsers = seedUsers();
 
 function nextCode(role: UserRole, users: AppUser[]): string {
-  const prefix = role === "admin" ? "ADM" : role === "accountant" ? "ACC" : "FAC";
+  const prefix = role === "admin" ? "ADM" : 
+                 role === "management" ? "MGT" :
+                 role === "chief_coordinator" ? "CC" :
+                 role === "academic_coordinator" ? "AC" :
+                 role === "accountant" ? "ACC" : "FAC";
   let max = 0;
   users.forEach((u) => {
     if (u.userCode.startsWith(prefix + "-")) {

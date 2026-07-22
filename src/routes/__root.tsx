@@ -215,6 +215,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: "Admin",
   management: "Management",
+  chief_coordinator: "Chief-Coordinator",
+  academic_coordinator: "Academic Coordinator",
   accountant: "Accountant",
   faculty: "Faculty",
 };
