@@ -347,7 +347,7 @@ function StudentDetail() {
 
         <Card>
           <CardContent className="grid grid-cols-3 gap-2 p-6">
-            <TotalPill label="Billed" value={inr(totals.netPayable)} />
+            <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
             <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
             <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
           </CardContent>

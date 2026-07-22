@@ -408,7 +408,7 @@ export function CollectPaymentDialog({
             {sum && (
               <div className="grid grid-cols-3 gap-2 mt-4">
                 <div className="rounded-md bg-muted/60 p-2 text-center">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Billed</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Net Payable</p>
                   <p className="mt-1 font-semibold text-sm">{inr(sum.netPayable)}</p>
                 </div>
                 <div className="rounded-md bg-muted/60 p-2 text-center">

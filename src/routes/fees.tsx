@@ -257,7 +257,7 @@ function FeesPage() {
                   <th className="px-4 py-3 text-right font-medium">Other</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
-                  <th className="px-4 py-3 text-right font-medium">Net</th>
+                  <th className="px-4 py-3 text-right font-medium min-w-[160px]">Net Amount to be Paid</th>
                   <th className="px-4 py-3 text-right font-medium">Paid</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3"></th>

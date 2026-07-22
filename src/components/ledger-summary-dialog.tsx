@@ -23,7 +23,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
 
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
           <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Billed</p>
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Net Payable</p>
             <p className="mt-1 font-display text-lg font-semibold">{inr(sum.netPayable)}</p>
           </div>
           <div className="rounded-md bg-muted/60 p-3 text-center">
