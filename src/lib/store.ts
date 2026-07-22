@@ -877,10 +877,23 @@ export function studentTotals(
 ) {
   let netPayable = 0, totalPaid = 0, balance = 0, totalCharged = 0, totalConcession = 0, totalScholarship = 0;
   let totalLate = 0, totalFine = 0, totalOther = 0;
+  let arrears = 0;
   const allCharges: any[] = [];
   const allAdjustments: any[] = [];
   const allPayments: any[] = [];
   
+  if (!includePrevious && currentSemester > 1) {
+    for (let s = 1; s < currentSemester; s++) {
+      const sum = semesterSummary(studentId, s, data);
+      arrears += sum.balance;
+    }
+    if (arrears > 0) {
+      netPayable += arrears;
+      balance += arrears;
+      totalCharged += arrears;
+    }
+  }
+
   const startSem = includePrevious ? 1 : currentSemester;
   for (let s = startSem; s <= currentSemester; s++) {
     const sum = semesterSummary(studentId, s, data);
@@ -893,7 +906,7 @@ export function studentTotals(
   }
   return { 
     netPayable, totalPaid, balance, totalCharged, totalConcession, totalScholarship,
-    totalLate, totalFine, totalOther,
+    totalLate, totalFine, totalOther, arrears,
     charges: allCharges,
     adjustments: allAdjustments,
     payments: allPayments
