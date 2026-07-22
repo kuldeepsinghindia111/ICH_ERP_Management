@@ -2,12 +2,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStore, inr, formatYear, FEE_HEADS } from "@/lib/store";
-import { Pencil, Trash2, Check, X } from "lucide-react";
+import { Pencil, Trash2, Save, X } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }) {
-  const { role, removeCharge, removeAdjustment, removePayment, updateCharge, updateAdjustment, updatePayment } = useStore();
+  const { role } = useStore();
   const isAdmin = role === "admin";
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async ({ table, id }: { table: string, id: string }) => {
+      const { error } = await supabase.from(table).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { table }) => {
+      toast.success("Transaction deleted");
+      queryClient.invalidateQueries({ queryKey: [table] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ table, id, amount }: { table: string, id: string, amount: number }) => {
+      const { error } = await supabase.from(table).update({ amount }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { table }) => {
+      toast.success("Transaction updated");
+      queryClient.invalidateQueries({ queryKey: [table] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -62,8 +90,8 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
             }))}
             empty="No charges."
             canEdit={isAdmin}
-            onDelete={(id) => removeCharge(id)}
-            onSave={(id, amount) => updateCharge(id, { amount })}
+            onDelete={(id) => deleteMutation.mutate({ table: "fee_charges", id })}
+            onSave={(id, amount) => updateMutation.mutate({ table: "fee_charges", id, amount })}
           />
           <LedgerBlock
             title="Concessions & scholarships"
@@ -77,8 +105,8 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
             }))}
             empty="No concessions or scholarships."
             canEdit={isAdmin}
-            onDelete={(id) => removeAdjustment(id)}
-            onSave={(id, amount) => updateAdjustment(id, { amount })}
+            onDelete={(id) => deleteMutation.mutate({ table: "fee_adjustments", id })}
+            onSave={(id, amount) => updateMutation.mutate({ table: "fee_adjustments", id, amount })}
           />
           <LedgerBlock
             title="Payments"
@@ -92,8 +120,8 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
             }))}
             empty="No payments recorded."
             canEdit={isAdmin}
-            onDelete={(id) => removePayment(id)}
-            onSave={(id, amount) => updatePayment(id, { amount })}
+            onDelete={(id) => deleteMutation.mutate({ table: "fee_payments", id })}
+            onSave={(id, amount) => updateMutation.mutate({ table: "fee_payments", id, amount })}
           />
         </div>
       </DialogContent>
@@ -145,7 +173,7 @@ function LedgerBlock({
                       }
                       setEditingId(null);
                     }}>
-                    <Check className="h-4 w-4" />
+                    <Save className="h-4 w-4" />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => setEditingId(null)}>
