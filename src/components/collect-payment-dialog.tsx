@@ -172,17 +172,27 @@ export function CollectPaymentDialog({
 
   const regenReceipt = () => setReference(nextReceiptNo(new Date(paidAt).toISOString(), payments, receiptFormat));
 
-  // Prefill on open and when semester/date changes.
+  // Prefill on open and when semester/date/adjustments change.
+  const calcBalance = (sum?.balance ?? 0)
+    - Number(concession || 0)
+    - Number(scholarship || 0)
+    + Number(lateFee || 0)
+    + Number(fine || 0)
+    + Number(otherCharge || 0);
+
   useEffect(() => {
     if (open && sum) {
-      setAmount(String(Math.max(sum.balance, 0)));
-      setConcession("");
-      setScholarship("");
-      setLateFee("");
-      setFine("");
-      setOtherCharge("");
+      if (!touched.amount) {
+        setAmount(String(Math.max(calcBalance, 0)));
+      }
+      if (!touched.reference) {
+        setConcession(concession); // just triggering effect
+      }
+    } else if (!open) {
+      // reset touched on close
+      setTouched({});
     }
-  }, [open, sem]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, sum, concession, scholarship, lateFee, fine, otherCharge, touched.amount]);
 
   useEffect(() => {
     if (open && (method === "cash" || !reference)) {
@@ -322,7 +332,7 @@ export function CollectPaymentDialog({
 
   const resetForm = () => {
     setReference(""); setTransactionId(""); setNote(""); setAmount(""); setTouched({});
-    setLateFee(""); setFine(""); setOtherCharge("");
+    setLateFee(""); setFine(""); setOtherCharge(""); setConcession(""); setScholarship("");
   };
 
   const closeAll = () => {
