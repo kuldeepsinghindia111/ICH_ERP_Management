@@ -1,8 +1,8 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useStore, inr, formatYear } from "@/lib/store";
 import { generateReceiptPdf, printReceiptPdf, downloadReceiptPdf, type ReceiptData } from "@/lib/receipt";
-import { Printer, Download, Receipt } from "lucide-react";
+import { Printer, Download, Receipt, X } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -114,6 +114,11 @@ export function ReceiptViewerDialog({ student, payments, programs }: { student: 
               <Button size="sm" variant="default" onClick={handleDownload} disabled={!selectedPaymentId}>
                 <Download className="mr-2 h-4 w-4" /> Download
               </Button>
+              <DialogClose asChild>
+                <Button size="sm" variant="ghost">
+                  <X className="mr-1 h-4 w-4" /> Close
+                </Button>
+              </DialogClose>
             </div>
           </div>
         </div>
