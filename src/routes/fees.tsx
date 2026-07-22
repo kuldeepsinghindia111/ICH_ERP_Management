@@ -261,12 +261,13 @@ function FeesPage() {
                   <th className="px-4 py-3 text-right font-medium min-w-[160px]">Net Payable</th>
                   <th className="px-4 py-3 text-right font-medium">Paid</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
+                  <th className="px-4 py-3 text-left font-medium">Remarks</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 && (
-                  <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
+                  <tr><td colSpan={14} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
                 {pageRows.map(({ st, sum }) => (
                   <tr key={st.id} className="hover:bg-accent/40">
@@ -287,6 +288,11 @@ function FeesPage() {
                       {sum.balance > 0
                         ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
                         : <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
+                      {sum.payments && sum.payments.length > 0
+                        ? Array.from(new Set(sum.payments.filter((p: any) => p.note).map((p: any) => p.note))).join(', ') || "—"
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
