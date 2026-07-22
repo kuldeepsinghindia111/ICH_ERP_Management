@@ -253,13 +253,15 @@ function FeesPage() {
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Course</th>
                   <th className="px-4 py-3 font-medium">Year</th>
+                  <th className="px-4 py-3 font-medium">Admission No</th>
+                  <th className="px-4 py-3 font-medium">Roll No</th>
                   <th className="px-4 py-3 text-right font-medium">Total Payable Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Late Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Fine</th>
                   <th className="px-4 py-3 text-right font-medium">Other</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
-                  <th className="px-4 py-3 text-right font-medium min-w-[160px]">Net Payable</th>
+                  <th className="px-4 py-3 text-right font-medium min-w-[160px]">Amount Net Payable</th>
                   <th className="px-4 py-3 text-right font-medium">Amount Paid</th>
                   <th className="px-4 py-3 text-right font-medium">Amount Paid Date</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
@@ -269,7 +271,7 @@ function FeesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 && (
-                  <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
+                  <tr><td colSpan={17} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
                 {pageRows.map(({ st, sum }) => (
                   <tr key={st.id} className="hover:bg-accent/40">
@@ -278,6 +280,8 @@ function FeesPage() {
                     </td>
                     <td className="px-4 py-3">{programs.find((p: any) => p.id === st.program_id)?.name}</td>
                     <td className="px-4 py-3">{formatYear(st.current_semester)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{st.admission_no || "—"}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{st.roll_number || "—"}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
                     <td className="px-4 py-3 text-right">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
                     <td className="px-4 py-3 text-right">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
