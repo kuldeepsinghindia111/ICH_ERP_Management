@@ -95,30 +95,30 @@ function Dashboard() {
       let stTotalPaid = 0;
       let stBalance = 0;
 
-      for (let s = 1; s <= currentSem; s++) {
-        const charges = feeCharges.filter(c => c.student_id === stId && c.semester === s);
-        const adjustments = feeAdjustments.filter(a => a.student_id === stId && a.semester === s);
-        const payments = feePayments.filter(p => p.student_id === stId && p.semester === s);
-        
-        let prescribedFee = 0;
-        const structs = feeStructures.filter(fs => fs.program_id === st.program_id && fs.semester === s);
-        prescribedFee = structs.reduce((sum, fs) => sum + Number(fs.amount), 0);
-        
-        const manualCharges = charges.reduce((sum, c) => sum + Number(c.amount), 0);
-        const totalCharged = prescribedFee + manualCharges;
-        
-        const totalConcession = adjustments.filter(a => a.type === "concession").reduce((sum, a) => sum + Number(a.amount), 0);
-        const totalScholarship = adjustments.filter(a => a.type === "scholarship").reduce((sum, a) => sum + Number(a.amount), 0);
-        const totalAdjustment = totalConcession + totalScholarship;
-        
-        const netPayable = totalCharged - totalAdjustment;
-        const totalPaid = payments.filter(p => !p.voided).reduce((sum, p) => sum + Number(p.amount), 0);
-        const balance = netPayable - totalPaid;
-        
-        stNetPayable += netPayable;
-        stTotalPaid += totalPaid;
-        stBalance += balance;
-      }
+      // Only calculate for the current session/semester
+      const s = currentSem;
+      const charges = feeCharges.filter(c => c.student_id === stId && c.semester === s);
+      const adjustments = feeAdjustments.filter(a => a.student_id === stId && a.semester === s);
+      const payments = feePayments.filter(p => p.student_id === stId && p.semester === s);
+      
+      let prescribedFee = 0;
+      const structs = feeStructures.filter(fs => fs.program_id === st.program_id && fs.semester === s);
+      prescribedFee = structs.reduce((sum, fs) => sum + Number(fs.amount), 0);
+      
+      const manualCharges = charges.reduce((sum, c) => sum + Number(c.amount), 0);
+      const totalCharged = prescribedFee + manualCharges;
+      
+      const totalConcession = adjustments.filter(a => a.type === "concession").reduce((sum, a) => sum + Number(a.amount), 0);
+      const totalScholarship = adjustments.filter(a => a.type === "scholarship").reduce((sum, a) => sum + Number(a.amount), 0);
+      const totalAdjustment = totalConcession + totalScholarship;
+      
+      const netPayable = totalCharged - totalAdjustment;
+      const totalPaid = payments.filter(p => !p.voided).reduce((sum, p) => sum + Number(p.amount), 0);
+      const balance = netPayable - totalPaid;
+      
+      stNetPayable = netPayable;
+      stTotalPaid = totalPaid;
+      stBalance = balance;
 
       netPayableAll += stNetPayable;
       totalPaidAll += stTotalPaid;
