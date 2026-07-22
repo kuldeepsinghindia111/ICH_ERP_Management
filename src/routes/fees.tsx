@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { LedgerSummaryDialog } from "@/components/ledger-summary-dialog";
 import { CollectPaymentDialog } from "@/components/collect-payment-dialog";
+import { ReceiptViewerDialog } from "@/components/receipt-viewer-dialog";
 import { StudentAutosuggest } from "@/components/student-autosuggest";
 
 
@@ -251,13 +252,13 @@ function FeesPage() {
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Course</th>
                   <th className="px-4 py-3 font-medium">Year</th>
-                  <th className="px-4 py-3 text-right font-medium">Total Fees</th>
+                  <th className="px-4 py-3 text-right font-medium">Total Payable Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Late Fees</th>
                   <th className="px-4 py-3 text-right font-medium">Fine</th>
                   <th className="px-4 py-3 text-right font-medium">Other</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
-                  <th className="px-4 py-3 text-right font-medium min-w-[160px]">Net Amount to be Paid</th>
+                  <th className="px-4 py-3 text-right font-medium min-w-[160px]">Net Payable</th>
                   <th className="px-4 py-3 text-right font-medium">Paid</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3"></th>
@@ -293,6 +294,7 @@ function FeesPage() {
                           <CollectPaymentDialog studentId={st.id} semester={st.current_semester} variant="sm" />
                         )}
                         <LedgerSummaryDialog student={st} sum={sum} />
+                        <ReceiptViewerDialog student={st} payments={sum.payments || []} programs={programs || []} />
                       </div>
                     </td>
                   </tr>
