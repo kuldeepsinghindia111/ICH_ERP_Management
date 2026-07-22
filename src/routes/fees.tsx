@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ExternalLink, Loader2, Settings } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Search, ExternalLink, Loader2, Settings, Pencil, Save, X, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { useStore, semesterSummary, studentTotals, inr, formatYear } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
@@ -289,10 +290,11 @@ function FeesPage() {
                         ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
                         : <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>}
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] whitespace-normal break-words">
-                      {sum.payments && sum.payments.length > 0
-                        ? Array.from(new Set(sum.payments.filter((p: any) => p.note).map((p: any) => p.note))).join(', ') || "—"
-                        : "—"}
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      <InlineRemarkEditor 
+                        payments={sum.payments} 
+                        canEdit={canEditPayments ?? false} 
+                      />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
@@ -338,5 +340,84 @@ function SummaryTile({
         <p className={`mt-2 font-display text-2xl font-semibold ${cls}`}>{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function InlineRemarkEditor({ payments, canEdit }: { payments: any[], canEdit: boolean }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [remark, setRemark] = useState("");
+  const queryClient = useQueryClient();
+
+  const activePayments = payments?.filter((p: any) => p.note) || [];
+  const displayRemark = activePayments.length > 0 
+    ? Array.from(new Set(activePayments.map((p: any) => p.note))).join(', ')
+    : "—";
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ note }: { note: string | null }) => {
+      if (!payments || payments.length === 0) throw new Error("No payments exist to attach a remark to.");
+      const ids = payments.map((p: any) => p.id);
+      const { error } = await supabase.from('fee_payments').update({ note }).in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: (_, { note }) => {
+      toast.success(note ? "Remark saved" : "Remark deleted");
+      queryClient.invalidateQueries({ queryKey: ['fee_payments'] });
+      setIsEditing(false);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input 
+          className="h-7 text-xs w-[140px]" 
+          value={remark} 
+          onChange={(e) => setRemark(e.target.value)} 
+          autoFocus
+          placeholder="Remark..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") updateMutation.mutate({ note: remark || null });
+            if (e.key === "Escape") setIsEditing(false);
+          }}
+        />
+        <Button size="icon" variant="ghost" className="h-6 w-6 text-success shrink-0 hover:bg-success/10 hover:text-success" onClick={() => updateMutation.mutate({ note: remark || null })}>
+          <Save className="h-3 w-3" />
+        </Button>
+        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive shrink-0 hover:bg-destructive/10 hover:text-destructive" onClick={() => setIsEditing(false)}>
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between group gap-2 min-w-[120px]">
+      <span className="max-w-[200px] whitespace-normal break-words">
+        {displayRemark}
+      </span>
+      {canEdit && payments?.length > 0 && (
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-foreground" 
+            onClick={() => {
+              setRemark(displayRemark !== "—" ? displayRemark : "");
+              setIsEditing(true);
+            }}>
+            <Pencil className="h-3 w-3" />
+          </Button>
+          {displayRemark !== "—" && (
+            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                if (confirm("Are you sure you want to delete this remark?")) {
+                  updateMutation.mutate({ note: null });
+                }
+              }}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
