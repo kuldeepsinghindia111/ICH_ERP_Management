@@ -129,6 +129,8 @@ function Reports() {
 
   const [program, setProgram] = useState("all");
   const [sem, setSem] = useState("all");
+  const [pendingProgram, setPendingProgram] = useState("all");
+  const [pendingSem, setPendingSem] = useState("all");
   const [selectedSessionId, setSessionId] = useState<string | null>(null);
   const sessionId = selectedSessionId !== null ? selectedSessionId : activeSessionId;
   const [month, setMonth] = useState<string>("all"); // 1-12
@@ -168,15 +170,15 @@ function Reports() {
   const pending = useMemo(() => {
     const rows: { st: (typeof students)[number]; semester: number; balance: number }[] = [];
     students.forEach((st) => {
-      if (program !== "all" && st.programId !== program) return;
+      if (pendingProgram !== "all" && st.programId !== pendingProgram) return;
       for (let s = 1; s <= st.currentSemester; s++) {
-        if (sem !== "all" && s !== Number(sem)) continue;
+        if (pendingSem !== "all" && s !== Number(pendingSem)) continue;
         const sum = semesterSummary(st.id, s, { charges, adjustments, payments, structures: feeStructures, student: st });
         if (sum.balance > 0) rows.push({ st, semester: s, balance: sum.balance });
       }
     });
     return rows.sort((a, b) => b.balance - a.balance);
-  }, [students, charges, adjustments, payments, feeStructures, program, sem]);
+  }, [students, charges, adjustments, payments, feeStructures, pendingProgram, pendingSem]);
 
   const byHead = useMemo(() => {
     const m: Record<string, number> = {};
@@ -274,6 +276,71 @@ function Reports() {
     w.document.close();
   };
 
+  const exportPendingCsv = () => {
+    const rows = ["Student,Admission,Program,Class/Program,Balance"];
+    pending.forEach((r) => {
+      const prog = programs.find((pr) => pr.id === r.st.programId);
+      rows.push([
+        r.st.name,
+        r.st.admissionNo,
+        prog?.name ?? "",
+        formatYear(r.semester),
+        r.balance,
+      ].join(","));
+    });
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `pending_fees.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printPending = () => {
+    const rows = pending.map((r) => {
+      const prog = programs.find((pr) => pr.id === r.st.programId);
+      return `<tr>
+        <td>${r.st.name ?? ""}<br/><span style="color:#666;font-size:11px">${r.st.admissionNo ?? ""}</span></td>
+        <td>${prog?.name ?? ""}</td>
+        <td>${formatYear(r.semester)}</td>
+        <td style="text-align:right">₹ ${r.balance.toLocaleString("en-IN")}</td>
+      </tr>`;
+    }).join("");
+    const filterLine = [
+      pendingProgram !== "all" && `Program: ${programs.find((pp) => pp.id === pendingProgram)?.name}`,
+      pendingSem !== "all" && `Class/Program: ${formatYear(Number(pendingSem))}`
+    ].filter(Boolean).join(" · ") || "All pending fees";
+
+    const totalPendingAmount = pending.reduce((sum, r) => sum + r.balance, 0);
+
+    const html = `<!doctype html><html><head><title>Pending Fees Report</title>
+      <style>
+        body{font-family:system-ui,sans-serif;padding:24px;color:#111}
+        h1{font-size:20px;margin:0 0 4px}
+        .meta{color:#555;font-size:12px;margin-bottom:16px}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th,td{padding:6px 8px;border-bottom:1px solid #e5e5e5;text-align:left;vertical-align:top}
+        th{background:#f5f5f5;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#555}
+        tfoot td{font-weight:600;border-top:2px solid #111;border-bottom:none}
+      </style></head><body>
+      <h1>${paymentInfo.collegeName} — Pending Fees Report</h1>
+      <div class="meta">${filterLine} · Generated ${new Date().toLocaleString()}</div>
+      <table>
+        <thead><tr>
+          <th>Student</th><th>Program</th>
+          <th>Class/Program</th><th style="text-align:right">Balance</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;color:#888;padding:24px">No pending dues for these filters.</td></tr>`}</tbody>
+        <tfoot><tr><td colspan="3" style="text-align:right">Total (${pending.length} records)</td>
+          <td style="text-align:right">₹ ${totalPendingAmount.toLocaleString("en-IN")}</td></tr></tfoot>
+      </table>
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
       <div>
@@ -354,7 +421,7 @@ function Reports() {
                 <SelectTrigger className="mt-1 h-8 text-xs w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All years</SelectItem>
-                  {[1,2,3,4,5,6].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
+                  {[1,2,3].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -445,9 +512,47 @@ function Reports() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="font-display text-lg">Pending fees</CardTitle>
-          <p className="text-xs text-muted-foreground">{pending.length} year entries with dues (respects program / year filters).</p>
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between space-y-0">
+          <div>
+            <CardTitle className="font-display text-lg">Pending fees</CardTitle>
+            <p className="text-xs text-muted-foreground">{pending.length} entries with dues.</p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={pendingProgram} onValueChange={setPendingProgram}>
+                <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder="Class/program" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All programs</SelectItem>
+                  {programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={pendingSem} onValueChange={setPendingSem}>
+                <SelectTrigger className="h-8 text-xs w-[110px]"><SelectValue placeholder="Year" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All years</SelectItem>
+                  {[1,2,3].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportPendingCsv}
+                disabled={!canExport || pending.length === 0}
+                title={!canExport ? "You don't have permission to export reports" : undefined}
+                className="ml-2"
+              >
+                Export CSV
+              </Button>
+              <Button
+                size="sm"
+                onClick={printPending}
+                disabled={!canExport || pending.length === 0}
+                title={!canExport ? "You don't have permission to print" : undefined}
+              >
+                <Printer className="mr-1 h-4 w-4" /> Print list
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="max-h-[420px] overflow-y-auto">
@@ -455,7 +560,7 @@ function Reports() {
               <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2 font-medium">Student</th>
-                  <th className="px-4 py-2 font-medium">Sem</th>
+                  <th className="px-4 py-2 font-medium">Class/Program</th>
                   <th className="px-4 py-2 text-right font-medium">Balance</th>
                   <th className="px-4 py-2"></th>
                 </tr>
