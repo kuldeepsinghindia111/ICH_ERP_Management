@@ -180,14 +180,14 @@ function StudentsPage() {
                 <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Father's Name</th>
-                  <th className="px-4 py-3 font-medium">Male/Female</th>
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium">Address</th>
-                  <th className="px-4 py-3 font-medium">Mobile No.</th>
                   <th className="px-4 py-3 font-medium">Admission No</th>
                   <th className="px-4 py-3 font-medium">Program</th>
                   <th className="px-4 py-3 font-medium">Year</th>
                   <th className="px-4 py-3 font-medium">Roll No.</th>
+                  <th className="px-4 py-3 font-medium">Male/Female</th>
+                  <th className="px-4 py-3 font-medium">Category</th>
+                  <th className="px-4 py-3 font-medium">Address</th>
+                  <th className="px-4 py-3 font-medium">Mobile No.</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -217,16 +217,16 @@ function StudentsPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-3">{s.guardian || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
+                      <td className="px-4 py-3">{program?.name ?? "—"}</td>
+                      <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
                       <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
                       <td className="px-4 py-3">{s.category || "—"}</td>
                       <td className="px-4 py-3">
                         <div className="max-w-[150px] truncate" title={s.address}>{s.address || "—"}</div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs">{s.phone || "—"}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
-                      <td className="px-4 py-3">{program?.name ?? "—"}</td>
-                      <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           {canEdit && (
