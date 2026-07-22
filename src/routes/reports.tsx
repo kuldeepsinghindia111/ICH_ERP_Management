@@ -171,11 +171,12 @@ function Reports() {
     const rows: { st: (typeof students)[number]; semester: number; balance: number }[] = [];
     students.forEach((st) => {
       if (pendingProgram !== "all" && st.programId !== pendingProgram) return;
-      for (let s = 1; s <= st.currentSemester; s++) {
-        if (pendingSem !== "all" && s !== Number(pendingSem)) continue;
-        const sum = semesterSummary(st.id, s, { charges, adjustments, payments, structures: feeStructures, student: st });
-        if (sum.balance > 0) rows.push({ st, semester: s, balance: sum.balance });
-      }
+      
+      const s = st.currentSemester;
+      if (pendingSem !== "all" && s !== Number(pendingSem)) return;
+      
+      const sum = semesterSummary(st.id, s, { charges, adjustments, payments, structures: feeStructures, student: st });
+      if (sum.balance > 0) rows.push({ st, semester: s, balance: sum.balance });
     });
     return rows.sort((a, b) => b.balance - a.balance);
   }, [students, charges, adjustments, payments, feeStructures, pendingProgram, pendingSem]);
