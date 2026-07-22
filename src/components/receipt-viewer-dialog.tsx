@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useStore, inr, formatYear } from "@/lib/store";
 import { generateReceiptPdf, printReceiptPdf, downloadReceiptPdf, type ReceiptData } from "@/lib/receipt";
 import { Printer, Download, Receipt } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function ReceiptViewerDialog({ student, payments, programs }: { student: any, payments: any[], programs: any[] }) {
@@ -13,7 +13,7 @@ export function ReceiptViewerDialog({ student, payments, programs }: { student: 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Filter out voided payments
-  const validPayments = payments.filter(p => !p.voided);
+  const validPayments = useMemo(() => payments.filter(p => !p.voided), [payments]);
 
   useEffect(() => {
     if (open && validPayments.length > 0 && !selectedPaymentId) {
@@ -41,11 +41,8 @@ export function ReceiptViewerDialog({ student, payments, programs }: { student: 
 
     try {
       const doc = generateReceiptPdf(receiptData);
-      const blob = doc.output("blob");
-      const url = URL.createObjectURL(blob);
+      const url = doc.output("datauristring");
       setPreviewUrl(url);
-
-      return () => URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
     }
