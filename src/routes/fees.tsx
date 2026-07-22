@@ -289,7 +289,7 @@ function FeesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        {sum.balance > 0 && canEditPayments && (
+                        {canEditPayments && (
                           <CollectPaymentDialog studentId={st.id} semester={st.current_semester} variant="sm" />
                         )}
                         <LedgerSummaryDialog student={st} sum={sum} />

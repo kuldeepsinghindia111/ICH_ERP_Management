@@ -1,9 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { inr, formatYear, FEE_HEADS } from "@/lib/store";
+import { Input } from "@/components/ui/input";
+import { useStore, inr, formatYear, FEE_HEADS } from "@/lib/store";
+import { Pencil, Trash2, Check, X } from "lucide-react";
+import { useState } from "react";
 
 export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }) {
+  const { role, removeCharge, removeAdjustment, removePayment, updateCharge, updateAdjustment, updatePayment } = useStore();
+  const isAdmin = role === "admin";
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -54,8 +58,12 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
               main: FEE_HEADS.find((h) => h.key === c.head)?.label ?? c.head,
               sub: c.label,
               right: inr(c.amount),
+              rawAmount: c.amount,
             }))}
             empty="No charges."
+            canEdit={isAdmin}
+            onDelete={(id) => removeCharge(id)}
+            onSave={(id, amount) => updateCharge(id, { amount })}
           />
           <LedgerBlock
             title="Concessions & scholarships"
@@ -65,8 +73,12 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
               sub: a.label,
               right: `− ${inr(a.amount)}`,
               rightClass: "text-warning",
+              rawAmount: a.amount,
             }))}
             empty="No concessions or scholarships."
+            canEdit={isAdmin}
+            onDelete={(id) => removeAdjustment(id)}
+            onSave={(id, amount) => updateAdjustment(id, { amount })}
           />
           <LedgerBlock
             title="Payments"
@@ -76,8 +88,12 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
               sub: `${new Date(p.paidAt).toLocaleDateString()} · ${p.reference ?? "—"}${p.voided && p.voidReason ? ` — ${p.voidReason}` : ""}`,
               right: inr(p.amount),
               rightClass: p.voided ? "text-muted-foreground line-through" : "text-success",
+              rawAmount: p.amount,
             }))}
             empty="No payments recorded."
+            canEdit={isAdmin}
+            onDelete={(id) => removePayment(id)}
+            onSave={(id, amount) => updatePayment(id, { amount })}
           />
         </div>
       </DialogContent>
@@ -86,12 +102,18 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
 }
 
 function LedgerBlock({
-  title, rows, empty,
+  title, rows, empty, canEdit, onDelete, onSave
 }: {
   title: string;
-  rows: { id: string; main: string; sub?: string; right: string; rightClass?: string }[];
+  rows: { id: string; main: string; sub?: string; right: string; rightClass?: string; rawAmount: number }[];
   empty: string;
+  canEdit?: boolean;
+  onDelete?: (id: string) => void;
+  onSave?: (id: string, amount: number) => void;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<string>("");
+
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="border-b border-border px-4 py-3">
@@ -100,12 +122,60 @@ function LedgerBlock({
       <div className="divide-y divide-border">
         {rows.length === 0 && <div className="p-4 text-sm text-muted-foreground">{empty}</div>}
         {rows.map((r) => (
-          <div key={r.id} className="flex items-center justify-between px-4 py-3 text-sm">
+          <div key={r.id} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-muted/30 group">
             <div>
               <p className="font-medium text-foreground">{r.main}</p>
               {r.sub && <p className="text-xs text-muted-foreground">{r.sub}</p>}
             </div>
-            <span className={r.rightClass ?? "text-foreground"}>{r.right}</span>
+            
+            <div className="flex items-center gap-3">
+              {editingId === r.id ? (
+                <div className="flex items-center gap-2">
+                  <Input 
+                    className="w-24 h-8 text-right" 
+                    type="number"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-success hover:text-success hover:bg-success/10" 
+                    onClick={() => {
+                      if (onSave && !isNaN(Number(editAmount))) {
+                        onSave(r.id, Number(editAmount));
+                      }
+                      setEditingId(null);
+                    }}>
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setEditingId(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <span className={r.rightClass ?? "text-foreground"}>{r.right}</span>
+                  {canEdit && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
+                        setEditingId(r.id);
+                        setEditAmount(String(r.rawAmount));
+                      }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this transaction?") && onDelete) {
+                            onDelete(r.id);
+                          }
+                        }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>

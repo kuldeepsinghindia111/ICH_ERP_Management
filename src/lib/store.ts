@@ -378,11 +378,14 @@ type State = {
   removeStudent: (id: string) => void;
 
   addCharge: (c: Omit<FeeCharge, "id" | "createdAt">) => void;
+  updateCharge: (id: string, patch: Partial<FeeCharge>) => void;
   removeCharge: (id: string) => void;
   addAdjustment: (a: Omit<FeeAdjustment, "id" | "createdAt">) => void;
+  updateAdjustment: (id: string, patch: Partial<FeeAdjustment>) => void;
   removeAdjustment: (id: string) => void;
   addPayment: (p: Omit<FeePayment, "id" | "paidAt"> & { paidAt?: string }) =>
     { ok: true; id: string; reference: string } | { ok: false; error: string };
+  updatePayment: (id: string, patch: Partial<FeePayment>) => void;
   removePayment: (id: string) => void;
   voidPayment: (id: string, reason?: string) => { ok: boolean; error?: string };
   unvoidPayment: (id: string) => void;
@@ -675,10 +678,14 @@ export const useStore = create<State>()(
 
       addCharge: (c) =>
         set((s) => ({ charges: [...s.charges, { ...c, id: uid(), createdAt: now() }] })),
+      updateCharge: (id, patch) =>
+        set((s) => ({ charges: s.charges.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
       removeCharge: (id) => set((s) => ({ charges: s.charges.filter((c) => c.id !== id) })),
 
       addAdjustment: (a) =>
         set((s) => ({ adjustments: [...s.adjustments, { ...a, id: uid(), createdAt: now() }] })),
+      updateAdjustment: (id, patch) =>
+        set((s) => ({ adjustments: s.adjustments.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
       removeAdjustment: (id) =>
         set((s) => ({ adjustments: s.adjustments.filter((a) => a.id !== id) })),
 
@@ -705,6 +712,8 @@ export const useStore = create<State>()(
         return { ok: true, id, reference: ref };
       },
       removePayment: (id) => set((s) => ({ payments: s.payments.filter((p) => p.id !== id) })),
+      updatePayment: (id, patch) =>
+        set((s) => ({ payments: s.payments.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
       voidPayment: (id, reason) => {
         if (!get().can("payments", "edit") || get().role !== "admin")
           return { ok: false, error: "Only admins can void payments" };
