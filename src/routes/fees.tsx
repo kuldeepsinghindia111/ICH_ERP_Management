@@ -289,7 +289,7 @@ function FeesPage() {
                         ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
                         : <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>}
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
+                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] whitespace-normal break-words">
                       {sum.payments && sum.payments.length > 0
                         ? Array.from(new Set(sum.payments.filter((p: any) => p.note).map((p: any) => p.note))).join(', ') || "—"
                         : "—"}
