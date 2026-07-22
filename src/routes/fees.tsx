@@ -260,7 +260,8 @@ function FeesPage() {
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
                   <th className="px-4 py-3 text-right font-medium min-w-[160px]">Net Payable</th>
-                  <th className="px-4 py-3 text-right font-medium">Paid</th>
+                  <th className="px-4 py-3 text-right font-medium">Amount Paid</th>
+                  <th className="px-4 py-3 text-right font-medium">Amount Paid Date</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3 text-left font-medium">Remarks</th>
                   <th className="px-4 py-3"></th>
@@ -268,7 +269,7 @@ function FeesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 && (
-                  <tr><td colSpan={14} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
+                  <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
                 {pageRows.map(({ st, sum }) => (
                   <tr key={st.id} className="hover:bg-accent/40">
@@ -285,6 +286,11 @@ function FeesPage() {
                     <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
                     <td className="px-4 py-3 text-right font-medium">{inr(sum.netPayable)}</td>
                     <td className="px-4 py-3 text-right text-success">{inr(sum.totalPaid)}</td>
+                    <td className="px-4 py-3 text-right text-sm text-muted-foreground">
+                      {sum.payments && sum.payments.length > 0
+                        ? Array.from(new Set(sum.payments.map((p: any) => new Date(p.paidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })))).join(', ')
+                        : "—"}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       {sum.balance > 0
                         ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
