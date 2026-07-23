@@ -58,8 +58,9 @@ export function AppSidebar() {
   const { can, profile } = useAuth();
   const isActive = (p: string) => (p === "/" ? pathname === "/" : pathname.startsWith(p));
 
+  const hasAnyPermission = profile?.role === 'admin' || Object.values(profile?.permissions || {}).some(p => p?.view);
   const visibleNav = nav.filter((n) => {
-    if (n.title === "Dashboard" && !profile?.role) return false;
+    if (n.title === "Dashboard" && !hasAnyPermission) return false;
     return !n.section || can(n.section, "view");
   });
   const visibleAdmin = admin.filter((n) => can(n.section, "view"));
