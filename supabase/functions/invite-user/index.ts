@@ -81,8 +81,18 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : (error?.message || typeof error === 'string' ? error : JSON.stringify(error));
-    return new Response(JSON.stringify({ error: errorMsg || 'Unknown error occurred' }), {
+    let errorMsg = "Unknown error";
+    if (error instanceof Error) {
+      errorMsg = error.message;
+    } else if (error && typeof error === 'object' && 'message' in error) {
+      errorMsg = String(error.message);
+    } else if (typeof error === 'string') {
+      errorMsg = error;
+    } else {
+      try { errorMsg = JSON.stringify(error); } catch (e) { errorMsg = String(error); }
+    }
+    
+    return new Response(JSON.stringify({ error: errorMsg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
