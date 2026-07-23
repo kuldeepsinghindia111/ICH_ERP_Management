@@ -69,9 +69,10 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    // We MUST return 200 here for supabase-js to parse the JSON error body correctly.
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     })
   }
 })
