@@ -66,6 +66,14 @@ function UsersPage() {
       }
       const { error } = await supabase.from('user_roles').update(patch).eq('id', id);
       if (error) throw error;
+      
+      // If name was updated, also update the Supabase auth metadata via edge function
+      if (patch.name) {
+        const { error: invokeError } = await supabase.functions.invoke('update-user-name', {
+          body: { userId: id, name: patch.name },
+        });
+        if (invokeError) throw new Error("Database updated, but failed to sync name to auth profile: " + invokeError.message);
+      }
     },
     onSuccess: () => {
       toast.success("User updated successfully");
