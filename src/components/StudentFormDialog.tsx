@@ -119,8 +119,8 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
 
       // Fetch Max Roll No with prefix
       const progIndex = programs.findIndex(p => p.id === form.programId);
-      const progCode = prog ? (prog.code || "").toUpperCase() : "";
-      const rollPrefix = `${joinYY}0${progCode}`;
+      const progWord = prog ? (prog.name || "").replace(/[^A-Za-z]/g, '').toUpperCase() : "";
+      const rollPrefix = `${joinYY}0${progWord}`;
       
       const defaultSeries = "1001";
 
