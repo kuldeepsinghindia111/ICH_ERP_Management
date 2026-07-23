@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   GraduationCap,
   Wallet,
@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { inr } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
+  const [showYearWise, setShowYearWise] = useState(false);
+
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
     queryFn: async () => {
@@ -237,104 +240,116 @@ function Dashboard() {
         />
       </div>
 
-      <div className="mt-8 mb-4">
-        <h2 className="font-display text-xl font-medium">1st Year Snapshot</h2>
+      <div className="mt-8 mb-6 flex items-center justify-between border-t pt-8">
+        <div>
+          <h2 className="font-display text-xl font-medium">Year-wise Breakdown</h2>
+          <p className="text-sm text-muted-foreground mt-1">Toggle to view detailed snapshots for each academic year.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">{showYearWise ? 'Hide details' : 'Show details'}</span>
+          <Switch checked={showYearWise} onCheckedChange={setShowYearWise} />
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={<GraduationCap className="h-4 w-4" />}
-          label="1st Year Active"
-          value={students.filter((s) => s.status === "active" && (s.current_semester === 1)).length.toString()}
-          hint="Students in 1st Year"
-        />
-        <StatCard
-          icon={<Wallet className="h-4 w-4" />}
-          label="1st Year Received"
-          value={inr(year1Totals.totalPaid)}
-          hint={`${y1CollectionRate}% collection rate`}
-          tone="success"
-        />
-        <StatCard
-          icon={<AlertTriangle className="h-4 w-4" />}
-          label="1st Year Dues"
-          value={inr(year1Totals.balance)}
-          hint={`${year1Totals.studentsWithDues} students pending`}
-          tone={year1Totals.balance > 0 ? "warning" : "default"}
-        />
-        <StatCard
-          icon={<TrendingUp className="h-4 w-4" />}
-          label="1st Year Billed"
-          value={inr(year1Totals.netPayable)}
-          hint="After concessions & scholarships"
-        />
-      </div>
+      {showYearWise && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div>
+            <h3 className="font-display text-sm font-medium mb-3 text-muted-foreground tracking-wider uppercase">1st Year</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniStatCard
+                icon={<GraduationCap className="h-4 w-4" />}
+                label="1st Year Active"
+                value={students.filter((s) => s.status === "active" && (s.current_semester === 1)).length.toString()}
+                hint="Students in 1st Year"
+              />
+              <MiniStatCard
+                icon={<Wallet className="h-4 w-4" />}
+                label="1st Year Received"
+                value={inr(year1Totals.totalPaid)}
+                hint={`${y1CollectionRate}% collection rate`}
+                tone="success"
+              />
+              <MiniStatCard
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="1st Year Dues"
+                value={inr(year1Totals.balance)}
+                hint={`${year1Totals.studentsWithDues} students pending`}
+                tone={year1Totals.balance > 0 ? "warning" : "default"}
+              />
+              <MiniStatCard
+                icon={<TrendingUp className="h-4 w-4" />}
+                label="1st Year Billed"
+                value={inr(year1Totals.netPayable)}
+                hint="After concessions & scholarships"
+              />
+            </div>
+          </div>
 
-      <div className="mt-8 mb-4">
-        <h2 className="font-display text-xl font-medium">2nd Year Snapshot</h2>
-      </div>
+          <div>
+            <h3 className="font-display text-sm font-medium mb-3 text-muted-foreground tracking-wider uppercase">2nd Year</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniStatCard
+                icon={<GraduationCap className="h-4 w-4" />}
+                label="2nd Year Active"
+                value={students.filter((s) => s.status === "active" && (s.current_semester === 2)).length.toString()}
+                hint="Students in 2nd Year"
+              />
+              <MiniStatCard
+                icon={<Wallet className="h-4 w-4" />}
+                label="2nd Year Received"
+                value={inr(year2Totals.totalPaid)}
+                hint={`${y2CollectionRate}% collection rate`}
+                tone="success"
+              />
+              <MiniStatCard
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="2nd Year Dues"
+                value={inr(year2Totals.balance)}
+                hint={`${year2Totals.studentsWithDues} students pending`}
+                tone={year2Totals.balance > 0 ? "warning" : "default"}
+              />
+              <MiniStatCard
+                icon={<TrendingUp className="h-4 w-4" />}
+                label="2nd Year Billed"
+                value={inr(year2Totals.netPayable)}
+                hint="After concessions & scholarships"
+              />
+            </div>
+          </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={<GraduationCap className="h-4 w-4" />}
-          label="2nd Year Active"
-          value={students.filter((s) => s.status === "active" && (s.current_semester === 2)).length.toString()}
-          hint="Students in 2nd Year"
-        />
-        <StatCard
-          icon={<Wallet className="h-4 w-4" />}
-          label="2nd Year Received"
-          value={inr(year2Totals.totalPaid)}
-          hint={`${y2CollectionRate}% collection rate`}
-          tone="success"
-        />
-        <StatCard
-          icon={<AlertTriangle className="h-4 w-4" />}
-          label="2nd Year Dues"
-          value={inr(year2Totals.balance)}
-          hint={`${year2Totals.studentsWithDues} students pending`}
-          tone={year2Totals.balance > 0 ? "warning" : "default"}
-        />
-        <StatCard
-          icon={<TrendingUp className="h-4 w-4" />}
-          label="2nd Year Billed"
-          value={inr(year2Totals.netPayable)}
-          hint="After concessions & scholarships"
-        />
-      </div>
-
-      <div className="mt-8 mb-4">
-        <h2 className="font-display text-xl font-medium">3rd Year Snapshot</h2>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={<GraduationCap className="h-4 w-4" />}
-          label="3rd Year Active"
-          value={students.filter((s) => s.status === "active" && (s.current_semester === 3)).length.toString()}
-          hint="Students in 3rd Year"
-        />
-        <StatCard
-          icon={<Wallet className="h-4 w-4" />}
-          label="3rd Year Received"
-          value={inr(year3Totals.totalPaid)}
-          hint={`${y3CollectionRate}% collection rate`}
-          tone="success"
-        />
-        <StatCard
-          icon={<AlertTriangle className="h-4 w-4" />}
-          label="3rd Year Dues"
-          value={inr(year3Totals.balance)}
-          hint={`${year3Totals.studentsWithDues} students pending`}
-          tone={year3Totals.balance > 0 ? "warning" : "default"}
-        />
-        <StatCard
-          icon={<TrendingUp className="h-4 w-4" />}
-          label="3rd Year Billed"
-          value={inr(year3Totals.netPayable)}
-          hint="After concessions & scholarships"
-        />
-      </div>
+          <div>
+            <h3 className="font-display text-sm font-medium mb-3 text-muted-foreground tracking-wider uppercase">3rd Year</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniStatCard
+                icon={<GraduationCap className="h-4 w-4" />}
+                label="3rd Year Active"
+                value={students.filter((s) => s.status === "active" && (s.current_semester === 3)).length.toString()}
+                hint="Students in 3rd Year"
+              />
+              <MiniStatCard
+                icon={<Wallet className="h-4 w-4" />}
+                label="3rd Year Received"
+                value={inr(year3Totals.totalPaid)}
+                hint={`${y3CollectionRate}% collection rate`}
+                tone="success"
+              />
+              <MiniStatCard
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="3rd Year Dues"
+                value={inr(year3Totals.balance)}
+                hint={`${year3Totals.studentsWithDues} students pending`}
+                tone={year3Totals.balance > 0 ? "warning" : "default"}
+              />
+              <MiniStatCard
+                icon={<TrendingUp className="h-4 w-4" />}
+                label="3rd Year Billed"
+                value={inr(year3Totals.netPayable)}
+                hint="After concessions & scholarships"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3 mt-8">
         <Card className="lg:col-span-2">
@@ -424,6 +439,45 @@ function StatCard({
         <div className="mt-3">
           <p className={`text-2xl font-bold font-display tracking-tight ${colors[tone]}`}>{value}</p>
           {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniStatCard({
+  label,
+  value,
+  icon,
+  hint,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  hint?: string;
+  tone?: "default" | "success" | "warning";
+}) {
+  const colors = {
+    default: "text-foreground",
+    success: "text-emerald-600",
+    warning: "text-amber-600",
+  };
+  const iconColors = {
+    default: "text-muted-foreground",
+    success: "text-emerald-500",
+    warning: "text-amber-500",
+  };
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <div className={iconColors[tone]}>{icon}</div>
+        </div>
+        <div className="mt-2">
+          <p className={`text-xl font-bold font-display tracking-tight ${colors[tone]}`}>{value}</p>
+          {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
         </div>
       </CardContent>
     </Card>
