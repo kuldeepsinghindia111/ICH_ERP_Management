@@ -43,6 +43,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single();
     if (!error && data) {
       setProfile(data as UserProfile);
+    } else {
+      // If the user's role/profile is missing (meaning they were deleted by admin),
+      // we must forcefully terminate their session so they can't linger in the dashboard.
+      await supabase.auth.signOut();
+      setProfile(null);
+      setUser(null);
+      setSession(null);
     }
   };
 
