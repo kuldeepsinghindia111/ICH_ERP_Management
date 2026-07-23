@@ -122,7 +122,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
       const progCode = prog ? (prog.code || "").toUpperCase() : "";
       const rollPrefix = `${joinYY}0${progCode}`;
       
-      const defaultSeries = ((progIndex >= 0 ? progIndex + 1 : 1) * 1000 + 1).toString();
+      const defaultSeries = "1001";
 
       const { data: rollData } = await supabase.from('students')
         .select('roll_number')
