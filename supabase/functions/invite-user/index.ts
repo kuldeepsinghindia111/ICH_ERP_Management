@@ -82,14 +82,24 @@ serve(async (req) => {
     )
   } catch (error) {
     let errorMsg = "Unknown error";
-    if (error instanceof Error) {
-      errorMsg = error.message;
-    } else if (error && typeof error === 'object' && 'message' in error) {
-      errorMsg = String(error.message);
-    } else if (typeof error === 'string') {
-      errorMsg = error;
-    } else {
-      try { errorMsg = JSON.stringify(error); } catch (e) { errorMsg = String(error); }
+    try {
+      if (error instanceof Error) {
+        errorMsg = error.stack || error.message || String(error);
+      } else if (typeof error === 'object' && error !== null) {
+        const props = Object.getOwnPropertyNames(error);
+        const obj = {};
+        for (const p of props) obj[p] = error[p];
+        errorMsg = JSON.stringify(obj);
+      } else {
+        errorMsg = String(error);
+      }
+    } catch(e) {
+      errorMsg = "Failed to parse error: " + String(e);
+    }
+    
+    // Fallback if it still resolves to "{}"
+    if (errorMsg === "{}" || !errorMsg) {
+       errorMsg = "Empty error object returned! Error type: " + (typeof error) + " IsArray: " + Array.isArray(error);
     }
     
     return new Response(JSON.stringify({ error: errorMsg }), {
