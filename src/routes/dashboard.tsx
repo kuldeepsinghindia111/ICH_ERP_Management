@@ -81,12 +81,18 @@ function Dashboard() {
 
   const isLoading = loadingStudents;
 
-  const { pending, totals, year1Totals } = useMemo(() => {
+  const { pending, totals, year1Totals, year2Totals, year3Totals } = useMemo(() => {
     let netPayableAll = 0, totalPaidAll = 0, balanceAll = 0;
     let studentsWithDues = 0;
     
     let y1NetPayable = 0, y1TotalPaid = 0, y1Balance = 0;
     let y1StudentsWithDues = 0;
+
+    let y2NetPayable = 0, y2TotalPaid = 0, y2Balance = 0;
+    let y2StudentsWithDues = 0;
+
+    let y3NetPayable = 0, y3TotalPaid = 0, y3Balance = 0;
+    let y3StudentsWithDues = 0;
     
     const pendingList: any[] = [];
 
@@ -141,6 +147,16 @@ function Dashboard() {
         y1TotalPaid += stTotalPaid;
         y1Balance += stBalance;
         if (stBalance > 0) y1StudentsWithDues++;
+      } else if (currentSem === 2) {
+        y2NetPayable += stNetPayable;
+        y2TotalPaid += stTotalPaid;
+        y2Balance += stBalance;
+        if (stBalance > 0) y2StudentsWithDues++;
+      } else if (currentSem === 3) {
+        y3NetPayable += stNetPayable;
+        y3TotalPaid += stTotalPaid;
+        y3Balance += stBalance;
+        if (stBalance > 0) y3StudentsWithDues++;
       }
     });
 
@@ -150,6 +166,8 @@ function Dashboard() {
     return {
       totals: { netPayable: netPayableAll, totalPaid: totalPaidAll, balance: balanceAll, studentsWithDues },
       year1Totals: { netPayable: y1NetPayable, totalPaid: y1TotalPaid, balance: y1Balance, studentsWithDues: y1StudentsWithDues },
+      year2Totals: { netPayable: y2NetPayable, totalPaid: y2TotalPaid, balance: y2Balance, studentsWithDues: y2StudentsWithDues },
+      year3Totals: { netPayable: y3NetPayable, totalPaid: y3TotalPaid, balance: y3Balance, studentsWithDues: y3StudentsWithDues },
       pending: topPending
     };
   }, [students, feeCharges, feeAdjustments, feePayments, feeStructures]);
@@ -160,6 +178,14 @@ function Dashboard() {
 
   const y1CollectionRate = year1Totals.netPayable
     ? Math.round((year1Totals.totalPaid / year1Totals.netPayable) * 100)
+    : 0;
+
+  const y2CollectionRate = year2Totals.netPayable
+    ? Math.round((year2Totals.totalPaid / year2Totals.netPayable) * 100)
+    : 0;
+
+  const y3CollectionRate = year3Totals.netPayable
+    ? Math.round((year3Totals.totalPaid / year3Totals.netPayable) * 100)
     : 0;
 
   if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading dashboard...</div>;
@@ -240,6 +266,72 @@ function Dashboard() {
           icon={<TrendingUp className="h-4 w-4" />}
           label="1st Year Billed"
           value={inr(year1Totals.netPayable)}
+          hint="After concessions & scholarships"
+        />
+      </div>
+
+      <div className="mt-8 mb-4">
+        <h2 className="font-display text-xl font-medium">2nd Year Snapshot</h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={<GraduationCap className="h-4 w-4" />}
+          label="2nd Year Active"
+          value={students.filter((s) => s.status === "active" && (s.current_semester === 2)).length.toString()}
+          hint="Students in 2nd Year"
+        />
+        <StatCard
+          icon={<Wallet className="h-4 w-4" />}
+          label="2nd Year Received"
+          value={inr(year2Totals.totalPaid)}
+          hint={`${y2CollectionRate}% collection rate`}
+          tone="success"
+        />
+        <StatCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          label="2nd Year Dues"
+          value={inr(year2Totals.balance)}
+          hint={`${year2Totals.studentsWithDues} students pending`}
+          tone={year2Totals.balance > 0 ? "warning" : "default"}
+        />
+        <StatCard
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="2nd Year Billed"
+          value={inr(year2Totals.netPayable)}
+          hint="After concessions & scholarships"
+        />
+      </div>
+
+      <div className="mt-8 mb-4">
+        <h2 className="font-display text-xl font-medium">3rd Year Snapshot</h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={<GraduationCap className="h-4 w-4" />}
+          label="3rd Year Active"
+          value={students.filter((s) => s.status === "active" && (s.current_semester === 3)).length.toString()}
+          hint="Students in 3rd Year"
+        />
+        <StatCard
+          icon={<Wallet className="h-4 w-4" />}
+          label="3rd Year Received"
+          value={inr(year3Totals.totalPaid)}
+          hint={`${y3CollectionRate}% collection rate`}
+          tone="success"
+        />
+        <StatCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          label="3rd Year Dues"
+          value={inr(year3Totals.balance)}
+          hint={`${year3Totals.studentsWithDues} students pending`}
+          tone={year3Totals.balance > 0 ? "warning" : "default"}
+        />
+        <StatCard
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="3rd Year Billed"
+          value={inr(year3Totals.netPayable)}
           hint="After concessions & scholarships"
         />
       </div>
