@@ -12,7 +12,16 @@ function UpdatePassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserEmail(user.email ?? null);
+      }
+    });
+  }, []);
 
   // In Supabase, when the user lands on this page from an email link (invite or recovery),
   // they are automatically signed in by the supabase-js client intercepting the hash in the URL.
@@ -72,7 +81,11 @@ function UpdatePassword() {
           Set New Password
         </h1>
         <p className="text-sm text-muted-foreground mb-6 text-center">
-          Please enter your new password below.
+          {userEmail ? (
+            <>Setting password for <span className="font-medium text-foreground">{userEmail}</span></>
+          ) : (
+            "Please enter your new password below."
+          )}
         </p>
         
         <form onSubmit={handleUpdatePassword} className="space-y-4">
