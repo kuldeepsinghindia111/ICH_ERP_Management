@@ -297,7 +297,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
             <Input 
               className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
               value={form.name} 
-              onChange={(e) => setField('name', e.target.value.replace(/[^A-Za-z\s]/g, ''))} 
+              onChange={(e) => setField('name', e.target.value.replace(/[^A-Za-z\s]/g, '').toUpperCase())} 
             />
             {errors.name && <p className="mt-1 text-[10px] text-destructive">{errors.name}</p>}
           </div>
@@ -408,7 +408,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
             <Input 
               className={errors.guardian ? "border-destructive focus-visible:ring-destructive" : ""}
               value={form.guardian} 
-              onChange={(e) => setField('guardian', e.target.value.replace(/[^A-Za-z\s]/g, ''))} 
+              onChange={(e) => setField('guardian', e.target.value.replace(/[^A-Za-z\s]/g, '').toUpperCase())} 
             />
             {errors.guardian && <p className="mt-1 text-[10px] text-destructive">{errors.guardian}</p>}
           </div>
