@@ -51,7 +51,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, role, name } = await req.json()
+    const { email, role, name, redirectTo } = await req.json()
 
     if (!email || !role || !name) {
       throw new Error('Email, role, and name are required')
@@ -59,7 +59,8 @@ serve(async (req) => {
 
     // Invite the user via email and set their name in auth metadata so it shows in Supabase Dashboard
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { name: name, full_name: name }
+      data: { name: name, full_name: name },
+      redirectTo: redirectTo || undefined
     })
 
     if (inviteError) throw inviteError

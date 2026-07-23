@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as UpdatePasswordRouteImport } from './routes/update-password'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
@@ -34,6 +35,11 @@ import { Route as ExamsExamIdRouteImport } from './routes/exams.$examId'
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UpdatePasswordRoute = UpdatePasswordRouteImport.update({
+  id: '/update-password',
+  path: '/update-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TimetableRoute = TimetableRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
+  '/update-password': typeof UpdatePasswordRoute
   '/users': typeof UsersRoute
   '/exams/$examId': typeof ExamsExamIdRoute
   '/faculty/$facultyId': typeof FacultyFacultyIdRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
+  '/update-password': typeof UpdatePasswordRoute
   '/users': typeof UsersRoute
   '/exams/$examId': typeof ExamsExamIdRoute
   '/faculty/$facultyId': typeof FacultyFacultyIdRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
+  '/update-password': typeof UpdatePasswordRoute
   '/users': typeof UsersRoute
   '/exams/$examId': typeof ExamsExamIdRoute
   '/faculty/$facultyId': typeof FacultyFacultyIdRoute
@@ -224,6 +233,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/timetable'
+    | '/update-password'
     | '/users'
     | '/exams/$examId'
     | '/faculty/$facultyId'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/timetable'
+    | '/update-password'
     | '/users'
     | '/exams/$examId'
     | '/faculty/$facultyId'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/timetable'
+    | '/update-password'
     | '/users'
     | '/exams/$examId'
     | '/faculty/$facultyId'
@@ -294,6 +306,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   TimetableRoute: typeof TimetableRoute
+  UpdatePasswordRoute: typeof UpdatePasswordRoute
   UsersRoute: typeof UsersRoute
   ExamsExamIdRoute: typeof ExamsExamIdRoute
   FacultyFacultyIdRoute: typeof FacultyFacultyIdRoute
@@ -310,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/update-password': {
+      id: '/update-password'
+      path: '/update-password'
+      fullPath: '/update-password'
+      preLoaderRoute: typeof UpdatePasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/timetable': {
@@ -470,6 +490,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   TimetableRoute: TimetableRoute,
+  UpdatePasswordRoute: UpdatePasswordRoute,
   UsersRoute: UsersRoute,
   ExamsExamIdRoute: ExamsExamIdRoute,
   FacultyFacultyIdRoute: FacultyFacultyIdRoute,

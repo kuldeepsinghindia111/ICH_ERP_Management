@@ -365,7 +365,12 @@ function AddUserDialog() {
   const inviteMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email: email.trim(), role, name: name.trim() },
+        body: { 
+          email: email.trim(), 
+          role, 
+          name: name.trim(),
+          redirectTo: `${window.location.origin}/update-password`
+        },
         headers: {
           Authorization: `Bearer ${session?.access_token}`
         }
