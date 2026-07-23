@@ -71,7 +71,7 @@ function UpdatePassword() {
       }
 
       toast.success("Password updated successfully!");
-      router.navigate({ to: '/' });
+      router.navigate({ to: '/', replace: true });
     }
     
     setLoading(false);
