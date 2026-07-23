@@ -91,42 +91,53 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
   }, [isEditing, student, open, programs]);
 
   useEffect(() => {
-    if (isEditing || !open) return;
-    async function fetchMaxAdmission() {
-      const { data } = await supabase.from('students').select('admission_no').order('created_at', { ascending: false }).limit(1);
-      if (data && data.length > 0) {
-        const lastAd = data[0].admission_no;
+    if (isEditing || !open || !form.programId || !form.joinedYear) return;
+    
+    async function fetchNumbers() {
+      const joinYY = form.joinedYear.toString().slice(-2);
+      const prog = programs.find(p => p.id === form.programId);
+      const durationYears = prog ? Math.ceil(prog.total_semesters / 2) : 3;
+      const completeYY = (form.joinedYear + durationYears).toString().slice(-2);
+      const prefix = `${joinYY}0${completeYY}`;
+      
+      // Fetch Max Admission No with prefix
+      const { data: adData } = await supabase.from('students')
+        .select('admission_no')
+        .like('admission_no', `${prefix}%`)
+        .order('admission_no', { ascending: false })
+        .limit(1);
+
+      let nextAd = `${prefix}001`;
+      if (adData && adData.length > 0 && adData[0].admission_no) {
+        const lastAd = adData[0].admission_no;
         const match = lastAd.match(/\d+$/);
         if (match) {
-          const next = (parseInt(match[0], 10) + 1).toString().padStart(match[0].length, '0');
-          setForm(f => ({ ...f, admissionNo: lastAd.replace(/\d+$/, next) }));
+           const nextVal = (BigInt(match[0]) + 1n).toString().padStart(match[0].length, '0');
+           nextAd = lastAd.replace(/\d+$/, nextVal);
         }
       }
-    }
-    fetchMaxAdmission();
-  }, [isEditing, open]);
 
-  useEffect(() => {
-    if (isEditing || !open || !form.programId) return;
-    async function fetchMaxRoll() {
-      const { data } = await supabase.from('students')
+      // Fetch Max Roll No with prefix
+      const { data: rollData } = await supabase.from('students')
         .select('roll_number')
-        .eq('program_id', form.programId)
-        .order('created_at', { ascending: false })
+        .like('roll_number', `${prefix}%`)
+        .order('roll_number', { ascending: false })
         .limit(1);
-      if (data && data.length > 0) {
-        const lastRoll = data[0].roll_number;
+
+      let nextRoll = `${prefix}001`;
+      if (rollData && rollData.length > 0 && rollData[0].roll_number) {
+        const lastRoll = rollData[0].roll_number;
         const match = lastRoll.match(/\d+$/);
         if (match) {
-          const next = (parseInt(match[0], 10) + 1).toString().padStart(match[0].length, '0');
-          setForm(f => ({ ...f, rollNumber: lastRoll.replace(/\d+$/, next) }));
+           const nextVal = (BigInt(match[0]) + 1n).toString().padStart(match[0].length, '0');
+           nextRoll = lastRoll.replace(/\d+$/, nextVal);
         }
-      } else {
-        setForm(f => ({ ...f, rollNumber: "" }));
       }
+
+      setForm(f => ({ ...f, admissionNo: nextAd, rollNumber: nextRoll }));
     }
-    fetchMaxRoll();
-  }, [isEditing, open, form.programId]);
+    fetchNumbers();
+  }, [isEditing, open, form.programId, form.joinedYear, programs]);
 
   const saveStudentMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -294,9 +305,15 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
             {errors.admissionNo && <p className="mt-1 text-[10px] text-destructive">{errors.admissionNo}</p>}
           </div>
           <div>
-            <Label>Joined year</Label>
-            <Input type="number" value={form.joinedYear}
-              onChange={(e) => setField('joinedYear', Number(e.target.value))} />
+            <Label>Joining Year</Label>
+            <Select value={String(form.joinedYear)} onValueChange={(v) => setField('joinedYear', Number(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[2024, 2025, 2026, 2027, 2028, 2029].map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label className={errors.programId ? "text-destructive" : ""}>Program</Label>
@@ -381,7 +398,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
             <Input value={form.email} onChange={(e) => setField('email', e.target.value)} />
           </div>
           <div>
-            <Label className={errors.guardian ? "text-destructive" : ""}>Guardian name</Label>
+            <Label className={errors.guardian ? "text-destructive" : ""}>Father's Name</Label>
             <Input 
               className={errors.guardian ? "border-destructive focus-visible:ring-destructive" : ""}
               value={form.guardian} 
@@ -390,7 +407,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
             {errors.guardian && <p className="mt-1 text-[10px] text-destructive">{errors.guardian}</p>}
           </div>
           <div>
-            <Label className={errors.guardianPhone ? "text-destructive" : ""}>Guardian mobile</Label>
+            <Label className={errors.guardianPhone ? "text-destructive" : ""}>Father's mobile</Label>
             <Input 
               type="text" 
               maxLength={10} 
