@@ -305,8 +305,12 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
   
   const removeUserMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('user_roles').delete().eq('id', id);
-      if (error) throw error;
+      // Use the edge function to completely delete them from Supabase auth as well as user_roles
+      const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
+        body: { userId: id }
+      });
+      if (invokeError) throw new Error("Failed to delete user: " + invokeError.message);
+      if (data?.error) throw new Error("Failed to delete user: " + data.error);
     },
     onSuccess: () => {
       toast.success("Invite canceled");

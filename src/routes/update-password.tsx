@@ -32,13 +32,32 @@ function UpdatePassword() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.updateUser({
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      setError("Not authenticated");
+      setLoading(false);
+      return;
+    }
+
+    const { error: authError } = await supabase.auth.updateUser({
       password: password
     });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      setError(authError.message);
     } else {
+      // Mark their account as active in the user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .update({ status: 'active' })
+        .eq('id', user.id);
+        
+      if (roleError) {
+        console.error("Failed to set user status to active:", roleError);
+        // We still let them through since auth succeeded, but log the error
+      }
+
       toast.success("Password updated successfully!");
       router.navigate({ to: '/' });
     }
