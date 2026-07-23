@@ -8,6 +8,7 @@ type UserProfile = {
   name: string;
   email: string;
   role: UserRole;
+  status: 'active' | 'pending';
   permissions: Permissions;
 };
 

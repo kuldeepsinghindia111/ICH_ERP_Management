@@ -171,23 +171,29 @@ function RootComponent() {
 }
 
 function AuthGuard({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const router = useRouter();
   const location = useLocation();
   const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
     if (!isLoading) {
-      // If not logged in, force them to login (unless they are on login or update-password)
+      // 1. If completely logged out, force to login
       if (!user && location.pathname !== '/login' && location.pathname !== '/update-password') {
         router.navigate({ to: '/login' });
       } 
-      // If already logged in, they shouldn't be on the login page
+      // 2. If logged in but on login page, send to dashboard
       else if (user && location.pathname === '/login') {
         router.navigate({ to: '/' });
       }
+      // 3. SECURE LOCK: If they are logged in but still "pending", FORCE them to update-password page
+      else if (user && profile?.status === 'pending' && location.pathname !== '/update-password') {
+        router.navigate({ to: '/update-password' });
+      }
+      // 4. If they are active and try to go to update-password (e.g. via direct URL), allow it,
+      // but once they submit they become active.
     }
-  }, [user, isLoading, location.pathname, router]);
+  }, [user, profile, isLoading, location.pathname, router]);
 
   useEffect(() => {
     // Show splash screen only if we just logged in and we are NOT on the login page
