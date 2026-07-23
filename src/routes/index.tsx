@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useRouter } from "@tanstack/react-router";
 import {
   Table,
   TableBody,
@@ -42,7 +43,15 @@ const FEE_COLUMNS = ["Admission Fee", "Tuition Fee", "Library Fee", "Exam Fee", 
 function GeneralManagementPage() {
   const { can } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const router = useRouter();
+
+  // Redirect if they don't have permission to view settings
+  useEffect(() => {
+    if (isMounted && !can("settings", "view")) {
+      router.navigate({ to: "/dashboard" });
+    }
+  }, [isMounted, can, router]);
+
   const canEdit = isMounted && can("settings", "edit");
   const queryClient = useQueryClient();
 
