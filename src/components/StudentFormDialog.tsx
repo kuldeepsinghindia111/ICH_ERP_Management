@@ -339,7 +339,7 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
               onValueChange={(v) => setField('currentSemester', Number(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 8 }, (_, i) => i + 1).map(n => (
+                {[1, 2, 3].map(n => (
                   <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
                 ))}
               </SelectContent>
