@@ -84,8 +84,12 @@ function UsersPage() {
 
   const removeUserMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('user_roles').delete().eq('id', id);
-      if (error) throw error;
+      // The edge function securely deletes the user from Supabase auth AND our custom roles table
+      const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
+        body: { userId: id }
+      });
+      if (invokeError) throw new Error("Failed to delete user: " + invokeError.message);
+      if (data?.error) throw new Error("Failed to delete user: " + data.error);
     },
     onSuccess: () => {
       toast.success("User removed");
