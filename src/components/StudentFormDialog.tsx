@@ -98,16 +98,16 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
       const prog = programs.find(p => p.id === form.programId);
       const durationYears = prog ? Math.ceil(prog.total_semesters / 2) : 3;
       const completeYY = (form.joinedYear + durationYears).toString().slice(-2);
-      const prefix = `${joinYY}0${completeYY}`;
+      const adPrefix = `${joinYY}0${completeYY}`;
       
       // Fetch Max Admission No with prefix
       const { data: adData } = await supabase.from('students')
         .select('admission_no')
-        .like('admission_no', `${prefix}%`)
+        .like('admission_no', `${adPrefix}%`)
         .order('admission_no', { ascending: false })
         .limit(1);
 
-      let nextAd = `${prefix}001`;
+      let nextAd = `${adPrefix}101`;
       if (adData && adData.length > 0 && adData[0].admission_no) {
         const lastAd = adData[0].admission_no;
         const match = lastAd.match(/\d+$/);
@@ -118,13 +118,19 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
       }
 
       // Fetch Max Roll No with prefix
+      const progIndex = programs.findIndex(p => p.id === form.programId);
+      const progCode = prog ? (prog.code || "").toUpperCase() : "";
+      const rollPrefix = `${joinYY}0${progCode}`;
+      
+      const defaultSeries = ((progIndex >= 0 ? progIndex + 1 : 1) * 1000 + 1).toString();
+
       const { data: rollData } = await supabase.from('students')
         .select('roll_number')
-        .like('roll_number', `${prefix}%`)
+        .like('roll_number', `${rollPrefix}%`)
         .order('roll_number', { ascending: false })
         .limit(1);
 
-      let nextRoll = `${prefix}001`;
+      let nextRoll = `${rollPrefix}${defaultSeries}`;
       if (rollData && rollData.length > 0 && rollData[0].roll_number) {
         const lastRoll = rollData[0].roll_number;
         const match = lastRoll.match(/\d+$/);
