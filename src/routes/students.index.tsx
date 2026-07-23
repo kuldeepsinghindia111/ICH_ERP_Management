@@ -242,7 +242,7 @@ function StudentsPage() {
                           <Link 
                             to="/students/$studentId" 
                             params={{ studentId: s.id }}
-                            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
                           >
                             View Profile
                           </Link>
