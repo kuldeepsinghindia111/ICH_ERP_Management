@@ -57,8 +57,10 @@ serve(async (req) => {
       throw new Error('Email, role, and name are required')
     }
 
-    // Invite the user via email
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email)
+    // Invite the user via email and set their name in auth metadata so it shows in Supabase Dashboard
+    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { name: name, full_name: name }
+    })
 
     if (inviteError) throw inviteError
 
