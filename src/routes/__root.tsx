@@ -168,7 +168,6 @@ function RootComponent() {
 }
 
 function getRequiredSection(pathname: string): Section | null {
-  if (pathname === '/') return 'settings';
   if (pathname.startsWith('/students')) return 'students';
   if (pathname.startsWith('/exams')) return 'students';
   if (pathname.startsWith('/timetable')) return 'students';
@@ -211,7 +210,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
       else if (user && profile?.status === 'active') {
         const requiredSection = getRequiredSection(location.pathname);
         if (requiredSection && !can(requiredSection, 'view')) {
-          router.navigate({ to: '/dashboard' });
+          router.navigate({ to: '/' });
         }
       }
     }

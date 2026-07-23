@@ -45,12 +45,7 @@ function GeneralManagementPage() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
-  // Redirect if they don't have permission to view settings
-  useEffect(() => {
-    if (isMounted && !can("settings", "view")) {
-      router.navigate({ to: "/dashboard" });
-    }
-  }, [isMounted, can, router]);
+  useEffect(() => setIsMounted(true), []);
 
   const canEdit = isMounted && can("settings", "edit");
   const queryClient = useQueryClient();
