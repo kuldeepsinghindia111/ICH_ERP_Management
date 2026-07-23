@@ -81,9 +81,8 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    // We MUST return 200 here! Supabase-js throws a generic "Edge Function returned a non-2xx status code" 
-    // and hides the JSON body if we return 400. To show the actual error message, we must return 200.
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMsg = error instanceof Error ? error.message : (error?.message || typeof error === 'string' ? error : JSON.stringify(error));
+    return new Response(JSON.stringify({ error: errorMsg || 'Unknown error occurred' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

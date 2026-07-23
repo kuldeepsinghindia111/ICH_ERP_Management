@@ -371,7 +371,10 @@ function AddUserDialog() {
         }
       });
       if (error) throw new Error(error.message || 'Failed to send invite');
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) {
+        const msg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+        throw new Error(msg);
+      }
       return data;
     },
     onSuccess: () => {
