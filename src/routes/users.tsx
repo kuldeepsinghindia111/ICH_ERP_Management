@@ -346,7 +346,6 @@ function AddUserDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("accountant");
   const { session } = useAuth();
   const queryClient = useQueryClient();
@@ -354,7 +353,7 @@ function AddUserDialog() {
   const inviteMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email: email.trim(), role, name: name.trim(), password },
+        body: { email: email.trim(), role, name: name.trim() },
         headers: {
           Authorization: `Bearer ${session?.access_token}`
         }
@@ -368,7 +367,6 @@ function AddUserDialog() {
       setOpen(false);
       setName("");
       setEmail("");
-      setPassword("");
       setRole("accountant");
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -405,13 +403,6 @@ function AddUserDialog() {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Initial Password</Label>
-            <Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimum 6 characters" />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Share this password with the user so they can log in.
-            </p>
-          </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -420,11 +411,10 @@ function AddUserDialog() {
             onClick={() => {
               if (!name.trim()) return toast.error("Name is required");
               if (!email.trim()) return toast.error("Email is required");
-              if (password.length < 6) return toast.error("Password must be at least 6 characters");
               inviteMutation.mutate();
             }}
           >
-            {inviteMutation.isPending ? 'Creating...' : <><Plus className="mr-1 h-4 w-4" /> Create User</>}
+            {inviteMutation.isPending ? 'Inviting...' : <><Plus className="mr-1 h-4 w-4" /> Send Invite</>}
           </Button>
         </DialogFooter>
       </DialogContent>

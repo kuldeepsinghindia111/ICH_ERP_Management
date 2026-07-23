@@ -51,18 +51,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, role, name, password } = await req.json()
+    const { email, role, name } = await req.json()
 
-    if (!email || !role || !name || !password) {
-      throw new Error('Email, role, name, and password are required')
+    if (!email || !role || !name) {
+      throw new Error('Email, role, and name are required')
     }
 
-    // Create the user with the provided password
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    })
+    // Invite the user via email
+    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email)
 
     if (inviteError) throw inviteError
 
