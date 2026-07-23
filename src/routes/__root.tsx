@@ -11,10 +11,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { useStore, type UserRole } from "@/lib/store";
+import { useStore, type UserRole, type Section } from "@/lib/store";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserRound, CalendarRange } from "lucide-react";
 import { AuthProvider, useAuth } from "../hooks/use-auth";
@@ -138,30 +138,27 @@ function RootComponent() {
       <AuthProvider>
         <AuthGuard>
           <SidebarProvider>
-            <div className="flex min-h-screen w-full bg-background">
-              <AppSidebar />
-              <div className="flex flex-1 flex-col">
-                <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
-                  <SidebarTrigger />
-                  <div className="h-6 w-px bg-border" />
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                      Active session
-                    </span>
-                    <span className="text-sm font-medium text-foreground">Administration Console</span>
-                  </div>
-                  <SessionSwitcher />
-                  <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="hidden md:inline">Supabase Connected</span>
-                    <UserProfile />
-                  </div>
-
-                </header>
-                <main className="flex-1">
-                  <Outlet />
-                </main>
+            <AppSidebar />
+            <SidebarInset>
+              <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
+                <SidebarTrigger />
+                <div className="h-6 w-px bg-border" />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Active session
+                  </span>
+                  <span className="text-sm font-medium text-foreground">Administration Console</span>
+                </div>
+                <SessionSwitcher />
+                <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="hidden md:inline">Supabase Connected</span>
+                  <UserProfile />
+                </div>
+              </header>
+              <div className="flex-1">
+                <Outlet />
               </div>
-            </div>
+            </SidebarInset>
             <Toaster richColors position="top-right" />
           </SidebarProvider>
         </AuthGuard>
@@ -170,8 +167,28 @@ function RootComponent() {
   );
 }
 
+function getRequiredSection(pathname: string): Section | null {
+  if (pathname === '/') return 'settings';
+  if (pathname.startsWith('/students')) return 'students';
+  if (pathname.startsWith('/exams')) return 'students';
+  if (pathname.startsWith('/timetable')) return 'students';
+  if (pathname.startsWith('/leaves')) return 'students';
+  if (pathname.startsWith('/library')) return 'students';
+  if (pathname.startsWith('/attendance')) return 'students';
+  if (pathname.startsWith('/fees')) return 'fees';
+  if (pathname.startsWith('/pay')) return 'payments';
+  if (pathname.startsWith('/reports')) return 'reports';
+  if (pathname.startsWith('/faculty')) return 'faculty';
+  if (pathname.startsWith('/payroll')) return 'faculty';
+  if (pathname.startsWith('/courses')) return 'courses';
+  if (pathname.startsWith('/users')) return 'users';
+  if (pathname.startsWith('/audit')) return 'audit';
+  if (pathname.startsWith('/settings')) return 'settings';
+  return null;
+}
+
 function AuthGuard({ children }: { children: ReactNode }) {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, can } = useAuth();
   const router = useRouter();
   const location = useLocation();
   const [showSplash, setShowSplash] = useState(false);
@@ -190,10 +207,15 @@ function AuthGuard({ children }: { children: ReactNode }) {
       else if (user && profile?.status === 'pending' && location.pathname !== '/update-password') {
         router.navigate({ to: '/update-password' });
       }
-      // 4. If they are active and try to go to update-password (e.g. via direct URL), allow it,
-      // but once they submit they become active.
+      // 4. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
+      else if (user && profile?.status === 'active') {
+        const requiredSection = getRequiredSection(location.pathname);
+        if (requiredSection && !can(requiredSection, 'view')) {
+          router.navigate({ to: '/dashboard' });
+        }
+      }
     }
-  }, [user, profile, isLoading, location.pathname, router]);
+  }, [user, profile, isLoading, location.pathname, router, can]);
 
   useEffect(() => {
     // Show splash screen only if we just logged in and we are NOT on the login page
