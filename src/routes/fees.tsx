@@ -12,9 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LedgerSummaryDialog } from "@/components/ledger-summary-dialog";
 import { CollectPaymentDialog } from "@/components/collect-payment-dialog";
 import { ReceiptViewerDialog } from "@/components/receipt-viewer-dialog";
@@ -121,7 +121,6 @@ function FeesPage() {
   const [pickStudentId, setPickStudentId] = useState<string | null>(null);
   const [includePrevious, setIncludePrevious] = useState(false);
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<"total" | "year">("total");
   const PAGE_SIZE = 15;
 
   useEffect(() => {
@@ -170,24 +169,6 @@ function FeesPage() {
     return { billed, paid, balance };
   }, [students, charges, adjustments, payments, feeStructures, includePrevious]);
 
-  const yearTotals = useMemo(() => {
-    let y1 = { billed: 0, paid: 0, balance: 0 };
-    let y2 = { billed: 0, paid: 0, balance: 0 };
-    let y3 = { billed: 0, paid: 0, balance: 0 };
-    
-    students.forEach((st: any) => {
-      const sum1 = semesterSummary(st.id, 1, { charges, adjustments, payments, structures: feeStructures, student: st });
-      y1.billed += sum1.netPayable; y1.paid += sum1.totalPaid; y1.balance += sum1.balance;
-      
-      const sum2 = semesterSummary(st.id, 2, { charges, adjustments, payments, structures: feeStructures, student: st });
-      y2.billed += sum2.netPayable; y2.paid += sum2.totalPaid; y2.balance += sum2.balance;
-      
-      const sum3 = semesterSummary(st.id, 3, { charges, adjustments, payments, structures: feeStructures, student: st });
-      y3.billed += sum3.netPayable; y3.paid += sum3.totalPaid; y3.balance += sum3.balance;
-    });
-    return [y1, y2, y3];
-  }, [students, charges, adjustments, payments, feeStructures]);
-
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -216,39 +197,11 @@ function FeesPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight">Fee Summaries</h2>
-        <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as "total" | "year")} className="justify-end bg-muted/50 p-1 rounded-lg">
-          <ToggleGroupItem value="total" className="text-xs px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm">Total View</ToggleGroupItem>
-          <ToggleGroupItem value="year" className="text-xs px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm">Year-wise View</ToggleGroupItem>
-        </ToggleGroup>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <SummaryTile label="Total billed" value={inr(totals.billed)} />
+        <SummaryTile label="Collected" value={inr(totals.paid)} tone="success" />
+        <SummaryTile label="Pending" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
       </div>
-
-      {viewMode === "total" ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <SummaryTile label="Total billed" value={inr(totals.billed)} />
-          <SummaryTile label="Collected" value={inr(totals.paid)} tone="success" />
-          <SummaryTile label="Pending" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <SummaryTile label="1st Year Billed" value={inr(yearTotals[0].billed)} />
-            <SummaryTile label="1st Year Collected" value={inr(yearTotals[0].paid)} tone="success" />
-            <SummaryTile label="1st Year Pending" value={inr(yearTotals[0].balance)} tone={yearTotals[0].balance > 0 ? "warning" : "default"} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <SummaryTile label="2nd Year Billed" value={inr(yearTotals[1].billed)} />
-            <SummaryTile label="2nd Year Collected" value={inr(yearTotals[1].paid)} tone="success" />
-            <SummaryTile label="2nd Year Pending" value={inr(yearTotals[1].balance)} tone={yearTotals[1].balance > 0 ? "warning" : "default"} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <SummaryTile label="3rd Year Billed" value={inr(yearTotals[2].billed)} />
-            <SummaryTile label="3rd Year Collected" value={inr(yearTotals[2].paid)} tone="success" />
-            <SummaryTile label="3rd Year Pending" value={inr(yearTotals[2].balance)} tone={yearTotals[2].balance > 0 ? "warning" : "default"} />
-          </div>
-        </div>
-      )}
 
       <Card>
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
