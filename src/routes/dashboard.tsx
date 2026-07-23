@@ -81,9 +81,12 @@ function Dashboard() {
 
   const isLoading = loadingStudents;
 
-  const { pending, totals } = useMemo(() => {
+  const { pending, totals, year1Totals } = useMemo(() => {
     let netPayableAll = 0, totalPaidAll = 0, balanceAll = 0;
     let studentsWithDues = 0;
+    
+    let y1NetPayable = 0, y1TotalPaid = 0, y1Balance = 0;
+    let y1StudentsWithDues = 0;
     
     const pendingList: any[] = [];
 
@@ -132,6 +135,13 @@ function Dashboard() {
           netPayable: stNetPayable
         });
       }
+
+      if (currentSem === 1) {
+        y1NetPayable += stNetPayable;
+        y1TotalPaid += stTotalPaid;
+        y1Balance += stBalance;
+        if (stBalance > 0) y1StudentsWithDues++;
+      }
     });
 
     pendingList.sort((a, b) => b.balance - a.balance);
@@ -139,12 +149,17 @@ function Dashboard() {
 
     return {
       totals: { netPayable: netPayableAll, totalPaid: totalPaidAll, balance: balanceAll, studentsWithDues },
+      year1Totals: { netPayable: y1NetPayable, totalPaid: y1TotalPaid, balance: y1Balance, studentsWithDues: y1StudentsWithDues },
       pending: topPending
     };
   }, [students, feeCharges, feeAdjustments, feePayments, feeStructures]);
 
   const collectionRate = totals.netPayable
     ? Math.round((totals.totalPaid / totals.netPayable) * 100)
+    : 0;
+
+  const y1CollectionRate = year1Totals.netPayable
+    ? Math.round((year1Totals.totalPaid / year1Totals.netPayable) * 100)
     : 0;
 
   if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading dashboard...</div>;
@@ -196,7 +211,40 @@ function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="mt-8 mb-4">
+        <h2 className="font-display text-xl font-medium">1st Year Snapshot</h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={<GraduationCap className="h-4 w-4" />}
+          label="1st Year Active"
+          value={students.filter((s) => s.status === "active" && (s.current_semester === 1)).length.toString()}
+          hint="Students in 1st Year"
+        />
+        <StatCard
+          icon={<Wallet className="h-4 w-4" />}
+          label="1st Year Received"
+          value={inr(year1Totals.totalPaid)}
+          hint={`${y1CollectionRate}% collection rate`}
+          tone="success"
+        />
+        <StatCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          label="1st Year Dues"
+          value={inr(year1Totals.balance)}
+          hint={`${year1Totals.studentsWithDues} students pending`}
+          tone={year1Totals.balance > 0 ? "warning" : "default"}
+        />
+        <StatCard
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="1st Year Billed"
+          value={inr(year1Totals.netPayable)}
+          hint="After concessions & scholarships"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3 mt-8">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
