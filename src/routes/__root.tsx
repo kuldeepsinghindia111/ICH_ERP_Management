@@ -177,8 +177,15 @@ function AuthGuard({ children }: { children: ReactNode }) {
   const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !user && location.pathname !== '/login') {
-      router.navigate({ to: '/login' });
+    if (!isLoading) {
+      // If not logged in, force them to login (unless they are on login or update-password)
+      if (!user && location.pathname !== '/login' && location.pathname !== '/update-password') {
+        router.navigate({ to: '/login' });
+      } 
+      // If already logged in, they shouldn't be on the login page
+      else if (user && location.pathname === '/login') {
+        router.navigate({ to: '/' });
+      }
     }
   }, [user, isLoading, location.pathname, router]);
 
@@ -194,8 +201,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
     return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   }
 
-  // If not logged in and on the login page, just render the Outlet (which is the login page)
-  if (!user && location.pathname === '/login') {
+  // Render standalone pages completely outside the dashboard layout
+  if (location.pathname === '/login' || location.pathname === '/update-password') {
     return (
       <>
         <Outlet />
@@ -204,7 +211,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  // If not logged in and not on login page (will redirect shortly)
+  // If not logged in and not on a standalone page (will redirect shortly)
   if (!user) {
     return null; 
   }
