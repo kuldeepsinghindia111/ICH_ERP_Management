@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
@@ -14,7 +14,25 @@ function Login() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isResetMode, setIsResetMode] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    const lastReset = localStorage.getItem('last_password_reset_time');
+    if (lastReset) {
+      const timePassed = Math.floor((Date.now() - parseInt(lastReset)) / 1000);
+      if (timePassed < 60) {
+        setCooldownTime(60 - timePassed);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      const timer = setTimeout(() => setCooldownTime(c => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownTime]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +50,8 @@ function Login() {
       } else {
         setSuccess("Password reset email sent! Check your inbox.");
         setIsResetMode(false);
+        localStorage.setItem('last_password_reset_time', Date.now().toString());
+        setCooldownTime(60);
       }
       setLoading(false);
       return;
@@ -102,10 +122,14 @@ function Login() {
           {success && <p className="text-sm text-green-600">{success}</p>}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={loading || (isResetMode && cooldownTime > 0)}
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Processing...' : (isResetMode ? 'Send Reset Email' : 'Sign In')}
+            {loading 
+              ? 'Processing...' 
+              : (isResetMode 
+                  ? (cooldownTime > 0 ? `Wait ${cooldownTime}s` : 'Send Reset Email') 
+                  : 'Sign In')}
           </button>
           
           {isResetMode && (
