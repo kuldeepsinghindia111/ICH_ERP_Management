@@ -60,7 +60,7 @@ export function SupabaseStatus() {
   return (
     <div className="hidden md:flex items-center gap-1.5 text-emerald-600 dark:text-emerald-500">
       <Wifi className="h-3.5 w-3.5" />
-      <span>Supabase Connected</span>
+      <span>Backend Connected</span>
     </div>
   );
 }
