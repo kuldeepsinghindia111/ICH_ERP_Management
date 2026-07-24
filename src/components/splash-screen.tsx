@@ -27,7 +27,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       }`}
     >
       <img
-        src="/Imperial College Logo.avif"
+        src="/imperial-logo.avif"
         alt="College Logo"
         className="w-48 h-auto animate-pulse"
         onError={(e) => {
