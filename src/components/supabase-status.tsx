@@ -30,8 +30,8 @@ export function SupabaseStatus() {
 
     checkConnection();
     
-    // Check periodically every 60 seconds
-    const interval = setInterval(checkConnection, 60000);
+    // Check periodically every 2 hours (7200000 ms) to reduce unnecessary network traffic
+    const interval = setInterval(checkConnection, 7200000);
     
     return () => {
       mounted = false;
