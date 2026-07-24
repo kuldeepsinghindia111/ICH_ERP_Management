@@ -20,6 +20,7 @@ import { UserRound, CalendarRange } from "lucide-react";
 import { AuthProvider, useAuth } from "../hooks/use-auth";
 import { useLocation } from "@tanstack/react-router";
 import { SplashScreen } from "@/components/splash-screen";
+import { SupabaseStatus } from "@/components/supabase-status";
 import { useState } from "react";
 
 function NotFoundComponent() {
@@ -151,7 +152,7 @@ function RootComponent() {
                 </div>
                 <SessionSwitcher />
                 <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="hidden md:inline">Supabase Connected</span>
+                  <SupabaseStatus />
                   <UserProfile />
                 </div>
               </header>
