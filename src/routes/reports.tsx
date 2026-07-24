@@ -479,7 +479,7 @@ function Reports() {
                   <th className="px-4 py-2 font-medium">Receipt no</th>
                   <th className="px-4 py-2 font-medium">Student</th>
                   <th className="px-4 py-2 font-medium">Program</th>
-                  <th className="px-4 py-2 font-medium">Sem</th>
+                  <th className="px-4 py-2 font-medium">Year</th>
                   <th className="px-4 py-2 font-medium">Method</th>
                   <th className="px-4 py-2 text-right font-medium">Amount</th>
                 </tr>
