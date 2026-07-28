@@ -101,11 +101,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/avif", href: "/imperial-logo.avif" },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "apple-touch-icon-precomposed", href: "/apple-touch-icon-precomposed.png" },
-      { rel: "manifest", href: "/site.webmanifest" },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico?v=imperial-1" },
+      { rel: "shortcut icon", href: "/favicon.ico?v=imperial-1" },
+      { rel: "icon", type: "image/png", href: "/favicon.png?v=imperial-1" },
+      { rel: "icon", type: "image/avif", href: "/imperial-logo.avif?v=imperial-1" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png?v=imperial-1" },
+      { rel: "apple-touch-icon-precomposed", href: "/apple-touch-icon-precomposed.png?v=imperial-1" },
+      { rel: "manifest", href: "/site.webmanifest?v=imperial-1" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

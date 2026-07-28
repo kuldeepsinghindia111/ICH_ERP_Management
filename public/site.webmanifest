@@ -8,19 +8,25 @@
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/favicon.ico?v=imperial-v1",
+      "sizes": "256x256",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png?v=imperial-v1",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/apple-touch-icon.png?v=imperial-v1",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/imperial-logo.avif",
+      "src": "/imperial-logo.avif?v=imperial-v1",
       "sizes": "512x512",
       "type": "image/avif",
       "purpose": "any maskable"
