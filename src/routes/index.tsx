@@ -183,7 +183,7 @@ function GeneralManagementPage() {
       </div>
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground">
-          General Management Setup
+          General Portal Setup
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Configure essential parameters and academic structures for the active session.
@@ -192,7 +192,7 @@ function GeneralManagementPage() {
 
       <Card>
         <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle>Session & Admission Management</CardTitle>
+          <CardTitle>Session & Admission Portal</CardTitle>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <Select value={headerSession} onValueChange={setHeaderSession}>
               <SelectTrigger className="w-35 h-9">
@@ -338,7 +338,7 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-        <CardTitle>Roll No. Management</CardTitle>
+        <CardTitle>Roll No. Portal</CardTitle>
         <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="w-35 h-9">

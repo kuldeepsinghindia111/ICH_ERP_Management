@@ -31,23 +31,23 @@ import { type Section } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
-  { title: "General Management", url: "/", icon: Settings },
+  { title: "General Portal", url: "/", icon: Settings },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Student's Profile", url: "/students", icon: GraduationCap, section: "students" },
+  { title: "Student Portal", url: "/students", icon: GraduationCap, section: "students" },
   { title: "Examinations", url: "/exams", icon: BookOpen, section: "students" },
   { title: "Timetable", url: "/timetable", icon: CalendarCheck, section: "students" },
   { title: "Leaves", url: "/leaves", icon: ScrollText, section: "students" },
   { title: "Library", url: "/library", icon: BookOpen, section: "students" },
   { title: "Attendance", url: "/attendance", icon: CalendarCheck, section: "students" },
-  { title: "Fees Management", url: "/fees", icon: Wallet, section: "fees" },
+  { title: "Fees Portal", url: "/fees", icon: Wallet, section: "fees" },
   { title: "Make Payment", url: "/pay", icon: CreditCard, section: "payments" },
   { title: "Reports", url: "/reports", icon: BarChart3, section: "reports" },
 ];
 
 const admin: { title: string; url: string; icon: typeof Users; section: Section }[] = [
-  { title: "Faculty Management", url: "/faculty", icon: Users, section: "faculty" },
+  { title: "Faculty Portal", url: "/faculty", icon: Users, section: "faculty" },
   { title: "Payroll & Salary", url: "/payroll", icon: FileText, section: "faculty" },
-  { title: "Course Management", url: "/courses", icon: BookOpen, section: "courses" },
+  { title: "Course Portal", url: "/courses", icon: BookOpen, section: "courses" },
   { title: "Users & Roles", url: "/users", icon: ShieldCheck, section: "users" },
   { title: "Audit Log", url: "/audit", icon: ScrollText, section: "audit" },
   { title: "Payment Settings", url: "/settings", icon: Settings, section: "settings" },
@@ -77,7 +77,7 @@ export function AppSidebar() {
               Imperial College Hisar
             </span>
             <span className="text-[11px] uppercase tracking-widest text-sidebar-foreground/60">
-              Management System
+              Portal System
             </span>
           </div>
         </Link>

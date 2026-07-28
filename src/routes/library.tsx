@@ -32,7 +32,7 @@ import {
 export const Route = createFileRoute("/library")({
   head: () => ({
     meta: [
-      { title: "Library Management — Imperial CMS" },
+      { title: "Library Portal — Imperial CMS" },
     ],
   }),
   component: LibraryPage,
@@ -184,7 +184,7 @@ function LibraryPage() {
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Library Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Library Portal</h1>
           <p className="text-muted-foreground mt-1">Manage the catalog and track book circulation.</p>
         </div>
         <div className="flex gap-2">

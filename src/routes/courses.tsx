@@ -65,7 +65,7 @@ function CoursesPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Academics</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Course Management</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Course Portal</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage courses and their durations.</p>
         </div>
         <div className="flex gap-2">

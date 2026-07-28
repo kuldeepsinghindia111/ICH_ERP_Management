@@ -81,16 +81,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Imperial CMS — College Management System" },
+      { title: "Imperial CMS — College Portal System" },
       {
         name: "description",
         content:
           "Manage students, semester-wise rolls, semester fees, concessions, scholarships, and pending dues from one clean academic dashboard.",
       },
-      { property: "og:title", content: "Imperial CMS — College Management System" },
+      { property: "og:title", content: "Imperial CMS — College Portal System" },
       {
         property: "og:description",
-        content: "Students, semester rolls, and semester-wise fees management in one dashboard.",
+        content: "Students, semester rolls, and semester-wise fees portal in one dashboard.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -167,7 +167,7 @@ function RootComponent() {
               <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 sm:gap-3 border-b border-border bg-background/80 px-2 sm:px-4 backdrop-blur">
                 <SidebarTrigger />
                 <div className="h-6 w-px bg-border" />
-                <div className="flex flex-col leading-tight min-w-0 max-w-[150px] sm:max-w-[220px] lg:max-w-none">
+                <div className="flex flex-col leading-tight min-w-0 max-w-36 sm:max-w-56 lg:max-w-none">
                   <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground truncate">
                     <span className="md:hidden">ERP / CMS</span>
                     <span className="hidden md:inline">Active session</span>
@@ -319,7 +319,7 @@ function UserProfile() {
       <UserRound className="h-4 w-4 text-primary shrink-0" />
       <div className="hidden flex-col leading-tight lg:flex min-w-0">
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Signed in as</span>
-        <span className="text-xs font-medium text-foreground truncate max-w-[130px] xl:max-w-[200px]">{user?.email}</span>
+        <span className="text-xs font-medium text-foreground truncate max-w-32 xl:max-w-48">{user?.email}</span>
       </div>
       <button 
         onClick={signOut}
