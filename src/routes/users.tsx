@@ -215,7 +215,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
                       onValueChange={(v) => updateUserMutation.mutate({ id: u.id, patch: { role: v } })}
                       disabled={isSelf || updateUserMutation.isPending}
                     >
-                      <SelectTrigger className="w-[130px] text-xs h-8">
+                      <SelectTrigger className="w-44 text-xs h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
