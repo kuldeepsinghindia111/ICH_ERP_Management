@@ -1,0 +1,29 @@
+{
+  "name": "Imperial CMS",
+  "short_name": "Imperial",
+  "description": "Imperial College Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/imperial-logo.avif",
+      "sizes": "512x512",
+      "type": "image/avif",
+      "purpose": "any maskable"
+    }
+  ]
+}
