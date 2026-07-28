@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/attendance")({
   head: () => ({
-    meta: [{ title: "Attendance Management — Imperial CMS" }],
+    meta: [{ title: "Attendance Portal — Imperial CMS" }],
   }),
   component: AttendancePage,
 });
@@ -134,7 +134,7 @@ function AttendancePage() {
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Operations</p>
           <h1 className="font-display text-3xl font-semibold text-foreground flex items-center gap-2">
-            <CalendarCheck className="h-7 w-7 text-primary" /> Attendance Management
+            <CalendarCheck className="h-7 w-7 text-primary" /> Attendance Portal
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">Track daily student attendance.</p>
         </div>
@@ -218,7 +218,7 @@ function AttendancePage() {
                     <tr className="border-b bg-muted/50">
                       <th className="px-4 py-3 text-left font-medium">Roll No</th>
                       <th className="px-4 py-3 text-left font-medium">Student</th>
-                      <th className="px-4 py-3 text-left font-medium min-w-[300px]">Attendance Status</th>
+                      <th className="px-4 py-3 text-left font-medium min-w-75">Attendance Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">

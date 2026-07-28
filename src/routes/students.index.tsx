@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/students/")({
   head: () => ({
     meta: [
-      { title: "Student Management — Imperial CMS" },
+      { title: "Student Portal — Imperial CMS" },
       { name: "description", content: "Directory of enrolled students with permanent roll numbers." },
     ],
   }),
@@ -114,7 +114,7 @@ function StudentsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Registry</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Student's Profile</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Student Portal</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {total} enrolled · Permanent roll numbers tracked per student.
           </p>
@@ -134,7 +134,7 @@ function StudentsPage() {
 
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <div className="relative min-w-[240px] flex-1">
+          <div className="relative min-w-60 flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
@@ -144,7 +144,7 @@ function StudentsPage() {
             />
           </div>
           <Select value={genderFilter} onValueChange={setGenderFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Gender" /></SelectTrigger>
+            <SelectTrigger className="w-35"><SelectValue placeholder="Gender" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All genders</SelectItem>
               <SelectItem value="male">Male</SelectItem>
@@ -152,7 +152,7 @@ function StudentsPage() {
             </SelectContent>
           </Select>
           <Select value={programFilter} onValueChange={setProgramFilter}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Program" /></SelectTrigger>
+            <SelectTrigger className="w-45"><SelectValue placeholder="Program" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All programs</SelectItem>
               {programs.map((p: any) => (
@@ -161,7 +161,7 @@ function StudentsPage() {
             </SelectContent>
           </Select>
           <Select value={sem} onValueChange={setSem}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Year" /></SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Year" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All years</SelectItem>
               {[1, 2, 3].map((n) => (
@@ -224,7 +224,7 @@ function StudentsPage() {
                       <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
                       <td className="px-4 py-3">{s.category || "—"}</td>
                       <td className="px-4 py-3">
-                        <div className="max-w-[150px] truncate" title={s.address}>{s.address || "—"}</div>
+                        <div className="max-w-37.5 truncate" title={s.address}>{s.address || "—"}</div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs">{s.phone || "—"}</td>
                       <td className="px-4 py-3 text-right">

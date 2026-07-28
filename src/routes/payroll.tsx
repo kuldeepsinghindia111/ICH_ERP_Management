@@ -29,7 +29,7 @@ import {
 export const Route = createFileRoute("/payroll")({
   head: () => ({
     meta: [
-      { title: "Payroll Management — Imperial CMS" },
+      { title: "Payroll Portal — Imperial CMS" },
     ],
   }),
   component: PayrollPage,
@@ -195,7 +195,7 @@ function PayrollPage() {
       {generateDialog.faculty && (
         <GenerateSalaryDialog 
           open={generateDialog.open} 
-          onOpenChange={(val) => setGenerateDialog({ ...generateDialog, open: val })} 
+          onOpenChange={(val: boolean) => setGenerateDialog({ ...generateDialog, open: val })} 
           faculty={generateDialog.faculty}
           month={selectedMonth}
           leaveRequests={leaveRequests}

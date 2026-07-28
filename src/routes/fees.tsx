@@ -182,7 +182,7 @@ function FeesPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Financials</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Fees Management</h1>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Fees Portal</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Collect payments and track year-wise dues across concessions, scholarships and fines.
           </p>
@@ -261,7 +261,7 @@ function FeesPage() {
                   <th className="px-4 py-3 text-right font-medium">Other</th>
                   <th className="px-4 py-3 text-right font-medium">Concession</th>
                   <th className="px-4 py-3 text-right font-medium">Scholarship</th>
-                  <th className="px-4 py-3 text-right font-medium min-w-[160px]">Amount Net Payable</th>
+                  <th className="px-4 py-3 text-right font-medium min-w-40">Amount Net Payable</th>
                   <th className="px-4 py-3 text-right font-medium">Amount Paid</th>
                   <th className="px-4 py-3 text-right font-medium">Amount Paid Date</th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
@@ -382,7 +382,7 @@ function InlineRemarkEditor({ payments, canEdit }: { payments: any[], canEdit: b
     return (
       <div className="flex items-center gap-1">
         <Input 
-          className="h-7 text-xs w-[140px]" 
+          className="h-7 text-xs w-35" 
           value={remark} 
           onChange={(e) => setRemark(e.target.value)} 
           autoFocus
@@ -403,8 +403,8 @@ function InlineRemarkEditor({ payments, canEdit }: { payments: any[], canEdit: b
   }
 
   return (
-    <div className="flex items-center justify-between group gap-2 min-w-[120px]">
-      <span className="max-w-[200px] whitespace-normal break-words">
+    <div className="flex items-center justify-between group gap-2 min-w-30">
+      <span className="max-w-50 whitespace-normal wrap-break-word">
         {displayRemark}
       </span>
       {canEdit && payments?.length > 0 && (
