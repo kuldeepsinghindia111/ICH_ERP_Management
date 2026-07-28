@@ -310,7 +310,7 @@ function SessionSwitcher() {
         disabled={!canChange}
       >
         <SelectTrigger
-          className="h-7 w-[160px] text-xs"
+          className="h-7 w-40 text-xs"
           title={!canChange ? "Only admins can change the active session" : undefined}
         >
           <SelectValue placeholder="Switch session" />
