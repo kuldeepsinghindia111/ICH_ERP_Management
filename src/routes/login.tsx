@@ -67,7 +67,7 @@ function Login() {
     if (error) {
       setError(error.message);
     } else {
-      router.navigate({ to: '/' });
+      router.navigate({ to: '/', replace: true });
     }
     
     setLoading(false);

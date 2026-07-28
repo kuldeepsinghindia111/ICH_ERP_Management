@@ -142,7 +142,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <link rel="manifest" href="/site.webmanifest?v=imperial-3" />
         <script dangerouslySetInnerHTML={{ __html: `
           if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
-            window.location.href = '/update-password' + window.location.hash;
+            window.location.replace('/update-password' + window.location.hash);
           }
         `}} />
       </head>
@@ -224,21 +224,25 @@ function AuthGuard({ children }: { children: ReactNode }) {
     if (!isLoading) {
       // 1. If completely logged out, force to login
       if (!user && location.pathname !== '/login' && location.pathname !== '/update-password') {
-        router.navigate({ to: '/login' });
+        router.navigate({ to: '/login', replace: true });
       } 
       // 2. If logged in but on login page, send to dashboard
       else if (user && location.pathname === '/login') {
-        router.navigate({ to: '/' });
+        router.navigate({ to: '/', replace: true });
       }
       // 3. SECURE LOCK: If they are logged in but still "pending", FORCE them to update-password page
       else if (user && profile?.status === 'pending' && location.pathname !== '/update-password') {
-        router.navigate({ to: '/update-password' });
+        router.navigate({ to: '/update-password', replace: true });
       }
-      // 4. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
+      // 4. If logged in and already "active", PREVENT going back to /update-password (unless using a recovery link)
+      else if (user && profile?.status === 'active' && location.pathname === '/update-password' && !window.location.hash.includes('type=recovery')) {
+        router.navigate({ to: '/', replace: true });
+      }
+      // 5. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
       else if (user && profile?.status === 'active') {
         const requiredSection = getRequiredSection(location.pathname);
         if (requiredSection && !can(requiredSection, 'view')) {
-          router.navigate({ to: '/' });
+          router.navigate({ to: '/', replace: true });
         }
       }
     }

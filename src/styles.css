@@ -135,7 +135,17 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  :root {
+    color-scheme: light dark;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  * { 
+    border-color: var(--color-border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-muted-foreground) transparent;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -145,5 +155,21 @@
   h1, h2, h3, .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
+  }
+
+  /* Sleek, Modern Academic Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-muted-foreground);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
   }
 }
