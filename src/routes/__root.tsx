@@ -167,18 +167,18 @@ function RootComponent() {
               <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 sm:gap-3 border-b border-border bg-background/80 px-2 sm:px-4 backdrop-blur">
                 <SidebarTrigger />
                 <div className="h-6 w-px bg-border" />
-                <div className="flex flex-col leading-tight min-w-0">
-                  <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <span className="sm:hidden">ERP / CMS</span>
-                    <span className="hidden sm:inline">Active session</span>
+                <div className="flex flex-col leading-tight min-w-0 max-w-[150px] sm:max-w-[220px] lg:max-w-none">
+                  <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground truncate">
+                    <span className="md:hidden">ERP / CMS</span>
+                    <span className="hidden md:inline">Active session</span>
                   </span>
                   <span className="text-xs sm:text-sm font-medium text-foreground truncate">
-                    <span className="sm:hidden">Imperial College Hisar Portal</span>
-                    <span className="hidden sm:inline">Administration Console</span>
+                    <span className="md:hidden">Imperial College Hisar Portal</span>
+                    <span className="hidden md:inline">Administration Console</span>
                   </span>
                 </div>
                 <SessionSwitcher />
-                <div className="ml-auto flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
+                <div className="ml-auto flex items-center gap-1.5 sm:gap-3 text-xs text-muted-foreground">
                   <SupabaseStatus />
                   <UserProfile />
                 </div>
@@ -234,8 +234,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
       else if (user && profile?.status === 'pending' && location.pathname !== '/update-password') {
         router.navigate({ to: '/update-password', replace: true });
       }
-      // 4. If logged in and already "active", PREVENT going back to /update-password (unless using a recovery link)
-      else if (user && profile?.status === 'active' && location.pathname === '/update-password' && !window.location.hash.includes('type=recovery')) {
+      // 4. If logged in and NOT "pending", PREVENT going back to /update-password (unless using a recovery/invite link)
+      else if (user && profile?.status !== 'pending' && location.pathname === '/update-password' && !window.location.hash.includes('type=recovery') && !window.location.hash.includes('type=invite')) {
         router.navigate({ to: '/', replace: true });
       }
       // 5. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
@@ -247,6 +247,25 @@ function AuthGuard({ children }: { children: ReactNode }) {
       }
     }
   }, [user, profile, isLoading, location.pathname, router, can]);
+
+  useEffect(() => {
+    const handleHistoryOrCacheRestore = () => {
+      if (user && profile?.status !== 'pending' && window.location.pathname === '/update-password' && !window.location.hash.includes('type=recovery') && !window.location.hash.includes('type=invite')) {
+        router.navigate({ to: '/', replace: true });
+      }
+      if (user && window.location.pathname === '/login') {
+        router.navigate({ to: '/', replace: true });
+      }
+    };
+
+    window.addEventListener('pageshow', handleHistoryOrCacheRestore);
+    window.addEventListener('popstate', handleHistoryOrCacheRestore);
+
+    return () => {
+      window.removeEventListener('pageshow', handleHistoryOrCacheRestore);
+      window.removeEventListener('popstate', handleHistoryOrCacheRestore);
+    };
+  }, [user, profile, router]);
 
   useEffect(() => {
     // Show splash screen only if we just logged in and we are NOT on the login page
@@ -296,15 +315,15 @@ function UserProfile() {
   const { user, signOut } = useAuth();
   
   return (
-    <div className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-1.5">
-      <UserRound className="h-4 w-4 text-primary" />
-      <div className="hidden flex-col leading-tight sm:flex">
+    <div className="flex items-center gap-1.5 sm:gap-2.5 rounded-md border border-border bg-card px-2 sm:px-2.5 py-1.5 shrink-0">
+      <UserRound className="h-4 w-4 text-primary shrink-0" />
+      <div className="hidden flex-col leading-tight lg:flex min-w-0">
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Signed in as</span>
-        <span className="text-xs font-medium text-foreground">{user?.email}</span>
+        <span className="text-xs font-medium text-foreground truncate max-w-[130px] xl:max-w-[200px]">{user?.email}</span>
       </div>
       <button 
         onClick={signOut}
-        className="ml-2 rounded-md bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors"
+        className="rounded-md bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors shrink-0"
       >
         Sign out
       </button>
@@ -321,19 +340,18 @@ function SessionSwitcher() {
   const active = sessions.find((s) => s.id === activeSessionId);
 
   return (
-    <div className="hidden items-center gap-2 rounded-md border border-border bg-card px-2 py-1 md:flex">
-      <CalendarRange className="h-3.5 w-3.5 text-primary" />
-      <div className="flex flex-col leading-tight">
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Session</span>
-        <span className="text-xs text-foreground">{active?.name ?? "—"}</span>
-      </div>
+    <div className="hidden items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 md:flex shrink-0">
+      <CalendarRange className="h-3.5 w-3.5 text-primary shrink-0" />
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden xl:inline">
+        Session:
+      </span>
       <Select
         value={activeSessionId}
         onValueChange={(v) => setActiveSession(v)}
         disabled={!canChange}
       >
         <SelectTrigger
-          className="h-7 w-40 text-xs"
+          className="h-7 w-28 text-xs font-medium"
           title={!canChange ? "Only admins can change the active session" : undefined}
         >
           <SelectValue placeholder="Switch session" />
