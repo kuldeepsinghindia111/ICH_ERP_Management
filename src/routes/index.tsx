@@ -24,7 +24,7 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "General Management — Imperial CMS" },
+      { title: "Imperial CMS" },
       { name: "description", content: "Session configuration and setup." },
     ],
   }),
@@ -195,7 +195,7 @@ function GeneralManagementPage() {
           <CardTitle>Session & Admission Management</CardTitle>
           <div className="flex items-center gap-4">
             <Select value={headerSession} onValueChange={setHeaderSession}>
-              <SelectTrigger className="w-[140px] h-9">
+              <SelectTrigger className="w-35 h-9">
                 <SelectValue placeholder="Session" />
               </SelectTrigger>
               <SelectContent>
@@ -341,7 +341,7 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
         <CardTitle>Roll No. Management</CardTitle>
         <div className="flex items-center gap-4">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="w-[140px] h-9">
+            <SelectTrigger className="w-35 h-9">
               <SelectValue placeholder="Select Session" />
             </SelectTrigger>
             <SelectContent>
@@ -351,7 +351,7 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
             </SelectContent>
           </Select>
           <Select value={selectedProgramFilter} onValueChange={setSelectedProgramFilter}>
-            <SelectTrigger className="w-[140px] h-9">
+            <SelectTrigger className="w-35 h-9">
               <SelectValue placeholder="Course" />
             </SelectTrigger>
             <SelectContent>
@@ -543,7 +543,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
         <CardTitle>Course & Fee Setup</CardTitle>
         <div className="flex items-center gap-2">
           <Select value={selectedSession} onValueChange={setSelectedSession}>
-            <SelectTrigger className="w-[120px] h-9">
+            <SelectTrigger className="w-30 h-9">
               <SelectValue placeholder="Session" />
             </SelectTrigger>
             <SelectContent>
@@ -555,7 +555,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
             </SelectContent>
           </Select>
           <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-            <SelectTrigger className="w-[140px] h-9">
+            <SelectTrigger className="w-35 h-9">
               <SelectValue placeholder="Course" />
             </SelectTrigger>
             <SelectContent>
@@ -564,7 +564,7 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
             </SelectContent>
           </Select>
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[120px] h-9">
+            <SelectTrigger className="w-30 h-9">
               <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
