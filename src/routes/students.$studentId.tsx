@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, nextReceiptNo, type FeeHead, type FeePayment } from "@/lib/store";
 import { downloadReceiptPdf, printReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,7 +26,7 @@ import { StudentFormDialog } from "@/components/StudentFormDialog";
 
 export const Route = createFileRoute("/students/$studentId")({
   head: () => ({
-    meta: [{ title: "Student profile — Imperial CMS" }],
+    meta: [{ title: "Student Portal — Imperial CMS" }],
   }),
   component: StudentDetail,
   notFoundComponent: () => (
@@ -86,7 +86,7 @@ function StudentAvatar({ student, canEdit }: { student: any, canEdit: boolean })
   const { handleFileChange, isUploading } = usePhotoUpload(student, canEdit);
 
   return (
-    <div className="relative group h-16 w-16 flex-shrink-0">
+    <div className="relative group h-16 w-16 shrink-0">
       {student.photo_url ? (
         <img 
           src={student.photo_url} 
@@ -325,7 +325,7 @@ function StudentDetail() {
                     setActiveSem(v);
                   }}
                 >
-                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {semesters.map((n) => (
                       <SelectItem key={n} value={String(n)}>Current: {formatYear(n)}</SelectItem>
@@ -463,7 +463,7 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
       </CardHeader>
       <CardContent className="flex justify-center py-10 bg-slate-50 rounded-b-lg border-t">
         {/* The ID Card Visual Wrapper */}
-        <div className="w-[300px] min-h-[470px] bg-white rounded-xl shadow-xl border overflow-hidden flex flex-col relative print:shadow-none print:border-black">
+        <div className="w-75 min-h-117.5 bg-white rounded-xl shadow-xl border overflow-hidden flex flex-col relative print:shadow-none print:border-black">
           
           {/* Header */}
           <div className="bg-primary text-primary-foreground p-4 text-center">
