@@ -182,7 +182,27 @@ function makePerms(fn: (s: Section) => Permission): Permissions {
 
 export function defaultPermissionsFor(role: UserRole): Permissions {
   if (role === "admin") return makePerms(() => ({ view: true, edit: true }));
-  if (role === "management" || role === "chief_coordinator" || role === "academic_coordinator") return makePerms(() => ({ view: true, edit: false }));
+  if (role === "management") return makePerms(() => ({ view: true, edit: false }));
+  if (role === "chief_coordinator")
+    return makePerms((s) => {
+      if (s === "users") return { view: false, edit: false };
+      if (
+        s === "students" ||
+        s === "faculty" ||
+        s === "courses" ||
+        s === "reports"
+      )
+        return { view: true, edit: true };
+      return { view: true, edit: false };
+    });
+  if (role === "academic_coordinator")
+    return makePerms((s) => {
+      if (s === "users" || s === "settings" || s === "audit" || s === "payments")
+        return { view: false, edit: false };
+      if (s === "students" || s === "faculty" || s === "courses")
+        return { view: true, edit: true };
+      return { view: true, edit: false };
+    });
   if (role === "accountant")
     return makePerms((s) => {
       if (s === "users") return { view: false, edit: false };

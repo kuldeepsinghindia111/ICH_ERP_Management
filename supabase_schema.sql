@@ -1,5 +1,9 @@
 -- Create an enum for user roles
-CREATE TYPE user_role AS ENUM ('admin', 'management', 'accountant', 'faculty');
+CREATE TYPE user_role AS ENUM ('admin', 'management', 'chief_coordinator', 'academic_coordinator', 'accountant', 'faculty');
+
+-- Safely add coordinator roles if the enum already existed in an existing database
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'chief_coordinator';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'academic_coordinator';
 
 -- Create a table to store user roles and permissions
 CREATE TABLE IF NOT EXISTS public.user_roles (
