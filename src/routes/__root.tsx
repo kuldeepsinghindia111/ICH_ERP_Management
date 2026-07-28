@@ -101,16 +101,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/x-icon", href: "/favicon.ico?v=imperial-2" },
-      { rel: "shortcut icon", href: "/favicon.ico?v=imperial-2" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/favicon-192.png?v=imperial-2" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/favicon-512.png?v=imperial-2" },
-      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png?v=imperial-2" },
-      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png?v=imperial-2" },
-      { rel: "icon", type: "image/avif", href: "/imperial-logo.avif?v=imperial-2" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png?v=imperial-2" },
-      { rel: "apple-touch-icon-precomposed", sizes: "180x180", href: "/apple-touch-icon-precomposed.png?v=imperial-2" },
-      { rel: "manifest", href: "/site.webmanifest?v=imperial-2" },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico?v=imperial-3" },
+      { rel: "shortcut icon", href: "/favicon.ico?v=imperial-3" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/favicon-192.png?v=imperial-3" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/favicon-512.png?v=imperial-3" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png?v=imperial-3" },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png?v=imperial-3" },
+      { rel: "icon", type: "image/avif", href: "/imperial-logo.avif?v=imperial-3" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png?v=imperial-3" },
+      { rel: "apple-touch-icon-precomposed", sizes: "180x180", href: "/apple-touch-icon-precomposed.png?v=imperial-3" },
+      { rel: "manifest", href: "/site.webmanifest?v=imperial-3" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -130,6 +130,16 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=imperial-3" />
+        <link rel="shortcut icon" href="/favicon.ico?v=imperial-3" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=imperial-3" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png?v=imperial-3" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=imperial-3" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=imperial-3" />
+        <link rel="icon" type="image/avif" href="/imperial-logo.avif?v=imperial-3" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=imperial-3" />
+        <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png?v=imperial-3" />
+        <link rel="manifest" href="/site.webmanifest?v=imperial-3" />
         <script dangerouslySetInnerHTML={{ __html: `
           if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
             window.location.href = '/update-password' + window.location.hash;
