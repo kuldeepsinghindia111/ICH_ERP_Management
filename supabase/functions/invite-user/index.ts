@@ -57,8 +57,14 @@ serve(async (req) => {
       throw new Error('Email, role, and name are required')
     }
 
+    const cleanedEmail = String(email).trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(cleanedEmail)) {
+      throw new Error("Invalid email format. Please provide a valid email address (e.g. user@college.edu)")
+    }
+
     // Invite the user via email and set their name in auth metadata so it shows in Supabase Dashboard
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(cleanedEmail, {
       data: { name: name, full_name: name },
       redirectTo: redirectTo || undefined
     })
@@ -85,12 +91,21 @@ serve(async (req) => {
     let errorMsg = "Unknown error";
     try {
       if (error instanceof Error) {
-        errorMsg = error.stack || error.message || String(error);
+        errorMsg = error.message || String(error);
+        if (errorMsg.includes("Unable to validate email address") || errorMsg.includes("invalid format")) {
+          errorMsg = "Invalid email format. Please provide a valid email address (e.g. user@college.edu)";
+        } else if (errorMsg.includes("User already registered") || errorMsg.includes("already exists")) {
+          errorMsg = "A user with this email address is already registered.";
+        }
       } else if (typeof error === 'object' && error !== null) {
         const props = Object.getOwnPropertyNames(error);
-        const obj = {};
-        for (const p of props) obj[p] = error[p];
-        errorMsg = JSON.stringify(obj);
+        const obj: Record<string, unknown> = {};
+        for (const p of props) {
+          if (p !== 'stack') {
+            obj[p] = (error as Record<string, unknown>)[p];
+          }
+        }
+        errorMsg = obj.message ? String(obj.message) : JSON.stringify(obj);
       } else {
         errorMsg = String(error);
       }

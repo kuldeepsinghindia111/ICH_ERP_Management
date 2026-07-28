@@ -370,7 +370,7 @@ function AddUserDialog() {
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('invite-user', {
         body: { 
-          email: email.trim(), 
+          email: email.trim().toLowerCase(), 
           role, 
           name: name.trim(),
           redirectTo: `${window.location.origin}/update-password`
@@ -434,7 +434,12 @@ function AddUserDialog() {
             disabled={inviteMutation.isPending}
             onClick={() => {
               if (!name.trim()) return toast.error("Name is required");
-              if (!email.trim()) return toast.error("Email is required");
+              const cleanEmail = email.trim();
+              if (!cleanEmail) return toast.error("Email is required");
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(cleanEmail)) {
+                return toast.error("Please enter a valid email address (e.g. user@college.edu)");
+              }
               inviteMutation.mutate();
             }}
           >
