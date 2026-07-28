@@ -261,6 +261,7 @@ export function referenceHint(method: PaymentMethod): string {
 export type PaymentFieldErrors = {
   amount?: string;
   reference?: string;
+  transactionId?: string;
   method?: string;
 };
 

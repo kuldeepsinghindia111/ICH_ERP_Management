@@ -157,7 +157,7 @@ export function CollectPaymentDialog({
   const [transactionId, setTransactionId] = useState("");
   const [note, setNote] = useState("");
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
-  const [touched, setTouched] = useState<{ amount?: boolean; reference?: boolean }>({});
+  const [touched, setTouched] = useState<{ amount?: boolean; reference?: boolean; transactionId?: boolean }>({});
   const [preview, setPreview] = useState<Preview>(null);
 
   const semList = useMemo(
