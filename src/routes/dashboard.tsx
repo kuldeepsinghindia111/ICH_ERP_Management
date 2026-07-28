@@ -194,11 +194,11 @@ function Dashboard() {
   if (isLoading) return <div className="p-8 animate-pulse text-muted-foreground">Loading dashboard...</div>;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
+    <div className="mx-auto max-w-7xl space-y-8 px-3 sm:px-6 py-6 sm:py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Dashboard</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground">
             Welcome back, Registrar's Office
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">

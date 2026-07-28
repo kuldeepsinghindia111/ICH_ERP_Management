@@ -177,12 +177,12 @@ function GeneralManagementPage() {
   const activeSessionName = activeSessionNames.length > 0 ? activeSessionNames.join(", ") : "Not Set";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+    <div className="mx-auto max-w-7xl space-y-6 px-3 sm:px-6 py-6 sm:py-8">
       <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-4 rounded-lg flex items-center justify-center">
-        <span className="font-display text-3xl font-semibold text-center leading-tight">Welcome to Imperial College ERP/CMS - ichacc.online Portal</span>
+        <span className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-center leading-tight">Welcome to Imperial College ERP/CMS - ichacc.online Portal</span>
       </div>
       <div>
-        <h1 className="font-display text-3xl font-semibold text-foreground">
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground">
           General Management Setup
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -191,9 +191,9 @@ function GeneralManagementPage() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle>Session & Admission Management</CardTitle>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <Select value={headerSession} onValueChange={setHeaderSession}>
               <SelectTrigger className="w-35 h-9">
                 <SelectValue placeholder="Session" />
@@ -337,9 +337,9 @@ function RollNoManagementSetup({ configSessions, realSessions, programs, canEdit
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
         <CardTitle>Roll No. Management</CardTitle>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="w-35 h-9">
               <SelectValue placeholder="Select Session" />
@@ -539,9 +539,9 @@ function CourseFeeSetup({ programs, feeStructures, canEdit }: { programs: any[],
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
         <CardTitle>Course & Fee Setup</CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           <Select value={selectedSession} onValueChange={setSelectedSession}>
             <SelectTrigger className="w-30 h-9">
               <SelectValue placeholder="Session" />

@@ -164,17 +164,21 @@ function RootComponent() {
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
+              <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 sm:gap-3 border-b border-border bg-background/80 px-2 sm:px-4 backdrop-blur">
                 <SidebarTrigger />
                 <div className="h-6 w-px bg-border" />
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                    Active session
+                <div className="flex flex-col leading-tight min-w-0">
+                  <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <span className="sm:hidden">ERP / CMS</span>
+                    <span className="hidden sm:inline">Active session</span>
                   </span>
-                  <span className="text-sm font-medium text-foreground">Administration Console</span>
+                  <span className="text-xs sm:text-sm font-medium text-foreground truncate">
+                    <span className="sm:hidden">Imperial College Hisar Portal</span>
+                    <span className="hidden sm:inline">Administration Console</span>
+                  </span>
                 </div>
                 <SessionSwitcher />
-                <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="ml-auto flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
                   <SupabaseStatus />
                   <UserProfile />
                 </div>
