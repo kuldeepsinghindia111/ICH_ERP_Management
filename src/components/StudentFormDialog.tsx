@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,51 +43,56 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
     pincode: "",
   });
 
+  const prevOpenRef = useRef(false);
+
   useEffect(() => {
-    setErrors({});
-    if (isEditing && open) {
-      setForm({
-        admissionNo: student.admission_no || "",
-        name: student.name || "",
-        programId: student.program_id || programs[0]?.id || "",
-        currentSemester: student.current_semester || 1,
-        rollNumber: student.roll_number || "",
-        joinedYear: student.joined_year || new Date().getFullYear(),
-        email: student.email || "",
-        phone: student.phone || "",
-        guardian: student.guardian || "",
-        guardianPhone: student.guardian_phone || "",
-        gender: student.gender || "male",
-        dob: student.dob || "",
-        category: student.category || "GENERAL",
-        bloodGroup: student.blood_group || "",
-        address: student.address || "",
-        city: student.city || "",
-        state: student.state || "",
-        pincode: student.pincode || "",
-      });
-    } else if (!isEditing && open) {
-      setForm({
-        admissionNo: "",
-        name: "",
-        programId: programs[0]?.id ?? "",
-        currentSemester: 1,
-        rollNumber: "",
-        joinedYear: new Date().getFullYear(),
-        email: "",
-        phone: "",
-        guardian: "",
-        guardianPhone: "",
-        gender: "male",
-        dob: "",
-        category: "GENERAL",
-        bloodGroup: "",
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-      });
+    if (open && !prevOpenRef.current) {
+      setErrors({});
+      if (isEditing && student) {
+        setForm({
+          admissionNo: student.admission_no || "",
+          name: student.name || "",
+          programId: student.program_id || programs[0]?.id || "",
+          currentSemester: student.current_semester || 1,
+          rollNumber: student.roll_number || "",
+          joinedYear: student.joined_year || new Date().getFullYear(),
+          email: student.email || "",
+          phone: student.phone || "",
+          guardian: student.guardian || "",
+          guardianPhone: student.guardian_phone || "",
+          gender: student.gender || "male",
+          dob: student.dob || "",
+          category: student.category || "GENERAL",
+          bloodGroup: student.blood_group || "",
+          address: student.address || "",
+          city: student.city || "",
+          state: student.state || "",
+          pincode: student.pincode || "",
+        });
+      } else {
+        setForm({
+          admissionNo: "",
+          name: "",
+          programId: programs[0]?.id ?? "",
+          currentSemester: 1,
+          rollNumber: "",
+          joinedYear: new Date().getFullYear(),
+          email: "",
+          phone: "",
+          guardian: "",
+          guardianPhone: "",
+          gender: "male",
+          dob: "",
+          category: "GENERAL",
+          bloodGroup: "",
+          address: "",
+          city: "",
+          state: "",
+          pincode: "",
+        });
+      }
     }
+    prevOpenRef.current = open;
   }, [isEditing, student, open, programs]);
 
   useEffect(() => {

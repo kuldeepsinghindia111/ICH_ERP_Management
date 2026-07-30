@@ -432,7 +432,7 @@ function Reports() {
             <div>
               <Label className="text-xs">Year</Label>
               <Select value={sem} onValueChange={setSem}>
-                <SelectTrigger className="mt-1 h-8 text-xs w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 h-8 text-xs w-35"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All years</SelectItem>
                   {[1,2,3].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
@@ -484,7 +484,7 @@ function Reports() {
       {/* the actual receipts table (with a switch for sessionId "__none" ignoring session) */}
       <Card>
         <CardContent className="p-0">
-          <div className="max-h-[480px] overflow-y-auto">
+          <div className="max-h-120 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
@@ -537,14 +537,14 @@ function Reports() {
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <Select value={pendingProgram} onValueChange={setPendingProgram}>
-                <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder="Class/program" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs w-35"><SelectValue placeholder="Class/program" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All programs</SelectItem>
                   {programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={pendingSem} onValueChange={setPendingSem}>
-                <SelectTrigger className="h-8 text-xs w-[110px]"><SelectValue placeholder="Year" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs w-27.5"><SelectValue placeholder="Year" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All years</SelectItem>
                   {[1,2,3].map((n) => <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>)}
@@ -572,7 +572,7 @@ function Reports() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-[420px] overflow-y-auto">
+          <div className="max-h-105 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>

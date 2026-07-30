@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { type Permissions, type Section, type UserRole } from '../lib/store';
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const currentUserIdRef = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       // If the user's role/profile is missing (meaning they were deleted by admin),
       // we must forcefully terminate their session so they can't linger in the dashboard.
+      currentUserIdRef.current = null;
       await supabase.auth.signOut();
       setProfile(null);
       setUser(null);
@@ -60,7 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setIsLoading(false));
+        if (currentUserIdRef.current !== session.user.id) {
+          currentUserIdRef.current = session.user.id;
+          setIsLoading(true);
+          fetchProfile(session.user.id).finally(() => setIsLoading(false));
+        }
       } else {
         setIsLoading(false);
       }
@@ -73,9 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setIsLoading(true);
-        fetchProfile(session.user.id).finally(() => setIsLoading(false));
+        if (currentUserIdRef.current !== session.user.id) {
+          currentUserIdRef.current = session.user.id;
+          setIsLoading(true);
+          fetchProfile(session.user.id).finally(() => setIsLoading(false));
+        }
       } else {
+        currentUserIdRef.current = null;
         setProfile(null);
         setIsLoading(false);
       }

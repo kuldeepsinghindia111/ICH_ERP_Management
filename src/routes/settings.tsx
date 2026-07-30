@@ -102,10 +102,10 @@ function CollegeSettingsCard({ canEdit }: { canEdit: boolean }) {
   const [draft, setDraft] = useState<any>({});
   
   useEffect(() => {
-    if (settings) {
+    if (settings && Object.keys(draft).length === 0) {
       setDraft(settings);
     }
-  }, [settings]);
+  }, [settings, draft]);
 
   const updateSettings = useMutation({
     mutationFn: async (newSettings: any) => {
