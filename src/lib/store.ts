@@ -76,7 +76,7 @@ export type CollegePaymentInfo = {
 };
 
 export const COLLEGE_PAYMENT_INFO: CollegePaymentInfo = {
-  collegeName: "Imperial College Hisar",
+  collegeName: "IMPERIAL COLLEGE, HISAR",
   accountName: "Principal, Imperial College Hisar",
   accountNumber: "50100 2345 67890",
   ifsc: "HDFC0001234",

@@ -50,7 +50,7 @@ function drawReceiptHalf(
   doc.setTextColor(...textColor);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text(data.college.collegeName.toUpperCase(), W / 2, y, { align: "center" });
+  doc.text("IMPERIAL COLLEGE, HISAR", W / 2, y, { align: "center" });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
@@ -173,12 +173,10 @@ function drawReceiptHalf(
   doc.setFontSize(10.5);
   doc.text(formatRs(data.payment.amount), amountX, y, { align: "right" });
 
-  y += 8;
   doc.setDrawColor(210, 210, 210);
-  doc.line(W - 200, y, W - 30, y);
+  doc.line(W - 200, y + 8, W - 30, y + 8);
 
-  y += 20;
-  // Footer Notes
+  // Footer Notes (shifted upward right after/below the fee line)
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...mutedColor);
@@ -189,7 +187,7 @@ function drawReceiptHalf(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(60, 60, 60);
-  doc.text("Authorized Signatory / Office Stamp", W - 45, y + 18, { align: "right" });
+  doc.text("Authorized Signatory / Office Stamp", W - 45, y + 36, { align: "right" });
 }
 
 export function generateReceiptPdf(data: ReceiptData): jsPDF {
