@@ -275,8 +275,9 @@ function FeesPage() {
                   <tr><td colSpan={18} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
                 {pageRows.map(({ st, sum }, idx: number) => {
-                  const serialNo = (page - 1) * pageSize + idx + 1;
+                  const serialNo = (page - 1) * PAGE_SIZE + idx + 1;
                   return (
+
                   <tr key={st.id} className="hover:bg-accent/40">
                     <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground">
                       {serialNo}
