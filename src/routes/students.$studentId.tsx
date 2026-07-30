@@ -907,7 +907,7 @@ function AddPaymentDialog({
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(String(defaultAmount || ""));
-  const [method, setMethod] = useState<"cash" | "upi" | "card" | "bank" | "cheque">("upi");
+  const [method, setMethod] = useState<"cash" | "online" | "upi" | "card" | "bank" | "cheque">("upi");
   const [reference, setReference] = useState("");
 
   return (
@@ -927,7 +927,7 @@ function AddPaymentDialog({
             <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["cash", "upi", "card", "bank", "cheque"].map((m) => (
+                {["cash", "online", "upi", "card", "bank", "cheque"].map((m) => (
                   <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>
                 ))}
               </SelectContent>
@@ -1161,7 +1161,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All methods</SelectItem>
-                {["cash", "upi", "card", "bank", "cheque"].map((m) => (
+                {["cash", "online", "upi", "card", "bank", "cheque"].map((m) => (
                   <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>
                 ))}
               </SelectContent>

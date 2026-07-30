@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 
-type Method = "cash" | "upi" | "card" | "bank" | "cheque";
+type Method = "cash" | "online" | "upi" | "card" | "bank" | "cheque";
 const METHOD_LABEL: Record<Method, string> = {
   cash: "Cash",
+  online: "Online",
   upi: "UPI",
   card: "Debit / Credit card",
   bank: "Bank transfer / NEFT",

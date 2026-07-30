@@ -43,6 +43,7 @@ type Step = "choose" | "lookup" | "pay" | "done";
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
   cash: "Cash",
+  online: "Online",
   upi: "UPI",
   card: "Debit / Credit card",
   bank: "Bank transfer / NEFT",

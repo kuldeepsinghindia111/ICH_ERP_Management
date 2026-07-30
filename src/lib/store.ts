@@ -125,7 +125,7 @@ export type FeeAdjustment = {
   createdAt: string;
 };
 
-export type PaymentMethod = "cash" | "upi" | "card" | "bank" | "cheque";
+export type PaymentMethod = "cash" | "online" | "upi" | "card" | "bank" | "cheque";
 
 export type FeePayment = {
   id: string;
@@ -248,6 +248,7 @@ export type AuditLog = {
 
 const REF_RULES: Record<PaymentMethod, { required: boolean; regex?: RegExp; hint: string }> = {
   cash: { required: false, hint: "Optional — auto-generated receipt no. is used if left blank." },
+  online: { required: true, regex: /^[A-Za-z0-9]{4,}$/, hint: "Online transaction ID / reference (min 4 characters)." },
   upi: { required: true, regex: /^[A-Za-z0-9]{6,}$/, hint: "UPI transaction ID (min 6 alphanumeric characters)." },
   card: { required: true, regex: /^[A-Za-z0-9]{4,}$/, hint: "Last 4 digits or authorization code (min 4)." },
   bank: { required: true, regex: /^[A-Za-z0-9\-]{6,22}$/, hint: "NEFT / IMPS / RTGS UTR (6–22 alphanumeric)." },
