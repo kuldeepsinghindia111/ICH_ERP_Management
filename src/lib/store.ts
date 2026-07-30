@@ -161,7 +161,7 @@ export const SECTIONS: { key: Section; label: string }[] = [
   { key: "users", label: "Users & roles" },
 ];
 
-export type Permission = { view: boolean; edit: boolean };
+export type Permission = { view: boolean; entry?: boolean; edit: boolean };
 export type Permissions = Record<Section, Permission>;
 
 export type AppUser = {
@@ -181,43 +181,43 @@ function makePerms(fn: (s: Section) => Permission): Permissions {
 }
 
 export function defaultPermissionsFor(role: UserRole): Permissions {
-  if (role === "admin") return makePerms(() => ({ view: true, edit: true }));
-  if (role === "management") return makePerms(() => ({ view: true, edit: false }));
+  if (role === "admin") return makePerms(() => ({ view: true, entry: true, edit: true }));
+  if (role === "management") return makePerms(() => ({ view: true, entry: false, edit: false }));
   if (role === "chief_coordinator")
     return makePerms((s) => {
-      if (s === "users") return { view: false, edit: false };
+      if (s === "users") return { view: false, entry: false, edit: false };
       if (
         s === "students" ||
         s === "faculty" ||
         s === "courses" ||
         s === "reports"
       )
-        return { view: true, edit: true };
-      return { view: true, edit: false };
+        return { view: true, entry: true, edit: true };
+      return { view: true, entry: false, edit: false };
     });
   if (role === "academic_coordinator")
     return makePerms((s) => {
       if (s === "users" || s === "settings" || s === "audit" || s === "payments")
-        return { view: false, edit: false };
+        return { view: false, entry: false, edit: false };
       if (s === "students" || s === "faculty" || s === "courses")
-        return { view: true, edit: true };
-      return { view: true, edit: false };
+        return { view: true, entry: true, edit: true };
+      return { view: true, entry: false, edit: false };
     });
   if (role === "accountant")
     return makePerms((s) => {
-      if (s === "users") return { view: false, edit: false };
-      if (s === "settings") return { view: true, edit: false };
-      if (s === "audit") return { view: true, edit: false };
+      if (s === "users") return { view: false, entry: false, edit: false };
+      if (s === "settings") return { view: true, entry: false, edit: false };
+      if (s === "audit") return { view: true, entry: false, edit: false };
       if (s === "fees" || s === "payments" || s === "students")
-        return { view: true, edit: true };
-      return { view: true, edit: false };
+        return { view: true, entry: true, edit: false };
+      return { view: true, entry: false, edit: false };
     });
   // faculty
   return makePerms((s) => {
-    if (s === "users" || s === "settings" || s === "audit") return { view: false, edit: false };
-    if (s === "courses" || s === "faculty") return { view: true, edit: true };
-    if (s === "payments") return { view: true, edit: false };
-    return { view: true, edit: false };
+    if (s === "users" || s === "settings" || s === "audit") return { view: false, entry: false, edit: false };
+    if (s === "courses" || s === "faculty") return { view: true, entry: true, edit: true };
+    if (s === "payments") return { view: true, entry: false, edit: false };
+    return { view: true, entry: false, edit: false };
   });
 }
 
@@ -430,7 +430,7 @@ type State = {
   setPermission: (userId: string, section: Section, key: keyof Permission, value: boolean) => void;
   resetUserPermissions: (userId: string) => void;
 
-  can: (section: Section, action?: "view" | "edit") => boolean;
+  can: (section: Section, action?: "view" | "entry" | "edit") => boolean;
 
   addAuditLog: (e: Omit<AuditLog, "id" | "at" | "actor" | "actorUserId" | "actorName" | "actorCode">) => void;
   clearAuditLog: () => void;
@@ -666,7 +666,9 @@ export const useStore = create<State>()(
         if (u.role === "admin") return true;
         const p = u.permissions[section];
         if (!p) return false;
-        return action === "edit" ? p.edit : p.view;
+        if (action === "edit") return !!p.edit;
+        if (action === "entry") return p.entry !== undefined ? !!(p.entry || p.edit) : !!p.edit;
+        return !!p.view;
       },
 
       addProgram: (p) => set((s) => ({ programs: [...s.programs, { ...p, id: uid() }] })),

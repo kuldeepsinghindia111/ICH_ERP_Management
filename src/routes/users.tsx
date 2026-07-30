@@ -261,32 +261,51 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-2 text-left">Section</th>
-                        <th className="px-3 py-2 text-center w-24">View</th>
-                        <th className="px-3 py-2 text-center w-24">Edit / Data Entry</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Section</th>
+                        <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">View</th>
+                        <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Data Entry</th>
+                        <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Edit</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {SECTIONS.map((s) => {
+                        const rawPerm = userPerms[s.key] || { view: false, entry: false, edit: false };
                         const perm: Permission = isAdminRow
-                          ? { view: true, edit: true }
-                          : userPerms[s.key] || { view: false, edit: false };
+                          ? { view: true, entry: true, edit: true }
+                          : {
+                              view: !!rawPerm.view,
+                              entry: rawPerm.entry !== undefined ? !!rawPerm.entry : !!rawPerm.edit,
+                              edit: !!rawPerm.edit,
+                            };
                         return (
                           <tr key={s.key}>
-                            <td className="px-3 py-2">{s.label}</td>
-                            <td className="px-3 py-2 text-center">
-                              <Checkbox
-                                checked={perm.view}
-                                disabled={isAdminRow || setPermissionMutation.isPending}
-                                onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'view', value: !!v })}
-                              />
+                            <td className="px-4 py-2.5">{s.label}</td>
+                            <td className="px-4 py-2.5 text-center align-middle">
+                              <div className="flex items-center justify-center">
+                                <Checkbox
+                                  checked={perm.view}
+                                  disabled={isAdminRow || setPermissionMutation.isPending}
+                                  onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'view', value: !!v })}
+                                />
+                              </div>
                             </td>
-                            <td className="px-3 py-2 text-center">
-                              <Checkbox
-                                checked={perm.edit}
-                                disabled={isAdminRow || !perm.view || setPermissionMutation.isPending}
-                                onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'edit', value: !!v })}
-                              />
+                            <td className="px-4 py-2.5 text-center align-middle">
+                              <div className="flex items-center justify-center">
+                                <Checkbox
+                                  checked={perm.entry}
+                                  disabled={isAdminRow || !perm.view || setPermissionMutation.isPending}
+                                  onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'entry', value: !!v })}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5 text-center align-middle">
+                              <div className="flex items-center justify-center">
+                                <Checkbox
+                                  checked={perm.edit}
+                                  disabled={isAdminRow || !perm.view || setPermissionMutation.isPending}
+                                  onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'edit', value: !!v })}
+                                />
+                              </div>
                             </td>
                           </tr>
                         );
