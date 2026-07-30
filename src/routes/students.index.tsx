@@ -224,8 +224,9 @@ function StudentsPage() {
                   <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-3">
                     <div className="flex items-center gap-3.5 min-w-60">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-mono text-xs font-bold text-primary shadow-inner border border-primary/20" title={`Serial No. ${serialNo}`}>
-                        #{serialNo}
+                        {serialNo}
                       </div>
+
                       <div>
                         <Link to="/students/$studentId" params={{ studentId: s.id }} className="group">
                           <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">

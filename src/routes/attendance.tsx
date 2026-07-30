@@ -160,13 +160,13 @@ function AttendancePage() {
               </Select>
             </div>
             <div>
-              <Label>Class (Semester)</Label>
+              <Label>Class (Year)</Label>
               <Select value={semester} onValueChange={setSemester}>
-                <SelectTrigger><SelectValue placeholder="All Classes" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="All Years" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Classes</SelectItem>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                    <SelectItem key={s} value={s.toString()}>Sem / Class {s}</SelectItem>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {[1, 2, 3].map((s) => (
+                    <SelectItem key={s} value={s.toString()}>{formatYear(s)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -182,12 +182,12 @@ function AttendancePage() {
         </CardContent>
       </Card>
 
-      {programId === "all" || semester === "all" ? (
+      {semester === "all" && programId === "all" ? (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-            <CalendarCheck className="h-12 w-12 mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-medium text-foreground">Select a Class</h3>
-            <p className="text-sm mt-1 max-w-md">Please select a specific Program and Class (Semester) above to view students and mark attendance.</p>
+          <CardContent className="p-8 text-center text-muted-foreground flex flex-col items-center">
+            <Users className="h-10 w-10 text-muted-foreground/50 mb-2" />
+            <h3 className="font-semibold text-foreground">Select a Program & Class</h3>
+            <p className="text-sm mt-1 max-w-md">Please select a specific Program and Class (Year) above to view students and mark attendance.</p>
           </CardContent>
         </Card>
       ) : (
@@ -216,16 +216,18 @@ function AttendancePage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-3 text-center font-medium w-14">S.No.</th>
                       <th className="px-4 py-3 text-left font-medium">Roll No</th>
                       <th className="px-4 py-3 text-left font-medium">Student</th>
                       <th className="px-4 py-3 text-left font-medium min-w-75">Attendance Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredStudents.map((s: any) => {
+                    {filteredStudents.map((s: any, idx: number) => {
                       const currentStatus = localAttendance[s.id];
                       return (
                         <tr key={s.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground">{idx + 1}</td>
                           <td className="px-4 py-3 text-muted-foreground font-mono">{s.roll_number || "—"}</td>
                           <td className="px-4 py-3 font-medium">{s.name}</td>
                           <td className="px-4 py-3">

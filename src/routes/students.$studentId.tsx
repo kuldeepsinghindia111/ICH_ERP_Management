@@ -504,11 +504,16 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
                 <span className="font-bold">{student.blood_group || "N/A"}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Valid Till</span>
-                <span className="font-bold">2028</span>
+                <span className="text-muted-foreground">Father's Name</span>
+                <span className="font-bold truncate max-w-32">{student.guardian || "N/A"}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Father's/Guardian Contact</span>
+                <span className="font-bold font-mono">{student.guardian_phone || student.phone || "N/A"}</span>
               </div>
             </div>
           </div>
+
 
           {/* Footer */}
           <div className="bg-slate-900 text-white p-2 text-center">
@@ -1123,7 +1128,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
           <div>
             <CardTitle className="font-display text-lg">Payment history</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Itemized ledger of every recorded receipt. Filter by semester, method or status.
+              Itemized ledger of every recorded receipt. Filter by year, method or status.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -1144,17 +1149,18 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <Label className="text-xs">Semester</Label>
+            <Label className="text-xs">Year</Label>
             <Select value={semFilter} onValueChange={setSemFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All semesters</SelectItem>
+                <SelectItem value="all">All years</SelectItem>
                 {semList.map((n) => (
-                  <SelectItem key={n} value={String(n)}>Semester {n}</SelectItem>
+                  <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label className="text-xs">Method</Label>
             <Select value={methodFilter} onValueChange={setMethodFilter}>
