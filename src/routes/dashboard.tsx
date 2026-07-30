@@ -10,7 +10,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
-import { inr } from "@/lib/store";
+import { inr, semesterSummary } from "@/lib/store";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
