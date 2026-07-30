@@ -319,7 +319,7 @@ export function CollectPaymentDialog({
       generatePreview({
         college: paymentInfo,
         payment: { amount: amt, method, reference: ref, transactionId: finalTx, paidAt: new Date(paidAt).toISOString() } as any,
-        student: { name: student.name, admissionNo: student.admission_no, rollNo: student.roll_number || "" },
+        student: { name: student.name, guardian: student.guardian, admissionNo: student.admission_no, rollNo: student.roll_number || "" },
         program: program ? { name: program.name, code: program.code } : undefined,
         semester: Number(sem),
       });
