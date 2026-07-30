@@ -252,30 +252,30 @@ function FeesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-4 py-3 font-medium text-center w-14">S.No.</th>
-                  <th className="px-4 py-3 font-medium">Student</th>
-                  <th className="px-4 py-3 font-medium">Course</th>
-                  <th className="px-4 py-3 font-medium">Year</th>
-                  <th className="px-4 py-3 font-medium">Admission No</th>
-                  <th className="px-4 py-3 font-medium">Roll No</th>
-                  <th className="px-4 py-3 text-right font-medium">Total Payable Fees</th>
-                  <th className="px-4 py-3 text-right font-medium">Late Fees</th>
-                  <th className="px-4 py-3 text-right font-medium">Fine</th>
-                  <th className="px-4 py-3 text-right font-medium">Other</th>
-                  <th className="px-4 py-3 text-right font-medium">Concession</th>
-                  <th className="px-4 py-3 text-right font-medium">Scholarship</th>
-                  <th className="px-4 py-3 text-right font-medium min-w-40">Amount Net Payable</th>
-                  <th className="px-4 py-3 text-right font-medium">Amount Paid</th>
-                  <th className="px-4 py-3 text-right font-medium">Amount Paid Date</th>
-                  <th className="px-4 py-3 text-right font-medium">Balance</th>
-                  <th className="px-4 py-3 text-left font-medium">Remarks</th>
-                  <th className="px-4 py-3"></th>
+          <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
+            <table className="w-full text-sm border-collapse">
+              <thead className="sticky top-0 z-40 bg-muted border-b shadow-xs">
+                <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
+                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Course</th>
+                  <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-40 whitespace-nowrap">Total Payable Fees</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Late Fees</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-28 whitespace-nowrap">Fine</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-28 whitespace-nowrap">Other</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Concession</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Scholarship</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-44 whitespace-nowrap">Amount Net Payable</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Amount Paid</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-44 whitespace-nowrap">Amount Paid Date</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Balance</th>
+                  <th className="px-4 py-3.5 text-left font-medium min-w-48 whitespace-nowrap">Remarks</th>
+                  <th className="px-4 py-3.5 min-w-48 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -285,59 +285,58 @@ function FeesPage() {
                 {pageRows.map(({ st, sum }, idx: number) => {
                   const serialNo = (page - 1) * PAGE_SIZE + idx + 1;
                   return (
+                    <tr key={st.id} className="hover:bg-accent/40 group transition-colors">
+                      <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground sticky left-0 z-30 bg-card group-hover:bg-secondary border-r border-border">
+                        {serialNo}
+                      </td>
+                      <td className="px-4 py-3 sticky left-16 z-30 bg-card group-hover:bg-secondary border-r border-border shadow-sm">
+                        <p className="font-medium text-foreground group-hover:text-primary transition-colors">{st.name}</p>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">{programs.find((p: any) => p.id === st.program_id)?.name}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatYear(st.current_semester)}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{st.admission_no || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{st.roll_number || "—"}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{inr(sum.totalCharged)}</td>
 
-                  <tr key={st.id} className="hover:bg-accent/40">
-                    <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground">
-                      {serialNo}
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{st.name}</p>
-                    </td>
-                    <td className="px-4 py-3">{programs.find((p: any) => p.id === st.program_id)?.name}</td>
-                    <td className="px-4 py-3">{formatYear(st.current_semester)}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{st.admission_no || "—"}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{st.roll_number || "—"}</td>
-                    <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
-
-                    <td className="px-4 py-3 text-right">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
-                    <td className="px-4 py-3 text-right">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
-                    <td className="px-4 py-3 text-right">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</td>
-                    <td className="px-4 py-3 text-right text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
-                    <td className="px-4 py-3 text-right text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
-                    <td className="px-4 py-3 text-right font-medium">{inr(sum.netPayable)}</td>
-                    <td className="px-4 py-3 text-right text-success">{inr(sum.totalPaid)}</td>
-                    <td className="px-4 py-3 text-right text-sm text-muted-foreground">
-                      {sum.payments && sum.payments.length > 0
-                        ? Array.from(new Set(sum.payments.map((p: any) => new Date(p.paidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })))).join(', ')
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {sum.balance > 0
-                        ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
-                        : <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      <InlineRemarkEditor 
-                        payments={sum.payments} 
-                        canEdit={canEditPayments ?? false} 
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {canEditPayments && (
-                          <CollectPaymentDialog studentId={st.id} semester={st.current_semester} variant="sm" />
-                        )}
-                        <LedgerSummaryDialog student={st} sum={sum} />
-                        <ReceiptViewerDialog student={st} payments={sum.payments || []} programs={programs || []} />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</td>
+                      <td className="px-4 py-3 text-right text-warning whitespace-nowrap">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
+                      <td className="px-4 py-3 text-right text-warning whitespace-nowrap">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
+                      <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{inr(sum.netPayable)}</td>
+                      <td className="px-4 py-3 text-right text-success whitespace-nowrap">{inr(sum.totalPaid)}</td>
+                      <td className="px-4 py-3 text-right text-sm text-muted-foreground whitespace-nowrap">
+                        {sum.payments && sum.payments.length > 0
+                          ? Array.from(new Set(sum.payments.map((p: any) => new Date(p.paidAt || p.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })))).join(', ')
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        {sum.balance > 0
+                          ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
+                          : <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                        <InlineRemarkEditor 
+                          payments={sum.payments} 
+                          canEdit={canEditPayments ?? false} 
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <div className="flex justify-end gap-2">
+                          {canEditPayments && (
+                            <CollectPaymentDialog studentId={st.id} semester={st.current_semester} variant="sm" />
+                          )}
+                          <LedgerSummaryDialog student={st} sum={sum} />
+                          <ReceiptViewerDialog student={st} payments={sum.payments || []} programs={programs || []} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
-
             </table>
           </div>
+
           {rows.length > 0 && (
             <div className="flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
               <span>

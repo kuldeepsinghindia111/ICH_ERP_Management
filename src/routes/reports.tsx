@@ -488,24 +488,23 @@ function Reports() {
         </CardContent>
       </Card>
 
-      {/* the actual receipts table (with a switch for sessionId "__none" ignoring session) */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="max-h-120 overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
+          <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
+            <table className="w-full text-sm border-collapse">
+              <thead className="sticky top-0 z-40 bg-muted border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 font-medium text-center w-14">S.No.</th>
-                  <th className="px-4 py-2 font-medium">Date</th>
-                  <th className="px-4 py-2 font-medium">Receipt no</th>
-                  <th className="px-4 py-2 font-medium">Student</th>
-                  <th className="px-4 py-2 font-medium">Father's Name</th>
-                  <th className="px-4 py-2 font-medium">Admission No.</th>
-                  <th className="px-4 py-2 font-medium">Roll No.</th>
-                  <th className="px-4 py-2 font-medium">Program</th>
-                  <th className="px-4 py-2 font-medium">Year</th>
-                  <th className="px-4 py-2 font-medium">Method</th>
-                  <th className="px-4 py-2 text-right font-medium">Amount</th>
+                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Date</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Receipt no</th>
+                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Program</th>
+                  <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
+                  <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Method</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -516,18 +515,20 @@ function Reports() {
                   const st = students.find((s) => s.id === p.studentId);
                   const prog = programs.find((pr) => pr.id === st?.programId);
                   return (
-                    <tr key={p.id}>
-                      <td className="px-4 py-2 text-center font-mono text-xs font-bold text-muted-foreground">{idx + 1}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{new Date(p.paidAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-2 font-mono text-xs">{p.reference ?? "—"}</td>
-                      <td className="px-4 py-2 font-medium">{st?.name ?? "—"}</td>
-                      <td className="px-4 py-2">{st?.guardian || "—"}</td>
-                      <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{st?.admissionNo || "—"}</td>
-                      <td className="px-4 py-2 font-mono text-xs">{st?.rollNumber || "—"}</td>
-                      <td className="px-4 py-2">{prog?.name ?? "—"}</td>
-                      <td className="px-4 py-2">{formatYear(p.semester)}</td>
-                      <td className="px-4 py-2 uppercase text-xs">{p.method}</td>
-                      <td className="px-4 py-2 text-right text-success">{inr(p.amount)}</td>
+                    <tr key={p.id} className="hover:bg-accent/40 group transition-colors">
+                      <td className="px-4 py-2.5 text-center font-mono text-xs font-bold text-muted-foreground sticky left-0 z-30 bg-card group-hover:bg-secondary border-r border-border">{idx + 1}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{new Date(p.paidAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{p.reference ?? "—"}</td>
+                      <td className="px-4 py-2.5 sticky left-16 z-30 bg-card group-hover:bg-secondary border-r border-border shadow-sm">
+                        <p className="font-medium text-foreground group-hover:text-primary transition-colors">{st?.name ?? "—"}</p>
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{st?.guardian || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{st?.admissionNo || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{st?.rollNumber || "—"}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{prog?.name ?? "—"}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{formatYear(p.semester)}</td>
+                      <td className="px-4 py-2.5 uppercase text-xs whitespace-nowrap">{p.method}</td>
+                      <td className="px-4 py-2.5 text-right text-success font-medium whitespace-nowrap">{inr(p.amount)}</td>
                     </tr>
                   );
                 })}
@@ -537,7 +538,7 @@ function Reports() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between space-y-0">
           <div>
             <CardTitle className="font-display text-lg">Pending fees</CardTitle>
@@ -581,43 +582,47 @@ function Reports() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-105 overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
+          <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
+            <table className="w-full text-sm border-collapse">
+              <thead className="sticky top-0 z-40 bg-muted border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 font-medium text-center w-14">S.No.</th>
-                  <th className="px-4 py-2 font-medium">Student</th>
-                  <th className="px-4 py-2 font-medium">Father's Name</th>
-                  <th className="px-4 py-2 font-medium">Admission No.</th>
-                  <th className="px-4 py-2 font-medium">Roll No.</th>
-                  <th className="px-4 py-2 font-medium">Class/Program</th>
-                  <th className="px-4 py-2 text-right font-medium">Balance</th>
-                  <th className="px-4 py-2"></th>
+                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Class/Program</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Balance</th>
+                  <th className="px-4 py-3.5 min-w-36 whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {pending.length === 0 && (
                   <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No pending dues.</td></tr>
                 )}
-                {pending.map((r, idx) => (
-                  <tr key={r.st.id + "-" + r.semester}>
-                    <td className="px-4 py-2 text-center font-mono text-xs font-bold text-muted-foreground">{idx + 1}</td>
-                    <td className="px-4 py-2 font-medium">{r.st.name}</td>
-                    <td className="px-4 py-2">{r.st.guardian || "—"}</td>
-                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{r.st.admissionNo || "—"}</td>
-                    <td className="px-4 py-2 font-mono text-xs">{r.st.rollNumber || "—"}</td>
-                    <td className="px-4 py-2">
-                      <p>{programs.find((p) => p.id === r.st.programId)?.name ?? "—"}</p>
-                      <p className="text-xs text-muted-foreground">{formatYear(r.semester)}</p>
-                    </td>
-                    <td className="px-4 py-2 text-right"><Badge variant="destructive">{inr(r.balance)}</Badge></td>
-                    <td className="px-4 py-2 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to="/students/$studentId" params={{ studentId: r.st.id }}>Open</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {pending.map((r, idx) => {
+                  const prog = programs.find((p) => p.id === r.st.programId);
+                  return (
+                    <tr key={r.st.id} className="hover:bg-accent/40 group transition-colors">
+                      <td className="px-4 py-2.5 text-center font-mono text-xs font-bold text-muted-foreground sticky left-0 z-30 bg-card group-hover:bg-secondary border-r border-border">{idx + 1}</td>
+                      <td className="px-4 py-2.5 sticky left-16 z-30 bg-card group-hover:bg-secondary border-r border-border shadow-sm">
+                        <p className="font-medium text-foreground group-hover:text-primary transition-colors">{r.st.name}</p>
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{r.st.guardian || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{r.st.admissionNo || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{r.st.rollNumber || "—"}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{prog?.name ?? "—"} ({formatYear(r.semester)})</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-destructive whitespace-nowrap">{inr(r.balance)}</td>
+                      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                        <Button asChild size="sm" variant="ghost">
+                          <Link to="/students/$studentId" params={{ studentId: r.st.id }}>
+                            View <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
