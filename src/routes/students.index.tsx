@@ -346,10 +346,10 @@ function StudentsPage() {
           <CardContent className="p-0">
             <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
               <table className="w-full text-sm border-collapse">
-                <thead className="sticky top-0 z-40 bg-muted/95 backdrop-blur-sm border-b shadow-xs">
+                <thead className="sticky top-0 z-40 bg-muted border-b shadow-xs">
                   <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted/95 border-r border-border">S.No.</th>
-                    <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted/95 border-r border-border shadow-sm">Student</th>
+                    <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
+                    <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
                     <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
                     <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No</th>
                     <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Program</th>
@@ -369,10 +369,10 @@ function StudentsPage() {
 
                     return (
                       <tr key={s.id} className="hover:bg-accent/40 group transition-colors">
-                        <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground sticky left-0 z-20 bg-card group-hover:bg-accent/40 border-r border-border">
+                        <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground sticky left-0 z-30 bg-card group-hover:bg-secondary border-r border-border">
                           {serialNo}
                         </td>
-                        <td className="px-4 py-3 sticky left-16 z-20 bg-card group-hover:bg-accent/40 border-r border-border shadow-sm">
+                        <td className="px-4 py-3 sticky left-16 z-30 bg-card group-hover:bg-secondary border-r border-border shadow-sm">
                           <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-2.5">
                             <div>
                               <p className="font-medium text-foreground group-hover:text-primary transition-colors">{s.name}</p>
@@ -380,6 +380,7 @@ function StudentsPage() {
                             </div>
                           </Link>
                         </td>
+
                         <td className="px-4 py-3 whitespace-nowrap">{s.guardian || "—"}</td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{s.admission_no}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{program?.name ?? "—"}</td>
