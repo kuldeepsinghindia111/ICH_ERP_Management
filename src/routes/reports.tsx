@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { ClassReportDialog } from "@/components/ClassReportDialog";
+
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -357,10 +359,15 @@ function Reports() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Reports</p>
-        <h1 className="font-display text-3xl font-semibold text-foreground">Collections & pending dues</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Snapshot of what's been received and what's outstanding. Filter receipts and print.</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Reports</p>
+          <h1 className="font-display text-3xl font-semibold text-foreground">Collections & pending dues</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Snapshot of what's been received and what's outstanding. Filter receipts and print.</p>
+        </div>
+        <div>
+          <ClassReportDialog programs={programs} />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

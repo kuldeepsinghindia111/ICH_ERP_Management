@@ -172,3 +172,42 @@
     background: var(--color-primary);
   }
 }
+
+/* Printable Report Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  aside, nav, header, footer, .print\:hidden, [role="dialog"] > button:last-child {
+    display: none !important;
+  }
+  [role="dialog"] {
+    position: static !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  #printable-general-report {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+  }
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+

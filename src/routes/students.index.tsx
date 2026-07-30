@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { Plus, Search, Trash2, Loader2, Pencil, Settings } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Pencil, Settings, LayoutList, Table, Phone, Mail, MapPin, User, GraduationCap, Shield } from "lucide-react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -11,12 +11,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StudentFormDialog } from "@/components/StudentFormDialog";
 import { StudentImportDialog } from "@/components/StudentImportDialog";
+import { ClassReportDialog } from "@/components/ClassReportDialog";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/students/")({
   head: () => ({
@@ -31,6 +31,8 @@ export const Route = createFileRoute("/students/")({
 function StudentsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const [viewMode, setViewMode] = useState<"vertical" | "table">("vertical");
   
   // Get user's permissions
   const { data: canEdit } = useQuery({
@@ -111,6 +113,7 @@ function StudentsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+      {/* Top Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Registry</p>
@@ -119,7 +122,8 @@ function StudentsPage() {
             {total} enrolled · Permanent roll numbers tracked per student.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ClassReportDialog programs={programs} defaultProgramId={programFilter} defaultSemester={sem} />
           <Button asChild variant="outline">
             <Link to="/settings"><Settings className="mr-1 h-4 w-4" /> Settings</Link>
           </Button>
@@ -132,146 +136,309 @@ function StudentsPage() {
         </div>
       </div>
 
+      {/* Filter and View Switcher Bar */}
       <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <div className="relative min-w-60 flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Search by name, admission or roll no."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            <div className="relative min-w-60 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Search by name, admission or roll no."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <Select value={genderFilter} onValueChange={setGenderFilter}>
+              <SelectTrigger className="w-35"><SelectValue placeholder="Gender" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All genders</SelectItem>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={programFilter} onValueChange={setProgramFilter}>
+              <SelectTrigger className="w-45"><SelectValue placeholder="Program" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All programs</SelectItem>
+                {programs.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sem} onValueChange={setSem}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Year" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All years</SelectItem>
+                {[1, 2, 3].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={genderFilter} onValueChange={setGenderFilter}>
-            <SelectTrigger className="w-35"><SelectValue placeholder="Gender" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All genders</SelectItem>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={programFilter} onValueChange={setProgramFilter}>
-            <SelectTrigger className="w-45"><SelectValue placeholder="Program" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All programs</SelectItem>
-              {programs.map((p: any) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sem} onValueChange={setSem}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Year" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All years</SelectItem>
-              {[1, 2, 3].map((n) => (
-                <SelectItem key={n} value={String(n)}>{formatYear(n)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          {/* View Mode Switcher */}
+          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border">
+            <Button
+              variant={viewMode === "vertical" ? "default" : "ghost"}
+              size="sm"
+              className="h-8 px-2.5 text-xs gap-1.5"
+              onClick={() => setViewMode("vertical")}
+              title="Vertical Stack Card View"
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              Vertical View
+            </Button>
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="sm"
+              className="h-8 px-2.5 text-xs gap-1.5"
+              onClick={() => setViewMode("table")}
+              title="Compact Table View"
+            >
+              <Table className="h-3.5 w-3.5" />
+              Table View
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Student</th>
-                  <th className="px-4 py-3 font-medium">Father's Name</th>
-                  <th className="px-4 py-3 font-medium">Admission No</th>
-                  <th className="px-4 py-3 font-medium">Program</th>
-                  <th className="px-4 py-3 font-medium">Year</th>
-                  <th className="px-4 py-3 font-medium">Roll No.</th>
-                  <th className="px-4 py-3 font-medium">Male/Female</th>
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium">Address</th>
-                  <th className="px-4 py-3 font-medium">Mobile No.</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {students.length === 0 && (
-                  <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">No students match your filters.</td></tr>
-                )}
-                {students.map((s: any) => {
-                  const program = programs.find((p: any) => p.id === s.program_id);
-                  // Safe initial logic for students with single-word names
-                  const parts = s.name.split(" ");
-                  const initials = parts.length > 1 
-                    ? parts[0][0] + parts[1][0] 
-                    : s.name.substring(0, 2);
+      {/* Main Content Area */}
+      {students.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            No students match your filters.
+          </CardContent>
+        </Card>
+      ) : viewMode === "vertical" ? (
+        /* ENHANCED VERTICAL CARDS VIEW */
+        <div className="space-y-4">
+          {students.map((s: any) => {
+            const program = programs.find((p: any) => p.id === s.program_id);
+            const parts = s.name.split(" ");
+            const initials = parts.length > 1
+              ? parts[0][0] + parts[1][0]
+              : s.name.substring(0, 2);
 
-                  return (
-                    <tr key={s.id} className="hover:bg-accent/40">
-                      <td className="px-4 py-3">
-                        <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary uppercase">
-                            {initials}
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{s.name}</p>
-                            <p className="text-xs text-muted-foreground">{s.email || "—"}</p>
-                          </div>
+            return (
+              <Card key={s.id} className="hover:border-primary/50 transition-all duration-200 shadow-sm overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  {/* Top Bar: Primary Info & Actions */}
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-3">
+                    <div className="flex items-center gap-3.5 min-w-60">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary uppercase shadow-inner">
+                        {initials}
+                      </div>
+                      <div>
+                        <Link to="/students/$studentId" params={{ studentId: s.id }} className="group">
+                          <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                            {s.name}
+                          </h3>
                         </Link>
-                      </td>
-                      <td className="px-4 py-3">{s.guardian || "—"}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
-                      <td className="px-4 py-3">{program?.name ?? "—"}</td>
-                      <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
-                      <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
-                      <td className="px-4 py-3">{s.category || "—"}</td>
-                      <td className="px-4 py-3">
-                        <div className="max-w-37.5 truncate" title={s.address}>{s.address || "—"}</div>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs">{s.phone || "—"}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          {canEdit && (
-                            <Link 
-                              to="/students/$studentId" 
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                          <span className="font-mono text-muted-foreground">Adm: <span className="font-semibold text-foreground">{s.admission_no}</span></span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="font-mono text-muted-foreground">Roll: <span className="font-semibold text-primary">{s.roll_number || "—"}</span></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Badges & Actions */}
+                    <div className="flex flex-wrap items-center gap-2 ml-auto">
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                        <GraduationCap className="mr-1 h-3 w-3" />
+                        {program?.name ?? "—"}
+                      </Badge>
+                      <Badge variant="secondary" className="font-medium">
+                        {formatYear(s.current_semester)}
+                      </Badge>
+                      {s.gender && (
+                        <Badge variant="outline" className="capitalize">
+                          {s.gender}
+                        </Badge>
+                      )}
+                      {s.category && (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                          {s.category}
+                        </Badge>
+                      )}
+
+                      <div className="flex items-center gap-1.5 ml-2 border-l pl-3">
+                        <Link
+                          to="/students/$studentId"
+                          params={{ studentId: s.id }}
+                          className="inline-flex h-8 px-3 items-center justify-center rounded-md bg-primary text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                        >
+                          View Profile
+                        </Link>
+                        {canEdit && (
+                          <>
+                            <Link
+                              to="/students/$studentId"
                               params={{ studentId: s.id }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
-                              title="View Full Profile"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                              title="Edit Profile"
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-3.5 w-3.5" />
                             </Link>
-                          )}
-                          <Link 
-                            to="/students/$studentId" 
-                            params={{ studentId: s.id }}
-                            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-                          >
-                            View Profile
-                          </Link>
-                          {canEdit && (
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="h-9 w-9"
+                              className="h-8 w-8"
                               onClick={() => {
-                                if (window.confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
+                                if (window.confirm("Are you sure you want to delete this student?")) {
                                   removeStudent.mutate(s.id);
                                 }
                               }}
                               title="Delete Student"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vertical Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-muted/30 p-3.5 rounded-lg border">
+                    {/* Col 1: Guardian & Personal */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                        <User className="h-3.5 w-3.5 text-primary/70" />
+                        <span>Father / Guardian Name:</span>
+                      </div>
+                      <p className="font-semibold text-foreground pl-5">{s.guardian || "—"}</p>
+                    </div>
+
+                    {/* Col 2: Contact Info */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                        <Phone className="h-3.5 w-3.5 text-primary/70" />
+                        <span>Contact & Communication:</span>
+                      </div>
+                      <div className="pl-5 space-y-0.5 font-mono">
+                        <p className="text-foreground">{s.phone ? `Mob: ${s.phone}` : "No phone"}</p>
+                        {s.email && <p className="text-muted-foreground truncate">{s.email}</p>}
+                      </div>
+                    </div>
+
+                    {/* Col 3: Address Details */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                        <MapPin className="h-3.5 w-3.5 text-primary/70" />
+                        <span>Address / Location:</span>
+                      </div>
+                      <p className="text-foreground pl-5 truncate" title={[s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ")}>
+                        {[s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ") || "—"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        /* COMPACT TABLE VIEW */
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">Student</th>
+                    <th className="px-4 py-3 font-medium">Father's Name</th>
+                    <th className="px-4 py-3 font-medium">Admission No</th>
+                    <th className="px-4 py-3 font-medium">Program</th>
+                    <th className="px-4 py-3 font-medium">Year</th>
+                    <th className="px-4 py-3 font-medium">Roll No.</th>
+                    <th className="px-4 py-3 font-medium">Gender</th>
+                    <th className="px-4 py-3 font-medium">Category</th>
+                    <th className="px-4 py-3 font-medium">Mobile No.</th>
+                    <th className="px-4 py-3 font-medium">Address</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {students.map((s: any) => {
+                    const program = programs.find((p: any) => p.id === s.program_id);
+                    const parts = s.name.split(" ");
+                    const initials = parts.length > 1
+                      ? parts[0][0] + parts[1][0]
+                      : s.name.substring(0, 2);
+
+                    return (
+                      <tr key={s.id} className="hover:bg-accent/40">
+                        <td className="px-4 py-3">
+                          <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary uppercase">
+                              {initials}
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{s.name}</p>
+                              <p className="text-xs text-muted-foreground">{s.email || "—"}</p>
+                            </div>
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">{s.guardian || "—"}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
+                        <td className="px-4 py-3">{program?.name ?? "—"}</td>
+                        <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
+                        <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
+                        <td className="px-4 py-3">{s.category || "—"}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{s.phone || "—"}</td>
+                        <td className="px-4 py-3">
+                          <div className="max-w-36 truncate" title={s.address}>{s.address || "—"}</div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            {canEdit && (
+                              <Link
+                                to="/students/$studentId"
+                                params={{ studentId: s.id }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
+                                title="Edit Profile"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Link>
+                            )}
+                            <Link
+                              to="/students/$studentId"
+                              params={{ studentId: s.id }}
+                              className="inline-flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                            >
+                              View Profile
+                            </Link>
+                            {canEdit && (
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to delete this student?")) {
+                                    removeStudent.mutate(s.id);
+                                  }
+                                }}
+                                title="Delete Student"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
+      {/* Pagination Footer */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
