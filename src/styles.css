@@ -156,22 +156,27 @@
     letter-spacing: -0.01em;
   }
 
-  /* Sleek, Modern Academic Custom Scrollbar */
+  /* Sleek, High-Visibility Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 9px;
+    height: 9px;
   }
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
   }
   ::-webkit-scrollbar-thumb {
     background: var(--color-muted-foreground);
     border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-primary);
+    border: 1px solid transparent;
   }
 }
+
 
 /* Printable Report Styles */
 @media print {

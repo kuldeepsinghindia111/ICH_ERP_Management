@@ -342,24 +342,24 @@ function StudentsPage() {
         </div>
       ) : (
         /* COMPACT TABLE VIEW */
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    <th className="px-4 py-3 font-medium text-center w-16">S.No.</th>
-                    <th className="px-4 py-3 font-medium">Student</th>
-                    <th className="px-4 py-3 font-medium">Father's Name</th>
-                    <th className="px-4 py-3 font-medium">Admission No</th>
-                    <th className="px-4 py-3 font-medium">Program</th>
-                    <th className="px-4 py-3 font-medium">Year</th>
-                    <th className="px-4 py-3 font-medium">Roll No.</th>
-                    <th className="px-4 py-3 font-medium">Gender</th>
-                    <th className="px-4 py-3 font-medium">Category</th>
-                    <th className="px-4 py-3 font-medium">Mobile No.</th>
-                    <th className="px-4 py-3 font-medium">Address</th>
-                    <th className="px-4 py-3"></th>
+            <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 z-40 bg-muted/95 backdrop-blur-sm border-b shadow-xs">
+                  <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
+                    <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted/95 border-r border-border">S.No.</th>
+                    <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted/95 border-r border-border shadow-sm">Student</th>
+                    <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
+                    <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No</th>
+                    <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Program</th>
+                    <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
+                    <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
+                    <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Gender</th>
+                    <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Category</th>
+                    <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Mobile No.</th>
+                    <th className="px-4 py-3.5 font-medium min-w-48 whitespace-nowrap">Address</th>
+                    <th className="px-4 py-3.5 min-w-44 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -368,31 +368,33 @@ function StudentsPage() {
                     const serialNo = (page - 1) * pageSize + idx + 1;
 
                     return (
-                      <tr key={s.id} className="hover:bg-accent/40">
-                        <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground">
+                      <tr key={s.id} className="hover:bg-accent/40 group transition-colors">
+                        <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground sticky left-0 z-20 bg-card group-hover:bg-accent/40 border-r border-border">
                           {serialNo}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 sticky left-16 z-20 bg-card group-hover:bg-accent/40 border-r border-border shadow-sm">
                           <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-2.5">
                             <div>
-                              <p className="font-medium text-foreground">{s.name}</p>
+                              <p className="font-medium text-foreground group-hover:text-primary transition-colors">{s.name}</p>
                               {s.email ? <p className="text-xs text-muted-foreground">{s.email}</p> : null}
                             </div>
                           </Link>
                         </td>
-                        <td className="px-4 py-3">{s.guardian || "—"}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.admission_no}</td>
-                        <td className="px-4 py-3">{program?.name ?? "—"}</td>
-                        <td className="px-4 py-3">{formatYear(s.current_semester)}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{s.roll_number || "—"}</td>
-                        <td className="px-4 py-3 capitalize">{s.gender || "—"}</td>
-                        <td className="px-4 py-3">{s.category || "—"}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{s.phone || "—"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{s.guardian || "—"}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{s.admission_no}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{program?.name ?? "—"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{formatYear(s.current_semester)}</td>
+                        <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">{s.roll_number || "—"}</td>
+                        <td className="px-4 py-3 capitalize whitespace-nowrap">{s.gender || "—"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{s.category || "—"}</td>
+                        <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">{s.phone || "—"}</td>
                         <td className="px-4 py-3">
-                          <div className="max-w-36 truncate" title={s.address}>{s.address || "—"}</div>
+                          <div className="max-w-44 truncate" title={[s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ")}>
+                            {[s.address, s.city].filter(Boolean).join(", ") || "—"}
+                          </div>
                         </td>
 
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
                           <div className="flex justify-end gap-2">
                             {canEdit && (
                               <Link
@@ -436,6 +438,7 @@ function StudentsPage() {
             </div>
           </CardContent>
         </Card>
+
       )}
       
       {/* Pagination Footer */}
