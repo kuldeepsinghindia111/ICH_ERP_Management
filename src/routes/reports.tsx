@@ -495,6 +495,7 @@ function Reports() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
+                  <th className="px-4 py-2 font-medium text-center w-14">S.No.</th>
                   <th className="px-4 py-2 font-medium">Date</th>
                   <th className="px-4 py-2 font-medium">Receipt no</th>
                   <th className="px-4 py-2 font-medium">Student</th>
@@ -509,13 +510,14 @@ function Reports() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredReceipts.length === 0 && (
-                  <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">No receipts for these filters.</td></tr>
+                  <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">No receipts for these filters.</td></tr>
                 )}
-                {filteredReceipts.slice(0, 200).map((p) => {
+                {filteredReceipts.slice(0, 200).map((p, idx) => {
                   const st = students.find((s) => s.id === p.studentId);
                   const prog = programs.find((pr) => pr.id === st?.programId);
                   return (
                     <tr key={p.id}>
+                      <td className="px-4 py-2 text-center font-mono text-xs font-bold text-muted-foreground">{idx + 1}</td>
                       <td className="px-4 py-2 text-muted-foreground">{new Date(p.paidAt).toLocaleDateString()}</td>
                       <td className="px-4 py-2 font-mono text-xs">{p.reference ?? "—"}</td>
                       <td className="px-4 py-2 font-medium">{st?.name ?? "—"}</td>
@@ -583,6 +585,7 @@ function Reports() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
+                  <th className="px-4 py-2 font-medium text-center w-14">S.No.</th>
                   <th className="px-4 py-2 font-medium">Student</th>
                   <th className="px-4 py-2 font-medium">Father's Name</th>
                   <th className="px-4 py-2 font-medium">Admission No.</th>
@@ -594,10 +597,11 @@ function Reports() {
               </thead>
               <tbody className="divide-y divide-border">
                 {pending.length === 0 && (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No pending dues.</td></tr>
+                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No pending dues.</td></tr>
                 )}
-                {pending.map((r) => (
+                {pending.map((r, idx) => (
                   <tr key={r.st.id + "-" + r.semester}>
+                    <td className="px-4 py-2 text-center font-mono text-xs font-bold text-muted-foreground">{idx + 1}</td>
                     <td className="px-4 py-2 font-medium">{r.st.name}</td>
                     <td className="px-4 py-2">{r.st.guardian || "—"}</td>
                     <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{r.st.admissionNo || "—"}</td>
@@ -619,6 +623,7 @@ function Reports() {
           </div>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>

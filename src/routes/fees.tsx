@@ -250,6 +250,7 @@ function FeesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
+                  <th className="px-4 py-3 font-medium text-center w-14">S.No.</th>
                   <th className="px-4 py-3 font-medium">Student</th>
                   <th className="px-4 py-3 font-medium">Course</th>
                   <th className="px-4 py-3 font-medium">Year</th>
@@ -271,10 +272,15 @@ function FeesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 && (
-                  <tr><td colSpan={17} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
+                  <tr><td colSpan={18} className="p-8 text-center text-muted-foreground">Nothing to show for these filters.</td></tr>
                 )}
-                {pageRows.map(({ st, sum }) => (
+                {pageRows.map(({ st, sum }, idx: number) => {
+                  const serialNo = (page - 1) * pageSize + idx + 1;
+                  return (
                   <tr key={st.id} className="hover:bg-accent/40">
+                    <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground">
+                      {serialNo}
+                    </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{st.name}</p>
                     </td>
@@ -283,6 +289,7 @@ function FeesPage() {
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{st.admission_no || "—"}</td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{st.roll_number || "—"}</td>
                     <td className="px-4 py-3 text-right">{inr(sum.totalCharged)}</td>
+
                     <td className="px-4 py-3 text-right">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
                     <td className="px-4 py-3 text-right">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
                     <td className="px-4 py-3 text-right">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</td>
@@ -316,8 +323,10 @@ function FeesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
+
             </table>
           </div>
           {rows.length > 0 && (

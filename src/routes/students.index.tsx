@@ -213,12 +213,9 @@ function StudentsPage() {
       ) : viewMode === "vertical" ? (
         /* ENHANCED VERTICAL CARDS VIEW */
         <div className="space-y-4">
-          {students.map((s: any) => {
+          {students.map((s: any, idx: number) => {
             const program = programs.find((p: any) => p.id === s.program_id);
-            const parts = s.name.split(" ");
-            const initials = parts.length > 1
-              ? parts[0][0] + parts[1][0]
-              : s.name.substring(0, 2);
+            const serialNo = (page - 1) * pageSize + idx + 1;
 
             return (
               <Card key={s.id} className="hover:border-primary/50 transition-all duration-200 shadow-sm overflow-hidden">
@@ -226,8 +223,8 @@ function StudentsPage() {
                   {/* Top Bar: Primary Info & Actions */}
                   <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-3">
                     <div className="flex items-center gap-3.5 min-w-60">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary uppercase shadow-inner">
-                        {initials}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-mono text-xs font-bold text-primary shadow-inner border border-primary/20" title={`Serial No. ${serialNo}`}>
+                        #{serialNo}
                       </div>
                       <div>
                         <Link to="/students/$studentId" params={{ studentId: s.id }} className="group">
@@ -235,6 +232,9 @@ function StudentsPage() {
                             {s.name}
                           </h3>
                         </Link>
+                        {s.email ? (
+                          <p className="text-xs text-muted-foreground">{s.email}</p>
+                        ) : null}
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
                           <span className="font-mono text-muted-foreground">Adm: <span className="font-semibold text-foreground">{s.admission_no}</span></span>
                           <span className="text-muted-foreground">•</span>
@@ -347,6 +347,7 @@ function StudentsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-widest text-muted-foreground">
+                    <th className="px-4 py-3 font-medium text-center w-16">S.No.</th>
                     <th className="px-4 py-3 font-medium">Student</th>
                     <th className="px-4 py-3 font-medium">Father's Name</th>
                     <th className="px-4 py-3 font-medium">Admission No</th>
@@ -361,23 +362,20 @@ function StudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {students.map((s: any) => {
+                  {students.map((s: any, idx: number) => {
                     const program = programs.find((p: any) => p.id === s.program_id);
-                    const parts = s.name.split(" ");
-                    const initials = parts.length > 1
-                      ? parts[0][0] + parts[1][0]
-                      : s.name.substring(0, 2);
+                    const serialNo = (page - 1) * pageSize + idx + 1;
 
                     return (
                       <tr key={s.id} className="hover:bg-accent/40">
+                        <td className="px-4 py-3 text-center font-mono text-xs font-bold text-muted-foreground">
+                          {serialNo}
+                        </td>
                         <td className="px-4 py-3">
-                          <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary uppercase">
-                              {initials}
-                            </div>
+                          <Link to="/students/$studentId" params={{ studentId: s.id }} className="flex items-center gap-2.5">
                             <div>
                               <p className="font-medium text-foreground">{s.name}</p>
-                              <p className="text-xs text-muted-foreground">{s.email || "—"}</p>
+                              {s.email ? <p className="text-xs text-muted-foreground">{s.email}</p> : null}
                             </div>
                           </Link>
                         </td>
@@ -392,6 +390,7 @@ function StudentsPage() {
                         <td className="px-4 py-3">
                           <div className="max-w-36 truncate" title={s.address}>{s.address || "—"}</div>
                         </td>
+
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-2">
                             {canEdit && (
