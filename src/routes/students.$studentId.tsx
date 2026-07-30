@@ -512,7 +512,7 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
 
           {/* Footer */}
           <div className="bg-slate-900 text-white p-2 text-center">
-            <p className="text-[9px]">IF FOUND, RETURN TO IMPERIAL COLLEGE, Dabra Road, Contact No. 90504228858</p>
+            <p className="text-[9px]">IF FOUND, RETURN TO IMPERIAL COLLEGE, Dabra Road, Contact No. 90504-28858</p>
           </div>
         </div>
       </CardContent>

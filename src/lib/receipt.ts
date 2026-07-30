@@ -182,7 +182,7 @@ function drawReceiptHalf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...mutedColor);
-  doc.text(`Support: ${data.college.supportEmail}  |  Phone: ${data.college.supportPhone}`, 30, y);
+  doc.text("Support: hisarimperial@gmail.com  |  Phone: 90504-28858", 30, y);
   doc.text("Note: Exam fees will be charged separately at the time of exam forms.", 30, y + 12);
   doc.text("This is a computer-generated document and does not require a physical signature.", 30, y + 24);
 

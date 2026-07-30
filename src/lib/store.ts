@@ -85,7 +85,7 @@ export const COLLEGE_PAYMENT_INFO: CollegePaymentInfo = {
   upiId: "hisarimperial@gmail.com",
   upiName: "Imperial College Hisar",
   supportEmail: "hisarimperial@gmail.com",
-  supportPhone: "+91 90504-228858",
+  supportPhone: "90504-28858",
 };
 
 export type FeeHead =
