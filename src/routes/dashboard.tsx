@@ -60,7 +60,11 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_charges').select('*');
       if (error) throw error;
-      return data;
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), head: d.head, label: d.label, amount: Number(d.amount), createdAt: d.created_at
+      }));
     }
   });
 
@@ -69,7 +73,11 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_adjustments').select('*');
       if (error) throw error;
-      return data;
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), type: d.type, label: d.label, amount: Number(d.amount), createdAt: d.created_at
+      }));
     }
   });
 
@@ -78,7 +86,13 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_payments').select('*');
       if (error) throw error;
-      return data;
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), amount: Number(d.amount), method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, paid_at: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, void_reason: d.void_reason, voidReason: d.void_reason
+      }));
     }
   });
 
@@ -103,34 +117,17 @@ function Dashboard() {
       const stId = st.id;
       const currentSem = st.current_semester || 1;
       
-      let stNetPayable = 0;
-      let stTotalPaid = 0;
-      let stBalance = 0;
+      const sum = semesterSummary(stId, currentSem, {
+        charges: feeCharges,
+        adjustments: feeAdjustments,
+        payments: feePayments,
+        structures: feeStructures,
+        student: st
+      });
 
-      // Only calculate for the current session/semester
-      const s = currentSem;
-      const charges = feeCharges.filter(c => c.student_id === stId && c.semester === s);
-      const adjustments = feeAdjustments.filter(a => a.student_id === stId && a.semester === s);
-      const payments = feePayments.filter(p => p.student_id === stId && p.semester === s);
-      
-      let prescribedFee = 0;
-      const structs = feeStructures.filter(fs => fs.program_id === st.program_id && fs.semester === s);
-      prescribedFee = structs.reduce((sum, fs) => sum + Number(fs.amount), 0);
-      
-      const manualCharges = charges.reduce((sum, c) => sum + Number(c.amount), 0);
-      const totalCharged = prescribedFee + manualCharges;
-      
-      const totalConcession = adjustments.filter(a => a.type === "concession").reduce((sum, a) => sum + Number(a.amount), 0);
-      const totalScholarship = adjustments.filter(a => a.type === "scholarship").reduce((sum, a) => sum + Number(a.amount), 0);
-      const totalAdjustment = totalConcession + totalScholarship;
-      
-      const netPayable = totalCharged - totalAdjustment;
-      const totalPaid = payments.filter(p => !p.voided).reduce((sum, p) => sum + Number(p.amount), 0);
-      const balance = netPayable - totalPaid;
-      
-      stNetPayable = netPayable;
-      stTotalPaid = totalPaid;
-      stBalance = balance;
+      const stNetPayable = sum.netPayable;
+      const stTotalPaid = sum.totalPaid;
+      const stBalance = sum.balance;
 
       netPayableAll += stNetPayable;
       totalPaidAll += stTotalPaid;
@@ -162,6 +159,7 @@ function Dashboard() {
         if (stBalance > 0) y3StudentsWithDues++;
       }
     });
+
 
     pendingList.sort((a, b) => b.balance - a.balance);
     const topPending = pendingList.slice(0, 5);

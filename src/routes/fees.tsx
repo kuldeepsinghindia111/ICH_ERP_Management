@@ -69,9 +69,10 @@ function FeesPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_charges').select('*');
       if (error) throw error;
-      return data.map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), head: d.head, label: d.label, amount: Number(d.amount), createdAt: d.created_at
       }));
     }
   });
@@ -81,7 +82,11 @@ function FeesPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_structures').select('*');
       if (error) throw error;
-      return data;
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, programId: d.program_id, program_id: d.program_id,
+        semester: Number(d.semester), amount: Number(d.amount), category: d.category
+      }));
     }
   });
   
@@ -90,9 +95,10 @@ function FeesPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_adjustments').select('*');
       if (error) throw error;
-      return data.map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), type: d.type, label: d.label, amount: Number(d.amount), createdAt: d.created_at
       }));
     }
   });
@@ -102,14 +108,16 @@ function FeesPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_payments').select('*');
       if (error) throw error;
-      return data.map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        amount: d.amount, method: d.method, reference: d.reference,
-        note: d.note, paidAt: d.paid_at, voided: d.voided,
-        voidedAt: d.voided_at, voidReason: d.void_reason
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), amount: Number(d.amount), method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, paid_at: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, void_reason: d.void_reason, voidReason: d.void_reason
       }));
     }
   });
+
 
   const isLoading = loadingPrograms || loadingStudents || loadingCharges || loadingAdjustments || loadingPayments || loadingStructures;
 

@@ -124,14 +124,16 @@ export function CollectPaymentDialog({
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_payments').select('*');
       if (error) throw error;
-      return data.map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        amount: d.amount, method: d.method, reference: d.reference,
-        note: d.note, paidAt: d.paid_at, voided: d.voided,
-        voidedAt: d.voided_at, voidReason: d.void_reason
+      return (data || []).map((d: any) => ({
+        ...d,
+        id: d.id, studentId: d.student_id, student_id: d.student_id,
+        semester: Number(d.semester), amount: Number(d.amount), method: d.method, reference: d.reference,
+        note: d.note, paidAt: d.paid_at, paid_at: d.paid_at, voided: d.voided,
+        voidedAt: d.voided_at, void_reason: d.void_reason, voidReason: d.void_reason
       }));
     }
   });
+
 
   const { data: feeStructures = [] } = useQuery({
     queryKey: ['fee_structures'],

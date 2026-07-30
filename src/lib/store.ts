@@ -871,32 +871,33 @@ export function semesterSummary(
   studentId: string, semester: number,
   data: Pick<State, "charges" | "adjustments" | "payments"> & { structures?: any[], student?: any },
 ) {
-  const charges = data.charges.filter((c) => c.studentId === studentId && c.semester === semester);
-  const adjustments = data.adjustments.filter((a) => a.studentId === studentId && a.semester === semester);
-  const payments = data.payments.filter((p) => p.studentId === studentId && p.semester === semester);
+  const charges = (data.charges || []).filter((c: any) => ((c.studentId || c.student_id) === studentId) && Number(c.semester) === Number(semester));
+  const adjustments = (data.adjustments || []).filter((a: any) => ((a.studentId || a.student_id) === studentId) && Number(a.semester) === Number(semester));
+  const payments = (data.payments || []).filter((p: any) => ((p.studentId || p.student_id) === studentId) && Number(p.semester) === Number(semester));
   
   // Calculate prescribed base fees from fee_structures for this student's program and semester
   let prescribedFee = 0;
   if (data.structures && data.student) {
-    const structs = data.structures.filter(s => s.program_id === data.student.program_id && s.semester === semester);
-    prescribedFee = structs.reduce((sum, s) => sum + Number(s.amount), 0);
+    const structs = data.structures.filter((s: any) => (s.program_id || s.programId) === data.student.program_id && Number(s.semester) === Number(semester));
+    prescribedFee = structs.reduce((sum: number, s: any) => sum + Number(s.amount || 0), 0);
   }
 
-  const totalLate = charges.filter((c) => c.head === "late").reduce((s, c) => s + c.amount, 0);
-  const totalFine = charges.filter((c) => c.head === "fine").reduce((s, c) => s + c.amount, 0);
-  const totalOther = charges.filter((c) => c.head === "other").reduce((s, c) => s + c.amount, 0);
+  const totalLate = charges.filter((c: any) => c.head === "late").reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
+  const totalFine = charges.filter((c: any) => c.head === "fine").reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
+  const totalOther = charges.filter((c: any) => c.head === "other").reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
   
-  const manualCharges = charges.reduce((s, c) => s + c.amount, 0);
+  const manualCharges = charges.reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
   const totalCharged = prescribedFee + manualCharges;
 
-  const totalConcession = adjustments.filter((a) => a.type === "concession").reduce((s, a) => s + a.amount, 0);
-  const totalScholarship = adjustments.filter((a) => a.type === "scholarship").reduce((s, a) => s + a.amount, 0);
+  const totalConcession = adjustments.filter((a: any) => a.type === "concession").reduce((s: number, a: any) => s + Number(a.amount || 0), 0);
+  const totalScholarship = adjustments.filter((a: any) => a.type === "scholarship").reduce((s: number, a: any) => s + Number(a.amount || 0), 0);
   const totalAdjustment = totalConcession + totalScholarship;
   const netPayable = totalCharged - totalAdjustment;
-  const totalPaid = payments.filter((p) => !p.voided).reduce((s, p) => s + p.amount, 0);
+  const totalPaid = payments.filter((p: any) => !p.voided).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
   const balance = netPayable - totalPaid;
   return { charges, adjustments, payments, prescribedFee, manualCharges, totalLate, totalFine, totalOther, totalCharged, totalConcession, totalScholarship, totalAdjustment, netPayable, totalPaid, balance };
 }
+
 
 export function studentTotals(
   studentId: string, currentSemester: number,
