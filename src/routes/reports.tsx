@@ -205,7 +205,7 @@ function Reports() {
   );
 
   const exportCsv = () => {
-    const rows = ["Date,Receipt No,Student,Admission No.,Roll No.,Father's Name,Program,Year,Method,Amount"];
+    const rows = ["Date,Receipt No,Student,Father's Name,Admission No.,Roll No.,Program,Year,Method,Amount"];
     filteredReceipts.forEach((p) => {
       const st = students.find((s) => s.id === p.studentId);
       const prog = programs.find((pr) => pr.id === st?.programId);
@@ -213,9 +213,9 @@ function Reports() {
         new Date(p.paidAt).toLocaleDateString(),
         p.reference ?? "",
         `"${st?.name ?? ""}"`,
+        `"${st?.guardian ?? ""}"`,
         st?.admissionNo ?? "",
         st?.rollNumber ?? "",
-        `"${st?.guardian ?? ""}"`,
         prog?.name ?? "",
         formatYear(p.semester),
         p.method,
@@ -237,9 +237,9 @@ function Reports() {
         <td>${new Date(p.paidAt).toLocaleDateString()}</td>
         <td style="font-family:monospace">${p.reference ?? ""}</td>
         <td>${st?.name ?? ""}</td>
+        <td>${st?.guardian ?? "—"}</td>
         <td style="font-family:monospace">${st?.admissionNo ?? "—"}</td>
         <td style="font-family:monospace">${st?.rollNumber ?? "—"}</td>
-        <td>${st?.guardian ?? "—"}</td>
         <td>${prog?.name ?? ""}</td>
         <td>${formatYear(p.semester)}</td>
         <td style="text-transform:uppercase">${p.method}</td>
@@ -270,7 +270,7 @@ function Reports() {
       <div class="meta">${filterLine} · Generated ${new Date().toLocaleString()}</div>
       <table>
         <thead><tr>
-          <th>Date</th><th>Receipt no</th><th>Student</th><th>Admission No.</th><th>Roll No.</th><th>Father's Name</th><th>Program</th>
+          <th>Date</th><th>Receipt no</th><th>Student</th><th>Father's Name</th><th>Admission No.</th><th>Roll No.</th><th>Program</th>
           <th>Year</th><th>Method</th><th style="text-align:right">Amount</th>
         </tr></thead>
         <tbody>${rows || `<tr><td colspan="10" style="text-align:center;color:#888;padding:24px">No receipts for these filters.</td></tr>`}</tbody>
@@ -286,14 +286,14 @@ function Reports() {
   };
 
   const exportPendingCsv = () => {
-    const rows = ["Student,Admission No.,Roll No.,Father's Name,Program,Class/Program,Balance"];
+    const rows = ["Student,Father's Name,Admission No.,Roll No.,Program,Class/Program,Balance"];
     pending.forEach((r) => {
       const prog = programs.find((pr) => pr.id === r.st.programId);
       rows.push([
         `"${r.st.name}"`,
+        `"${r.st.guardian ?? ""}"`,
         r.st.admissionNo ?? "",
         r.st.rollNumber ?? "",
-        `"${r.st.guardian ?? ""}"`,
         prog?.name ?? "",
         formatYear(r.semester),
         r.balance,
@@ -311,9 +311,9 @@ function Reports() {
       const prog = programs.find((pr) => pr.id === r.st.programId);
       return `<tr>
         <td>${r.st.name ?? ""}</td>
+        <td>${r.st.guardian ?? "—"}</td>
         <td style="font-family:monospace">${r.st.admissionNo ?? "—"}</td>
         <td style="font-family:monospace">${r.st.rollNumber ?? "—"}</td>
-        <td>${r.st.guardian ?? "—"}</td>
         <td>${prog?.name ?? ""}</td>
         <td>${formatYear(r.semester)}</td>
         <td style="text-align:right">₹ ${r.balance.toLocaleString("en-IN")}</td>
@@ -340,7 +340,7 @@ function Reports() {
       <div class="meta">${filterLine} · Generated ${new Date().toLocaleString()}</div>
       <table>
         <thead><tr>
-          <th>Student</th><th>Admission No.</th><th>Roll No.</th><th>Father's Name</th><th>Program</th>
+          <th>Student</th><th>Father's Name</th><th>Admission No.</th><th>Roll No.</th><th>Program</th>
           <th>Class/Program</th><th style="text-align:right">Balance</th>
         </tr></thead>
         <tbody>${rows || `<tr><td colspan="7" style="text-align:center;color:#888;padding:24px">No pending dues for these filters.</td></tr>`}</tbody>
@@ -491,9 +491,9 @@ function Reports() {
                   <th className="px-4 py-2 font-medium">Date</th>
                   <th className="px-4 py-2 font-medium">Receipt no</th>
                   <th className="px-4 py-2 font-medium">Student</th>
+                  <th className="px-4 py-2 font-medium">Father's Name</th>
                   <th className="px-4 py-2 font-medium">Admission No.</th>
                   <th className="px-4 py-2 font-medium">Roll No.</th>
-                  <th className="px-4 py-2 font-medium">Father's Name</th>
                   <th className="px-4 py-2 font-medium">Program</th>
                   <th className="px-4 py-2 font-medium">Year</th>
                   <th className="px-4 py-2 font-medium">Method</th>
@@ -512,9 +512,9 @@ function Reports() {
                       <td className="px-4 py-2 text-muted-foreground">{new Date(p.paidAt).toLocaleDateString()}</td>
                       <td className="px-4 py-2 font-mono text-xs">{p.reference ?? "—"}</td>
                       <td className="px-4 py-2 font-medium">{st?.name ?? "—"}</td>
+                      <td className="px-4 py-2">{st?.guardian || "—"}</td>
                       <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{st?.admissionNo || "—"}</td>
                       <td className="px-4 py-2 font-mono text-xs">{st?.rollNumber || "—"}</td>
-                      <td className="px-4 py-2">{st?.guardian || "—"}</td>
                       <td className="px-4 py-2">{prog?.name ?? "—"}</td>
                       <td className="px-4 py-2">{formatYear(p.semester)}</td>
                       <td className="px-4 py-2 uppercase text-xs">{p.method}</td>
@@ -577,9 +577,9 @@ function Reports() {
               <thead className="sticky top-0 bg-muted/70 text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2 font-medium">Student</th>
+                  <th className="px-4 py-2 font-medium">Father's Name</th>
                   <th className="px-4 py-2 font-medium">Admission No.</th>
                   <th className="px-4 py-2 font-medium">Roll No.</th>
-                  <th className="px-4 py-2 font-medium">Father's Name</th>
                   <th className="px-4 py-2 font-medium">Class/Program</th>
                   <th className="px-4 py-2 text-right font-medium">Balance</th>
                   <th className="px-4 py-2"></th>
@@ -592,9 +592,9 @@ function Reports() {
                 {pending.map((r) => (
                   <tr key={r.st.id + "-" + r.semester}>
                     <td className="px-4 py-2 font-medium">{r.st.name}</td>
+                    <td className="px-4 py-2">{r.st.guardian || "—"}</td>
                     <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{r.st.admissionNo || "—"}</td>
                     <td className="px-4 py-2 font-mono text-xs">{r.st.rollNumber || "—"}</td>
-                    <td className="px-4 py-2">{r.st.guardian || "—"}</td>
                     <td className="px-4 py-2">
                       <p>{programs.find((p) => p.id === r.st.programId)?.name ?? "—"}</p>
                       <p className="text-xs text-muted-foreground">{formatYear(r.semester)}</p>
