@@ -285,7 +285,184 @@ export function ClassReportDialog({
 
   // Print Trigger
   const handlePrint = () => {
-    window.print();
+    if (students.length === 0) {
+      toast.error("No student records to print.");
+      return;
+    }
+
+    const progName = selectedProgramObj?.name || "All Programs";
+    const yearName = semFilter !== "all" ? formatYear(Number(semFilter)) : "All Years";
+    const dateStr = new Date().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const rows = students
+      .map((s, idx) => {
+        const addressStr = [s.address, s.city].filter(Boolean).join(", ") || "—";
+        return `
+        <tr>
+          <td style="text-align:center;font-family:monospace;color:#475569;">${idx + 1}</td>
+          <td style="font-family:monospace;font-weight:600;color:#0f172a;">${s.admission_no || "—"}</td>
+          <td style="font-family:monospace;color:#0f172a;">${s.roll_number || "—"}</td>
+          <td style="font-weight:600;color:#0f172a;">${s.name || "—"}</td>
+          <td style="color:#1e293b;">${s.guardian || "—"}</td>
+          <td style="text-align:center;text-transform:capitalize;color:#1e293b;">${s.gender || "—"}</td>
+          <td style="text-align:center;color:#1e293b;">${s.category || "—"}</td>
+          <td style="font-family:monospace;color:#1e293b;">${s.phone || "—"}</td>
+          <td style="color:#1e293b;">${addressStr}</td>
+        </tr>
+      `;
+      })
+      .join("");
+
+    const html = `<!doctype html>
+<html>
+  <head>
+    <title>Class-Wise General Student Report — Imperial College, Hisar</title>
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 12mm;
+      }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #0f172a;
+        margin: 0;
+        padding: 0;
+        font-size: 11px;
+      }
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #0f172a;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      }
+      .header h1 {
+        font-size: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin: 0 0 4px 0;
+        letter-spacing: 0.05em;
+        color: #0f172a;
+      }
+      .header p {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #475569;
+        margin: 0 0 12px 0;
+      }
+      .meta-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: #334155;
+        font-weight: 500;
+        padding: 0 4px;
+      }
+      .meta-bar strong {
+        color: #0f172a;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+      }
+      thead {
+        display: table-header-group;
+      }
+      tr {
+        page-break-inside: avoid;
+      }
+      th, td {
+        border: 1px solid #cbd5e1;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: middle;
+      }
+      th {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .footer {
+        margin-top: 36px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        font-size: 11px;
+        font-weight: 600;
+        color: #334155;
+        page-break-inside: avoid;
+      }
+      .signature-line {
+        border-top: 1px solid #0f172a;
+        padding-top: 6px;
+        width: 200px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Imperial College, Hisar</h1>
+      <p>Class-Wise General Student Report — College Record</p>
+      <div class="meta-bar">
+        <div><strong>Program / Course:</strong> ${progName}</div>
+        <div><strong>Year / Semester:</strong> ${yearName}</div>
+        <div><strong>Total Students:</strong> ${students.length}</div>
+        <div><strong>Generated On:</strong> ${dateStr}</div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 35px; text-align: center;">S.No</th>
+          <th>Admission No.</th>
+          <th>Roll No.</th>
+          <th>Student Name</th>
+          <th>Father's Name</th>
+          <th style="text-align: center;">Gender</th>
+          <th style="text-align: center;">Category</th>
+          <th>Mobile No.</th>
+          <th>Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+    <div class="footer">
+      <div class="signature-line">Prepared By</div>
+      <div class="signature-line">Verified By</div>
+      <div class="signature-line">Principal / Director Stamp & Sign</div>
+    </div>
+    <script>
+      window.onload = () => {
+        window.print();
+      };
+    </script>
+  </body>
+</html>`;
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("Please allow popups to print the report.");
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
   };
 
   return (
