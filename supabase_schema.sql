@@ -38,7 +38,22 @@ BEGIN
     END IF;
 
     has_perm := (user_permissions #>> ARRAY[section_key, access_type])::boolean;
-    RETURN COALESCE(has_perm, false);
+    IF COALESCE(has_perm, false) THEN
+        RETURN true;
+    END IF;
+
+    IF section_key = 'fees' THEN
+        has_perm := (user_permissions #>> ARRAY['fees_complete', access_type])::boolean;
+        IF COALESCE(has_perm, false) THEN
+            RETURN true;
+        END IF;
+        has_perm := (user_permissions #>> ARRAY['fees_student', access_type])::boolean;
+        IF COALESCE(has_perm, false) THEN
+            RETURN true;
+        END IF;
+    END IF;
+
+    RETURN false;
 END;
 $$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
@@ -52,7 +67,7 @@ CREATE TABLE IF NOT EXISTS public.programs (
 
 ALTER TABLE public.programs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users with courses view permission can read programs" ON public.programs
-    FOR SELECT TO authenticated USING (public.has_permission('courses', 'view'));
+    FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users with courses edit permission can edit programs" ON public.programs
     FOR ALL TO authenticated USING (public.has_permission('courses', 'edit'));
 
@@ -318,7 +333,7 @@ ALTER TABLE public.program_sections ENABLE ROW LEVEL SECURITY;
 
 -- Policies for courses (requires 'courses' permission)
 CREATE POLICY "Users with courses view permission can read courses" ON public.courses
-    FOR SELECT TO authenticated USING (public.has_permission('courses', 'view'));
+    FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users with courses edit permission can all courses" ON public.courses
     FOR ALL TO authenticated USING (public.has_permission('courses', 'edit'));
 
@@ -330,25 +345,25 @@ CREATE POLICY "Users with faculty edit permission can all faculty" ON public.fac
 
 -- Policies for sessions (requires 'settings' permission)
 CREATE POLICY "Users with settings view permission can read sessions" ON public.sessions
-    FOR SELECT TO authenticated USING (public.has_permission('settings', 'view'));
+    FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users with settings edit permission can all sessions" ON public.sessions
     FOR ALL TO authenticated USING (public.has_permission('settings', 'edit'));
 
 -- Policies for program_sections (requires 'settings' permission)
 CREATE POLICY "Users with settings view permission can read program_sections" ON public.program_sections
-    FOR SELECT TO authenticated USING (public.has_permission('settings', 'view'));
+    FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users with settings edit permission can all program_sections" ON public.program_sections
     FOR ALL TO authenticated USING (public.has_permission('settings', 'edit'));
 
 -- Policies for college_settings (requires 'settings' permission)
 CREATE POLICY "Users with settings view permission can read college_settings" ON public.college_settings
-    FOR SELECT TO authenticated USING (public.has_permission('settings', 'view'));
+    FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users with settings edit permission can all college_settings" ON public.college_settings
     FOR ALL TO authenticated USING (public.has_permission('settings', 'edit'));
 
 -- Policies for fee_structures (requires 'settings' permission)
 CREATE POLICY "Users with settings view permission can read fee_structures" ON public.fee_structures
-    FOR SELECT TO authenticated USING (public.has_permission('settings', 'view'));
+    FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users with settings edit permission can all fee_structures" ON public.fee_structures
     FOR ALL TO authenticated USING (public.has_permission('settings', 'edit'));
 
