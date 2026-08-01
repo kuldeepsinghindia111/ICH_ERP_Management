@@ -214,19 +214,21 @@ function UsersPage() {
 
 function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, removeUserMutation, setPermissionMutation, savePermissionsMutation }: any) {
   const [showPermissions, setShowPermissions] = useState(false);
+  if (!u) return null;
   const isSelf = u.id === user?.id;
   const isAdminRow = u.role === "admin";
-  const displayName = u.name || u.email.split('@')[0];
-  const displayCode = u.id.split('-')[0].toUpperCase();
-  const basePerms = u.permissions || {};
-  const hasAnyRights = u.permissions && Object.values(u.permissions).some((p: any) => p?.view || p?.entry || p?.edit);
+  const displayName = u.name || (u.email && typeof u.email === 'string' ? u.email.split('@')[0] : "User");
+  const displayCode = (u.id && typeof u.id === 'string') ? u.id.split('-')[0].toUpperCase() : "USR";
+  const basePerms = (u.permissions && typeof u.permissions === 'object' && !Array.isArray(u.permissions)) ? u.permissions : {};
+  const hasAnyRights = basePerms && Object.keys(basePerms).length > 0 && Object.values(basePerms).some((p: any) => p && typeof p === 'object' && (p.view || p.entry || p.edit));
 
   const [draftPerms, setDraftPerms] = useState<any>(() => basePerms);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (!hasChanges) {
-      setDraftPerms(u.permissions || {});
+      const perms = (u.permissions && typeof u.permissions === 'object' && !Array.isArray(u.permissions)) ? u.permissions : {};
+      setDraftPerms(perms);
     }
   }, [u.permissions, u.role, hasChanges]);
 
