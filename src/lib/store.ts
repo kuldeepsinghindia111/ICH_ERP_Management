@@ -185,7 +185,6 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
   if (role === "management") return makePerms(() => ({ view: true, entry: false, edit: false }));
   if (role === "chief_coordinator")
     return makePerms((s) => {
-      if (s === "users") return { view: false, entry: false, edit: false };
       if (
         s === "students" ||
         s === "faculty" ||
@@ -193,31 +192,29 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
         s === "reports"
       )
         return { view: true, entry: true, edit: true };
-      return { view: true, entry: false, edit: false };
+      return { view: false, entry: false, edit: false };
     });
   if (role === "academic_coordinator")
     return makePerms((s) => {
-      if (s === "users" || s === "settings" || s === "audit" || s === "payments")
-        return { view: false, entry: false, edit: false };
       if (s === "students" || s === "faculty" || s === "courses")
         return { view: true, entry: true, edit: true };
-      return { view: true, entry: false, edit: false };
+      if (s === "reports")
+        return { view: true, entry: false, edit: false };
+      return { view: false, entry: false, edit: false };
     });
   if (role === "accountant")
     return makePerms((s) => {
-      if (s === "users") return { view: false, entry: false, edit: false };
-      if (s === "settings") return { view: true, entry: false, edit: false };
-      if (s === "audit") return { view: true, entry: false, edit: false };
-      if (s === "fees" || s === "payments" || s === "students")
+      if (s === "fees" || s === "payments")
         return { view: true, entry: true, edit: false };
-      return { view: true, entry: false, edit: false };
+      if (s === "students" || s === "reports")
+        return { view: true, entry: false, edit: false };
+      return { view: false, entry: false, edit: false };
     });
   // faculty
   return makePerms((s) => {
-    if (s === "users" || s === "settings" || s === "audit") return { view: false, entry: false, edit: false };
     if (s === "courses" || s === "faculty") return { view: true, entry: true, edit: true };
-    if (s === "payments") return { view: true, entry: false, edit: false };
-    return { view: true, entry: false, edit: false };
+    if (s === "students" || s === "reports") return { view: true, entry: false, edit: false };
+    return { view: false, entry: false, edit: false };
   });
 }
 

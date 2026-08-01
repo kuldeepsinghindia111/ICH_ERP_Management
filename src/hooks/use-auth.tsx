@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { type Permissions, type Section, type UserRole } from '../lib/store';
+import { type Permissions, type Section, type UserRole, defaultPermissionsFor } from '../lib/store';
 
 type UserProfile = {
   id: string;
@@ -150,7 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const can = (section: Section, action: "view" | "entry" | "edit" = "view") => {
     if (!profile) return false;
     if (profile.role === "admin") return true;
-    const p = profile.permissions?.[section];
+    const perms = profile.permissions || defaultPermissionsFor(profile.role);
+    const p = perms?.[section] || defaultPermissionsFor(profile.role)?.[section];
     if (!p) return false;
     if (action === "edit") return !!p.edit;
     if (action === "entry") return p.entry !== undefined ? !!(p.entry || p.edit) : !!p.edit;

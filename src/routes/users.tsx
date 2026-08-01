@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, RotateCcw, ShieldAlert, ShieldCheck, Trash2, UserPlus, Clock } from "lucide-react";
+import { Pencil, Plus, RotateCcw, ShieldAlert, ShieldCheck, Trash2, UserPlus, Clock, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -144,6 +144,19 @@ function UsersPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const savePermissionsMutation = useMutation({
+    mutationFn: async ({ userId, permissions }: { userId: string, permissions: any }) => {
+      const { error } = await supabase.from('user_roles').update({ permissions }).eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      toast.success("User rights saved successfully");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      broadcastAndSyncRole(variables.userId);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   if (isLoading) {
     return <div className="p-8 text-center">Loading users...</div>;
   }
@@ -199,138 +212,232 @@ function UsersPage() {
   );
 }
 
-function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, removeUserMutation, setPermissionMutation }: any) {
+function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, removeUserMutation, setPermissionMutation, savePermissionsMutation }: any) {
   const [showPermissions, setShowPermissions] = useState(false);
   const isSelf = u.id === user?.id;
   const isAdminRow = u.role === "admin";
   const displayName = u.name || u.email.split('@')[0];
   const displayCode = u.id.split('-')[0].toUpperCase();
-  const userPerms = u.permissions || defaultPermissionsFor(u.role);
+  const basePerms = u.permissions || defaultPermissionsFor(u.role);
 
-            return (
-              <div key={u.id} className="rounded-lg border border-border">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-medium text-primary uppercase">
-                      {displayName.substring(0, 2)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{displayName}</p>
-                        {isSelf && <Badge variant="secondary" className="text-[10px]">You</Badge>}
+  const [draftPerms, setDraftPerms] = useState<any>(() => basePerms);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    if (!hasChanges) {
+      setDraftPerms(u.permissions || defaultPermissionsFor(u.role));
+    }
+  }, [u.permissions, u.role, hasChanges]);
+
+  const handleToggle = (section: Section, key: keyof Permission, value: boolean) => {
+    const currentSectionPerm = draftPerms[section] || { view: false, entry: false, edit: false };
+    const updatedSectionPerm = { ...currentSectionPerm, [key]: value };
+    if (key === 'view' && !value) {
+      updatedSectionPerm.entry = false;
+      updatedSectionPerm.edit = false;
+    }
+    if ((key === 'entry' || key === 'edit') && value) {
+      updatedSectionPerm.view = true;
+    }
+    setDraftPerms((prev: any) => ({
+      ...prev,
+      [section]: updatedSectionPerm,
+    }));
+    setHasChanges(true);
+  };
+
+  const handleSaveRights = () => {
+    savePermissionsMutation.mutate(
+      { userId: u.id, permissions: draftPerms },
+      {
+        onSuccess: () => {
+          setHasChanges(false);
+        }
+      }
+    );
+  };
+
+  const handleCancelChanges = () => {
+    setDraftPerms(u.permissions || defaultPermissionsFor(u.role));
+    setHasChanges(false);
+  };
+
+  return (
+    <div key={u.id} className="rounded-lg border border-border">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-medium text-primary uppercase">
+            {displayName.substring(0, 2)}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-medium">{displayName}</p>
+              {isSelf && <Badge variant="secondary" className="text-[10px]">You</Badge>}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-mono">{displayCode}</span>
+              {u.email ? ` · ${u.email}` : ""}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={u.role}
+            onValueChange={(v) => {
+              const nextPerms = defaultPermissionsFor(v as UserRole);
+              setDraftPerms(nextPerms);
+              setHasChanges(false);
+              updateUserMutation.mutate({ id: u.id, patch: { role: v, permissions: nextPerms } });
+            }}
+            disabled={isSelf || updateUserMutation.isPending}
+          >
+            <SelectTrigger className="w-44 text-xs h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
+                <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <EditUserDialog 
+            user={u} 
+            onSave={(patch) => updateUserMutation.mutate({ id: u.id, patch })} 
+            isPending={updateUserMutation.isPending} 
+            onDelete={() => {
+              if (confirm("Are you sure you want to remove this user?")) {
+                 removeUserMutation.mutate(u.id);
+              }
+            }}
+            isDeleting={removeUserMutation.isPending}
+            canDelete={!isSelf && !isAdminRow}
+          />
+
+          <Button
+            size="sm" variant="ghost"
+            onClick={() => {
+              setHasChanges(false);
+              resetPermissionsMutation.mutate({ userId: u.id, role: u.role });
+            }}
+            disabled={isAdminRow || resetPermissionsMutation.isPending}
+            title="Reset to role defaults"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSaveRights}
+            disabled={isAdminRow || savePermissionsMutation.isPending}
+            className="ml-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+            title="Save User Role & Rights Selection"
+          >
+            <Save className="h-4 w-4" />
+            {savePermissionsMutation.isPending ? "Saving..." : "Save Rights"}
+          </Button>
+          <Button
+            size="sm" variant="outline"
+            onClick={() => setShowPermissions(!showPermissions)}
+            title="Toggle permissions"
+            className="ml-1"
+          >
+            {showPermissions ? "Hide Permissions" : "View Permissions"}
+          </Button>
+        </div>
+      </div>
+
+      {showPermissions && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2.5 text-left font-semibold">Section</th>
+                <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">View</th>
+                <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Data Entry</th>
+                <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Edit</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {SECTIONS.map((s) => {
+                const rawPerm = draftPerms[s.key] || { view: false, entry: false, edit: false };
+                const perm: Permission = isAdminRow
+                  ? { view: true, entry: true, edit: true }
+                  : {
+                      view: !!rawPerm.view,
+                      entry: rawPerm.entry !== undefined ? !!rawPerm.entry : !!rawPerm.edit,
+                      edit: !!rawPerm.edit,
+                    };
+                return (
+                  <tr key={s.key}>
+                    <td className="px-4 py-2.5">{s.label}</td>
+                    <td className="px-4 py-2.5 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={perm.view}
+                          disabled={isAdminRow || savePermissionsMutation.isPending}
+                          onCheckedChange={(v) => handleToggle(s.key as Section, 'view', !!v)}
+                        />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-mono">{displayCode}</span>
-                        {u.email ? ` · ${u.email}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={u.role}
-                      onValueChange={(v) => updateUserMutation.mutate({ id: u.id, patch: { role: v } })}
-                      disabled={isSelf || updateUserMutation.isPending}
-                    >
-                      <SelectTrigger className="w-44 text-xs h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                          <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <EditUserDialog 
-                      user={u} 
-                      onSave={(patch) => updateUserMutation.mutate({ id: u.id, patch })} 
-                      isPending={updateUserMutation.isPending} 
-                      onDelete={() => {
-                        if (confirm("Are you sure you want to remove this user?")) {
-                           removeUserMutation.mutate(u.id);
-                        }
-                      }}
-                      isDeleting={removeUserMutation.isPending}
-                      canDelete={!isSelf && !isAdminRow}
-                    />
-
-                    <Button
-                      size="sm" variant="ghost"
-                      onClick={() => resetPermissionsMutation.mutate({ userId: u.id, role: u.role })}
-                      disabled={isAdminRow || resetPermissionsMutation.isPending}
-                      title="Reset to role defaults"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm" variant="outline"
-                      onClick={() => setShowPermissions(!showPermissions)}
-                      title="Toggle permissions"
-                      className="ml-2"
-                    >
-                      {showPermissions ? "Hide Permissions" : "View Permissions"}
-                    </Button>
-                  </div>
-                </div>
-
-                {showPermissions && (
-                  <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
-                      <tr>
-                        <th className="px-4 py-2.5 text-left font-semibold">Section</th>
-                        <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">View</th>
-                        <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Data Entry</th>
-                        <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Edit</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {SECTIONS.map((s) => {
-                        const rawPerm = userPerms[s.key] || { view: false, entry: false, edit: false };
-                        const perm: Permission = isAdminRow
-                          ? { view: true, entry: true, edit: true }
-                          : {
-                              view: !!rawPerm.view,
-                              entry: rawPerm.entry !== undefined ? !!rawPerm.entry : !!rawPerm.edit,
-                              edit: !!rawPerm.edit,
-                            };
-                        return (
-                          <tr key={s.key}>
-                            <td className="px-4 py-2.5">{s.label}</td>
-                            <td className="px-4 py-2.5 text-center align-middle">
-                              <div className="flex items-center justify-center">
-                                <Checkbox
-                                  checked={perm.view}
-                                  disabled={isAdminRow || setPermissionMutation.isPending}
-                                  onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'view', value: !!v })}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-4 py-2.5 text-center align-middle">
-                              <div className="flex items-center justify-center">
-                                <Checkbox
-                                  checked={perm.entry}
-                                  disabled={isAdminRow || !perm.view || setPermissionMutation.isPending}
-                                  onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'entry', value: !!v })}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-4 py-2.5 text-center align-middle">
-                              <div className="flex items-center justify-center">
-                                <Checkbox
-                                  checked={perm.edit}
-                                  disabled={isAdminRow || !perm.view || setPermissionMutation.isPending}
-                                  onCheckedChange={(v) => setPermissionMutation.mutate({ userId: u.id, section: s.key as Section, key: 'edit', value: !!v })}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                )}
-              </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={perm.entry}
+                          disabled={isAdminRow || !perm.view || savePermissionsMutation.isPending}
+                          onCheckedChange={(v) => handleToggle(s.key as Section, 'entry', !!v)}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={perm.edit}
+                          disabled={isAdminRow || !perm.view || savePermissionsMutation.isPending}
+                          onCheckedChange={(v) => handleToggle(s.key as Section, 'edit', !!v)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-4 py-3">
+            <div className="text-xs">
+              {hasChanges ? (
+                <span className="font-medium text-amber-600 dark:text-amber-400">
+                  • Unsaved changes to user rights
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  All rights saved
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {hasChanges && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCancelChanges}
+                  disabled={savePermissionsMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleSaveRights}
+                disabled={isAdminRow || savePermissionsMutation.isPending}
+                className="gap-1.5"
+              >
+                <Save className="h-4 w-4" />
+                {savePermissionsMutation.isPending ? "Saving..." : "Save Rights"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
