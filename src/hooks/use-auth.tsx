@@ -19,6 +19,7 @@ type AuthContextType = {
   isLoading: boolean;
   signOut: () => Promise<void>;
   can: (section: Section, action?: "view" | "edit") => boolean;
+  refetchProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   signOut: async () => {},
   can: () => false,
+  refetchProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -94,6 +96,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const refetchProfile = async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`user-roles-changes-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_roles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setProfile(payload.new as UserProfile);
+          } else if (payload.eventType === 'DELETE') {
+            currentUserIdRef.current = null;
+            supabase.auth.signOut();
+            setProfile(null);
+            setUser(null);
+            setSession(null);
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'role-updated' },
+        (payload) => {
+          if (payload.payload?.userId === user.id) {
+            fetchProfile(user.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -109,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, isLoading, signOut, can }}>
+    <AuthContext.Provider value={{ user, session, profile, isLoading, signOut, can, refetchProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -33,8 +33,19 @@ const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 function UsersPage() {
-  const { user } = useAuth();
+  const { user, refetchProfile } = useAuth();
   const queryClient = useQueryClient();
+
+  const broadcastAndSyncRole = async (targetUserId: string) => {
+    supabase.channel(`user-roles-changes-${targetUserId}`).send({
+      type: 'broadcast',
+      event: 'role-updated',
+      payload: { userId: targetUserId },
+    });
+    if (user?.id === targetUserId) {
+      await refetchProfile();
+    }
+  };
 
   const { data: currentUserRole } = useQuery({
     queryKey: ['userRole', user?.id],
@@ -75,9 +86,10 @@ function UsersPage() {
         if (invokeError) throw new Error("Database updated, but failed to sync name to auth profile: " + invokeError.message);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success("User updated successfully");
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      broadcastAndSyncRole(variables.id);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -112,7 +124,10 @@ function UsersPage() {
       const { error } = await supabase.from('user_roles').update({ permissions: newPerms }).eq('id', userId);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      broadcastAndSyncRole(variables.userId);
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -121,9 +136,10 @@ function UsersPage() {
       const { error } = await supabase.from('user_roles').update({ permissions: defaultPermissionsFor(role) }).eq('id', userId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success("Permissions reset to defaults");
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      broadcastAndSyncRole(variables.userId);
     },
     onError: (err: Error) => toast.error(err.message),
   });
