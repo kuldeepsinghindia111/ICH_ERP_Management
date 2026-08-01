@@ -65,7 +65,7 @@ export function AppSidebar() {
     if (n.title === "Dashboard" && !hasAnyPermission) return false;
     return !n.section || can(n.section, "view");
   });
-  const visibleAdmin = admin.filter((n) => can(n.section, "view"));
+  const visibleAdmin = profile?.role === "admin" ? admin.filter((n) => can(n.section, "view")) : [];
 
   return (
     <Sidebar collapsible="icon">

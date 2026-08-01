@@ -346,10 +346,16 @@ function StudentDetail() {
         </Card>
 
         <Card>
-          <CardContent className="grid grid-cols-3 gap-2 p-6">
+          <CardContent className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2 p-4">
             <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
             <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
             <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
+            <TotalPill label="Total Payable" value={inr(totals.totalCharged)} />
+            <TotalPill label="Late Fees" value={totals.totalLate > 0 ? inr(totals.totalLate) : "—"} />
+            <TotalPill label="Fine" value={totals.totalFine > 0 ? inr(totals.totalFine) : "—"} />
+            <TotalPill label="Other" value={totals.totalOther > 0 ? inr(totals.totalOther) : "—"} />
+            <TotalPill label="Concession" value={totals.totalConcession ? `− ${inr(totals.totalConcession)}` : "—"} />
+            <TotalPill label="Scholarship" value={totals.totalScholarship ? `− ${inr(totals.totalScholarship)}` : "—"} />
           </CardContent>
         </Card>
       </div>
@@ -643,6 +649,9 @@ function SemesterLedger({
 function SummaryPanel({ sum, semester }: { sum: ReturnType<typeof semesterSummary>, semester: number }) {
   const rows: [string, string, string?][] = [
     ["Total charged", inr(sum.totalCharged)],
+    ["Late fees", sum.totalLate > 0 ? inr(sum.totalLate) : "—", "text-muted-foreground"],
+    ["Fine", sum.totalFine > 0 ? inr(sum.totalFine) : "—", "text-muted-foreground"],
+    ["Other charges", sum.totalOther > 0 ? inr(sum.totalOther) : "—", "text-muted-foreground"],
     ["Concessions", `− ${inr(sum.totalConcession)}`, "text-warning"],
     ["Scholarships", `− ${inr(sum.totalScholarship)}`, "text-warning"],
     ["Net payable", inr(sum.netPayable), "font-semibold text-foreground"],

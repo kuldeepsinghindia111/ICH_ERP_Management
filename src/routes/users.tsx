@@ -298,9 +298,11 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-              ))}
+              {(Object.keys(ROLE_LABEL) as UserRole[])
+                .filter((r) => r !== "admin" || u.role === "admin")
+                .map((r) => (
+                  <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <EditUserDialog 
@@ -570,7 +572,6 @@ function AddUserDialog() {
             <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
                 <SelectItem value="chief_coordinator">Chief-Coordinator</SelectItem>
                 <SelectItem value="academic_coordinator">Academic Coordinator</SelectItem>

@@ -49,32 +49,44 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
-          <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Net Payable</p>
-            <p className="mt-1 font-display text-lg font-semibold">{inr(sum.netPayable)}</p>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2 mt-4">
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Net Payable</p>
+            <p className="mt-1 font-display text-base font-semibold">{inr(sum.netPayable)}</p>
           </div>
-          <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Paid</p>
-            <p className="mt-1 font-display text-lg font-semibold text-success">{inr(sum.totalPaid)}</p>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Paid</p>
+            <p className="mt-1 font-display text-base font-semibold text-success">{inr(sum.totalPaid)}</p>
           </div>
-          <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Balance</p>
-            <p className={`mt-1 font-display text-lg font-semibold ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</p>
+            <p className={`mt-1 font-display text-base font-semibold ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
               {inr(sum.balance)}
             </p>
           </div>
-          <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Late Fees</p>
-            <p className="mt-1 font-display text-lg font-semibold text-muted-foreground">{inr(sum.totalLate)}</p>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Payable</p>
+            <p className="mt-1 font-display text-base font-semibold text-muted-foreground">{inr(sum.totalCharged)}</p>
           </div>
-          <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Fine</p>
-            <p className="mt-1 font-display text-lg font-semibold text-muted-foreground">{inr(sum.totalFine)}</p>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Late Fees</p>
+            <p className="mt-1 font-display text-base font-semibold text-muted-foreground">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</p>
           </div>
-          <div className="rounded-md bg-muted/60 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Other</p>
-            <p className="mt-1 font-display text-lg font-semibold text-muted-foreground">{inr(sum.totalOther)}</p>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Fine</p>
+            <p className="mt-1 font-display text-base font-semibold text-muted-foreground">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Other</p>
+            <p className="mt-1 font-display text-base font-semibold text-muted-foreground">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Concession</p>
+            <p className="mt-1 font-display text-base font-semibold text-warning">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Scholarship</p>
+            <p className="mt-1 font-display text-base font-semibold text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</p>
           </div>
         </div>
 
