@@ -219,6 +219,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
   const displayName = u.name || u.email.split('@')[0];
   const displayCode = u.id.split('-')[0].toUpperCase();
   const basePerms = u.permissions || {};
+  const hasAnyRights = u.permissions && Object.values(u.permissions).some((p: any) => p?.view || p?.entry || p?.edit);
 
   const [draftPerms, setDraftPerms] = useState<any>(() => basePerms);
   const [hasChanges, setHasChanges] = useState(false);
@@ -247,7 +248,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
   };
 
   const handleSaveRights = () => {
-    savePermissionsMutation?.mutate({ userId: u.id, perms: draftPerms });
+    savePermissionsMutation?.mutate({ userId: u.id, permissions: draftPerms });
     setHasChanges(false);
   };
 
@@ -267,10 +268,10 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
             <div className="flex items-center gap-2">
               <p className="font-medium">{displayName}</p>
               {isSelf && <Badge variant="secondary" className="text-[10px]">You</Badge>}
-              {!u.permissions && !isAdminRow && (
+              {!hasAnyRights && !isAdminRow && (
                 <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 bg-amber-500/10">No Rights Assigned</Badge>
               )}
-              {u.permissions && !isAdminRow && (
+              {hasAnyRights && !isAdminRow && (
                 <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 bg-emerald-500/10">Rights Assigned</Badge>
               )}
             </div>
