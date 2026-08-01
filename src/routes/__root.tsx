@@ -196,18 +196,18 @@ function RootComponent() {
 }
 
 function getRequiredSection(pathname: string): Section | null {
-  if (pathname.startsWith('/general')) return 'settings';
+  if (pathname.startsWith('/general')) return 'general';
   if (pathname.startsWith('/students')) return 'students';
-  if (pathname.startsWith('/exams')) return 'students';
-  if (pathname.startsWith('/timetable')) return 'students';
-  if (pathname.startsWith('/leaves')) return 'students';
-  if (pathname.startsWith('/library')) return 'students';
-  if (pathname.startsWith('/attendance')) return 'students';
+  if (pathname.startsWith('/exams')) return 'exams';
+  if (pathname.startsWith('/timetable')) return 'timetable';
+  if (pathname.startsWith('/leaves')) return 'leaves';
+  if (pathname.startsWith('/library')) return 'library';
+  if (pathname.startsWith('/attendance')) return 'attendance';
   if (pathname.startsWith('/fees')) return 'fees';
   if (pathname.startsWith('/pay')) return 'payments';
   if (pathname.startsWith('/reports')) return 'reports';
   if (pathname.startsWith('/faculty')) return 'faculty';
-  if (pathname.startsWith('/payroll')) return 'faculty';
+  if (pathname.startsWith('/payroll')) return 'payroll';
   if (pathname.startsWith('/courses')) return 'courses';
   if (pathname.startsWith('/users')) return 'users';
   if (pathname.startsWith('/audit')) return 'audit';

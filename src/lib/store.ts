@@ -146,19 +146,28 @@ export type FeePayment = {
 export type UserRole = "admin" | "management" | "chief_coordinator" | "academic_coordinator" | "accountant" | "faculty";
 
 export type Section =
-  | "students" | "fees" | "payments" | "reports"
-  | "faculty" | "courses" | "settings" | "audit" | "users";
+  | "general" | "students" | "exams" | "timetable" | "leaves" | "library" | "attendance"
+  | "fees_complete" | "fees_student" | "fees"
+  | "payments" | "reports" | "faculty" | "payroll" | "courses" | "settings" | "audit" | "users";
 
 export const SECTIONS: { key: Section; label: string }[] = [
-  { key: "students", label: "Students" },
-  { key: "fees", label: "Fees ledger" },
-  { key: "payments", label: "Payments (collect / void)" },
+  { key: "general", label: "General Portal Setup" },
+  { key: "students", label: "Student Portal" },
+  { key: "exams", label: "Examinations" },
+  { key: "timetable", label: "Timetable" },
+  { key: "leaves", label: "Leaves" },
+  { key: "library", label: "Library" },
+  { key: "attendance", label: "Attendance" },
+  { key: "fees_complete", label: "Fees Ledger Complete" },
+  { key: "fees_student", label: "Individual Students Fees Ledger" },
+  { key: "payments", label: "Make Payment (collect / void)" },
   { key: "reports", label: "Reports" },
-  { key: "faculty", label: "Faculty" },
-  { key: "courses", label: "Courses" },
-  { key: "settings", label: "Payment settings" },
-  { key: "audit", label: "Audit log" },
-  { key: "users", label: "Users & roles" },
+  { key: "faculty", label: "Faculty Portal" },
+  { key: "payroll", label: "Payroll & Salary" },
+  { key: "courses", label: "Course Portal" },
+  { key: "users", label: "Users & Roles" },
+  { key: "audit", label: "Audit Log" },
+  { key: "settings", label: "Payment Settings" },
 ];
 
 export type Permission = { view: boolean; entry?: boolean; edit: boolean };
@@ -174,7 +183,11 @@ export type AppUser = {
   createdAt: string;
 };
 
-const ALL_SECTIONS = SECTIONS.map((s) => s.key);
+const ALL_SECTIONS: Section[] = [
+  "general", "students", "exams", "timetable", "leaves", "library", "attendance",
+  "fees_complete", "fees_student", "fees",
+  "payments", "reports", "faculty", "payroll", "courses", "settings", "audit", "users"
+];
 
 function makePerms(fn: (s: Section) => Permission): Permissions {
   return Object.fromEntries(ALL_SECTIONS.map((s) => [s, fn(s)])) as Permissions;
@@ -186,17 +199,18 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
   if (role === "chief_coordinator")
     return makePerms((s) => {
       if (
-        s === "students" ||
-        s === "faculty" ||
-        s === "courses" ||
-        s === "reports"
+        s === "students" || s === "exams" || s === "timetable" || s === "leaves" || s === "library" || s === "attendance" ||
+        s === "faculty" || s === "payroll" || s === "courses" || s === "reports"
       )
         return { view: true, entry: true, edit: true };
       return { view: false, entry: false, edit: false };
     });
   if (role === "academic_coordinator")
     return makePerms((s) => {
-      if (s === "students" || s === "faculty" || s === "courses")
+      if (
+        s === "students" || s === "exams" || s === "timetable" || s === "leaves" || s === "library" || s === "attendance" ||
+        s === "faculty" || s === "courses"
+      )
         return { view: true, entry: true, edit: true };
       if (s === "reports")
         return { view: true, entry: false, edit: false };
@@ -204,7 +218,7 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
     });
   if (role === "accountant")
     return makePerms((s) => {
-      if (s === "fees" || s === "payments")
+      if (s === "fees_complete" || s === "fees_student" || s === "fees" || s === "payments")
         return { view: true, entry: true, edit: false };
       if (s === "students" || s === "reports")
         return { view: true, entry: false, edit: false };
@@ -212,7 +226,8 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
     });
   // faculty
   return makePerms((s) => {
-    if (s === "courses" || s === "faculty") return { view: true, entry: true, edit: true };
+    if (s === "courses" || s === "faculty" || s === "attendance" || s === "library" || s === "timetable" || s === "leaves")
+      return { view: true, entry: true, edit: true };
     if (s === "students" || s === "reports") return { view: true, entry: false, edit: false };
     return { view: false, entry: false, edit: false };
   });

@@ -32,7 +32,8 @@ export const Route = createFileRoute("/fees")({
 });
 
 function FeesPage() {
-  const { user } = useAuth();
+  const { user, can, profile } = useAuth();
+  const showSummarySection = can('fees_complete', 'view') || profile?.role === 'admin' || !!profile?.permissions?.fees?.view;
   
   const { data: canEditPayments } = useQuery({
     queryKey: ['canEditPayments', user?.id],
@@ -205,11 +206,13 @@ function FeesPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <SummaryTile label="Total billed" value={inr(totals.billed)} />
-        <SummaryTile label="Collected" value={inr(totals.paid)} tone="success" />
-        <SummaryTile label="Pending" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
-      </div>
+      {showSummarySection && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <SummaryTile label="Total billed" value={inr(totals.billed)} />
+          <SummaryTile label="Collected" value={inr(totals.paid)} tone="success" />
+          <SummaryTile label="Pending" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
+        </div>
+      )}
 
       <Card>
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
