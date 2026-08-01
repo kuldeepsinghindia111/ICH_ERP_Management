@@ -81,11 +81,11 @@ function UpdatePassword() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-foreground mb-2 text-center">
-          Set New Password
+          Set / Reset Password
         </h1>
         <p className="text-sm text-muted-foreground mb-6 text-center">
           {userEmail ? (
-            <>Setting password for <span className="font-medium text-foreground">{userEmail}</span></>
+            <>Setting / resetting password for <span className="font-medium text-foreground">{userEmail}</span></>
           ) : (
             "Please enter your new password below."
           )}

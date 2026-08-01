@@ -234,12 +234,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
       else if (user && profile?.status === 'pending' && location.pathname !== '/update-password') {
         router.navigate({ to: '/update-password', replace: true });
       }
-      // 4. If logged in and NOT "pending", PREVENT going back to /update-password (unless using a recovery/invite link)
-      else if (user && profile?.status !== 'pending' && location.pathname === '/update-password' && !window.location.hash.includes('type=recovery') && !window.location.hash.includes('type=invite')) {
-        router.navigate({ to: '/', replace: true });
-      }
-      // 5. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
-      else if (user && profile?.status === 'active') {
+      // 4. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
+      else if (user && profile?.status === 'active' && location.pathname !== '/update-password') {
         const requiredSection = getRequiredSection(location.pathname);
         if (requiredSection && !can(requiredSection, 'view')) {
           router.navigate({ to: '/', replace: true });
@@ -250,9 +246,6 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleHistoryOrCacheRestore = () => {
-      if (user && profile?.status !== 'pending' && window.location.pathname === '/update-password' && !window.location.hash.includes('type=recovery') && !window.location.hash.includes('type=invite')) {
-        router.navigate({ to: '/', replace: true });
-      }
       if (user && window.location.pathname === '/login') {
         router.navigate({ to: '/', replace: true });
       }
