@@ -204,7 +204,7 @@ function UsersPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {users.filter(u => u.status === 'active').map((u) => (
-            <UserRow key={u.id} u={u} user={user} updateUserMutation={updateUserMutation} resetPermissionsMutation={resetPermissionsMutation} removeUserMutation={removeUserMutation} setPermissionMutation={setPermissionMutation} />
+            <UserRow key={u.id} u={u} user={user} updateUserMutation={updateUserMutation} resetPermissionsMutation={resetPermissionsMutation} removeUserMutation={removeUserMutation} setPermissionMutation={setPermissionMutation} savePermissionsMutation={savePermissionsMutation} />
           ))}
         </CardContent>
       </Card>
@@ -247,7 +247,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
   };
 
   const handleSaveRights = () => {
-    savePermissionsMutation.mutate(
+    savePermissionsMutation?.mutate(
       { userId: u.id, permissions: draftPerms },
       {
         onSuccess: () => {
@@ -287,9 +287,9 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
               const nextPerms = defaultPermissionsFor(v as UserRole);
               setDraftPerms(nextPerms);
               setHasChanges(false);
-              updateUserMutation.mutate({ id: u.id, patch: { role: v, permissions: nextPerms } });
+              updateUserMutation?.mutate({ id: u.id, patch: { role: v, permissions: nextPerms } });
             }}
-            disabled={isSelf || updateUserMutation.isPending}
+            disabled={isSelf || updateUserMutation?.isPending}
           >
             <SelectTrigger className="w-44 text-xs h-8">
               <SelectValue />
@@ -302,14 +302,14 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
           </Select>
           <EditUserDialog 
             user={u} 
-            onSave={(patch) => updateUserMutation.mutate({ id: u.id, patch })} 
-            isPending={updateUserMutation.isPending} 
+            onSave={(patch) => updateUserMutation?.mutate({ id: u.id, patch })} 
+            isPending={updateUserMutation?.isPending} 
             onDelete={() => {
               if (confirm("Are you sure you want to remove this user?")) {
-                 removeUserMutation.mutate(u.id);
+                 removeUserMutation?.mutate(u.id);
               }
             }}
-            isDeleting={removeUserMutation.isPending}
+            isDeleting={removeUserMutation?.isPending}
             canDelete={!isSelf && !isAdminRow}
           />
 
@@ -317,9 +317,9 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
             size="sm" variant="ghost"
             onClick={() => {
               setHasChanges(false);
-              resetPermissionsMutation.mutate({ userId: u.id, role: u.role });
+              resetPermissionsMutation?.mutate({ userId: u.id, role: u.role });
             }}
-            disabled={isAdminRow || resetPermissionsMutation.isPending}
+            disabled={isAdminRow || resetPermissionsMutation?.isPending}
             title="Reset to role defaults"
           >
             <RotateCcw className="h-4 w-4" />
@@ -327,12 +327,12 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
           <Button
             size="sm"
             onClick={handleSaveRights}
-            disabled={isAdminRow || savePermissionsMutation.isPending}
+            disabled={isAdminRow || savePermissionsMutation?.isPending}
             className="ml-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
             title="Save User Role & Rights Selection"
           >
             <Save className="h-4 w-4" />
-            {savePermissionsMutation.isPending ? "Saving..." : "Save Rights"}
+            {savePermissionsMutation?.isPending ? "Saving..." : "Save Rights"}
           </Button>
           <Button
             size="sm" variant="outline"
@@ -373,7 +373,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
                       <div className="flex items-center justify-center">
                         <Checkbox
                           checked={perm.view}
-                          disabled={isAdminRow || savePermissionsMutation.isPending}
+                          disabled={isAdminRow || savePermissionsMutation?.isPending}
                           onCheckedChange={(v) => handleToggle(s.key as Section, 'view', !!v)}
                         />
                       </div>
@@ -382,7 +382,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
                       <div className="flex items-center justify-center">
                         <Checkbox
                           checked={perm.entry}
-                          disabled={isAdminRow || !perm.view || savePermissionsMutation.isPending}
+                          disabled={isAdminRow || !perm.view || savePermissionsMutation?.isPending}
                           onCheckedChange={(v) => handleToggle(s.key as Section, 'entry', !!v)}
                         />
                       </div>
@@ -391,7 +391,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
                       <div className="flex items-center justify-center">
                         <Checkbox
                           checked={perm.edit}
-                          disabled={isAdminRow || !perm.view || savePermissionsMutation.isPending}
+                          disabled={isAdminRow || !perm.view || savePermissionsMutation?.isPending}
                           onCheckedChange={(v) => handleToggle(s.key as Section, 'edit', !!v)}
                         />
                       </div>
@@ -419,7 +419,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
                   size="sm"
                   variant="ghost"
                   onClick={handleCancelChanges}
-                  disabled={savePermissionsMutation.isPending}
+                  disabled={savePermissionsMutation?.isPending}
                 >
                   Cancel
                 </Button>
@@ -427,11 +427,11 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
               <Button
                 size="sm"
                 onClick={handleSaveRights}
-                disabled={isAdminRow || savePermissionsMutation.isPending}
+                disabled={isAdminRow || savePermissionsMutation?.isPending}
                 className="gap-1.5"
               >
                 <Save className="h-4 w-4" />
-                {savePermissionsMutation.isPending ? "Saving..." : "Save Rights"}
+                {savePermissionsMutation?.isPending ? "Saving..." : "Save Rights"}
               </Button>
             </div>
           </div>
