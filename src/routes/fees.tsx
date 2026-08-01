@@ -285,15 +285,15 @@ function FeesPage() {
                   <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No</th>
-                  <th className="px-4 py-3.5 text-right font-medium min-w-44 whitespace-nowrap">Amount Net Payable</th>
-                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Amount Paid</th>
-                  <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Balance</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-40 whitespace-nowrap">Total Payable Fees</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Late Fees</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-28 whitespace-nowrap">Fine</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-28 whitespace-nowrap">Other</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Concession</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Scholarship</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-44 whitespace-nowrap">Amount Net Payable</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Amount Paid</th>
+                  <th className="px-4 py-3.5 text-right font-medium min-w-32 whitespace-nowrap">Balance</th>
                   <th className="px-4 py-3.5 text-right font-medium min-w-44 whitespace-nowrap">Amount Paid Date</th>
                   <th className="px-4 py-3.5 text-left font-medium min-w-48 whitespace-nowrap">Remarks</th>
                   <th className="px-4 py-3.5 min-w-48 text-right whitespace-nowrap">Actions</th>
@@ -317,6 +317,12 @@ function FeesPage() {
                       <td className="px-4 py-3 whitespace-nowrap">{formatYear(st.current_semester)}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{st.admission_no || "—"}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{st.roll_number || "—"}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{inr(sum.totalCharged)}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</td>
+                      <td className="px-4 py-3 text-right text-warning whitespace-nowrap">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
+                      <td className="px-4 py-3 text-right text-warning whitespace-nowrap">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
                       <td className="px-4 py-3 text-right font-semibold text-foreground whitespace-nowrap">{inr(sum.netPayable)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-success whitespace-nowrap">{inr(sum.totalPaid)}</td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -324,12 +330,6 @@ function FeesPage() {
                           ? <Badge variant="destructive">{inr(sum.balance)}</Badge>
                           : <Badge className="bg-success text-success-foreground hover:bg-success/90">Cleared</Badge>}
                       </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">{inr(sum.totalCharged)}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</td>
-                      <td className="px-4 py-3 text-right text-warning whitespace-nowrap">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</td>
-                      <td className="px-4 py-3 text-right text-warning whitespace-nowrap">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</td>
                       <td className="px-4 py-3 text-right text-sm text-muted-foreground whitespace-nowrap">
                         {sum.payments && sum.payments.length > 0
                           ? Array.from(new Set(sum.payments.map((p: any) => new Date(p.paidAt || p.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })))).join(', ')

@@ -41,7 +41,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">Ledger</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Fee Ledger - {student.name}</DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -49,21 +49,7 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2 mt-4">
-          <div className="rounded-md bg-muted/60 p-2.5 text-center">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Net Payable</p>
-            <p className="mt-1 font-display text-base font-semibold">{inr(sum.netPayable)}</p>
-          </div>
-          <div className="rounded-md bg-muted/60 p-2.5 text-center">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Paid</p>
-            <p className="mt-1 font-display text-base font-semibold text-success">{inr(sum.totalPaid)}</p>
-          </div>
-          <div className="rounded-md bg-muted/60 p-2.5 text-center">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</p>
-            <p className={`mt-1 font-display text-base font-semibold ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
-              {inr(sum.balance)}
-            </p>
-          </div>
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 mt-4">
           <div className="rounded-md bg-muted/60 p-2.5 text-center">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Payable</p>
             <p className="mt-1 font-display text-base font-semibold text-muted-foreground">{inr(sum.totalCharged)}</p>
@@ -87,6 +73,20 @@ export function LedgerSummaryDialog({ student, sum }: { student: any, sum: any }
           <div className="rounded-md bg-muted/60 p-2.5 text-center">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Scholarship</p>
             <p className="mt-1 font-display text-base font-semibold text-warning">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Net Payable</p>
+            <p className="mt-1 font-display text-base font-semibold">{inr(sum.netPayable)}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Paid</p>
+            <p className="mt-1 font-display text-base font-semibold text-success">{inr(sum.totalPaid)}</p>
+          </div>
+          <div className="rounded-md bg-muted/60 p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</p>
+            <p className={`mt-1 font-display text-base font-semibold ${sum.balance > 0 ? "text-warning" : "text-foreground"}`}>
+              {inr(sum.balance)}
+            </p>
           </div>
         </div>
 

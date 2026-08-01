@@ -346,16 +346,16 @@ function StudentDetail() {
         </Card>
 
         <Card>
-          <CardContent className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2 p-4">
-            <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
-            <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
-            <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
+          <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-4">
             <TotalPill label="Total Payable" value={inr(totals.totalCharged)} />
             <TotalPill label="Late Fees" value={totals.totalLate > 0 ? inr(totals.totalLate) : "—"} />
             <TotalPill label="Fine" value={totals.totalFine > 0 ? inr(totals.totalFine) : "—"} />
             <TotalPill label="Other" value={totals.totalOther > 0 ? inr(totals.totalOther) : "—"} />
             <TotalPill label="Concession" value={totals.totalConcession ? `− ${inr(totals.totalConcession)}` : "—"} />
             <TotalPill label="Scholarship" value={totals.totalScholarship ? `− ${inr(totals.totalScholarship)}` : "—"} />
+            <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
+            <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
+            <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
           </CardContent>
         </Card>
       </div>
