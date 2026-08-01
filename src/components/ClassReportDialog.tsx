@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +34,13 @@ export function ClassReportDialog({
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setProgramFilter(defaultProgramId);
+      setSemFilter(defaultSemester);
+    }
+  }, [open, defaultProgramId, defaultSemester]);
 
   // Fetch ALL matching students for the report (without pagination)
   const { data: students = [], isLoading } = useQuery({
@@ -73,7 +80,7 @@ export function ClassReportDialog({
           "Gender": s.gender ? s.gender.toUpperCase() : "—",
           "Category": s.category || "—",
           "Program": prog?.name || "—",
-          "Year/Semester": formatYear(s.current_semester),
+          "Year": formatYear(s.current_semester),
           "Mobile No": s.phone || "—",
           "Email": s.email || "—",
           "Address": [s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ") || "—",
@@ -143,7 +150,7 @@ export function ClassReportDialog({
       doc.setFontSize(10);
 
       const progText = `Program: ${selectedProgramObj?.name || "All Programs"}`;
-      const yearText = `Year/Class: ${semFilter !== "all" ? formatYear(Number(semFilter)) : "All Years"}`;
+      const yearText = `Year: ${semFilter !== "all" ? formatYear(Number(semFilter)) : "All Years"}`;
       const totalText = `Total Enrolled: ${students.length} Students`;
       const dateText = `Generated On: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`;
 
@@ -420,7 +427,7 @@ export function ClassReportDialog({
       <p>Class-Wise General Student Report — College Record</p>
       <div class="meta-bar">
         <div><strong>Program / Course:</strong> ${progName}</div>
-        <div><strong>Year / Semester:</strong> ${yearName}</div>
+        <div><strong>Year:</strong> ${yearName}</div>
         <div><strong>Total Students:</strong> ${students.length}</div>
         <div><strong>Generated On:</strong> ${dateStr}</div>
       </div>
@@ -575,7 +582,7 @@ export function ClassReportDialog({
               </p>
               <div className="flex flex-wrap justify-between items-center text-xs text-muted-foreground pt-3 px-2 font-medium">
                 <div><span className="font-semibold text-foreground">Program / Course:</span> {selectedProgramObj?.name || "All Programs"}</div>
-                <div><span className="font-semibold text-foreground">Year / Semester:</span> {semFilter !== "all" ? formatYear(Number(semFilter)) : "All Years"}</div>
+                <div><span className="font-semibold text-foreground">Year:</span> {semFilter !== "all" ? formatYear(Number(semFilter)) : "All Years"}</div>
                 <div><span className="font-semibold text-foreground">Total Students:</span> {students.length}</div>
                 <div><span className="font-semibold text-foreground">Date:</span> {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</div>
               </div>
