@@ -31,7 +31,8 @@ import { type Section } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 
 const nav: { title: string; url: string; icon: typeof LayoutDashboard; section?: Section }[] = [
-  { title: "General Portal", url: "/", icon: Settings },
+  { title: "Welcome", url: "/", icon: LayoutDashboard },
+  { title: "General Portal Setup", url: "/general", icon: Settings, section: "settings" },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Student Portal", url: "/students", icon: GraduationCap, section: "students" },
   { title: "Examinations", url: "/exams", icon: BookOpen, section: "students" },

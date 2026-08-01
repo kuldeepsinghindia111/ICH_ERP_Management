@@ -196,6 +196,7 @@ function RootComponent() {
 }
 
 function getRequiredSection(pathname: string): Section | null {
+  if (pathname.startsWith('/general')) return 'settings';
   if (pathname.startsWith('/students')) return 'students';
   if (pathname.startsWith('/exams')) return 'students';
   if (pathname.startsWith('/timetable')) return 'students';

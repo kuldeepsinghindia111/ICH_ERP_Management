@@ -218,14 +218,14 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
   const isAdminRow = u.role === "admin";
   const displayName = u.name || u.email.split('@')[0];
   const displayCode = u.id.split('-')[0].toUpperCase();
-  const basePerms = u.permissions || defaultPermissionsFor(u.role);
+  const basePerms = u.permissions || {};
 
   const [draftPerms, setDraftPerms] = useState<any>(() => basePerms);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (!hasChanges) {
-      setDraftPerms(u.permissions || defaultPermissionsFor(u.role));
+      setDraftPerms(u.permissions || {});
     }
   }, [u.permissions, u.role, hasChanges]);
 
@@ -247,32 +247,32 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
   };
 
   const handleSaveRights = () => {
-    savePermissionsMutation?.mutate(
-      { userId: u.id, permissions: draftPerms },
-      {
-        onSuccess: () => {
-          setHasChanges(false);
-        }
-      }
-    );
+    savePermissionsMutation?.mutate({ userId: u.id, perms: draftPerms });
+    setHasChanges(false);
   };
 
   const handleCancelChanges = () => {
-    setDraftPerms(u.permissions || defaultPermissionsFor(u.role));
+    setDraftPerms(u.permissions || {});
     setHasChanges(false);
   };
 
   return (
-    <div key={u.id} className="rounded-lg border border-border">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+    <div className="rounded-lg border bg-card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-medium text-primary uppercase">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
             {displayName.substring(0, 2)}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <p className="font-medium">{displayName}</p>
               {isSelf && <Badge variant="secondary" className="text-[10px]">You</Badge>}
+              {!u.permissions && !isAdminRow && (
+                <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 bg-amber-500/10">No Rights Assigned</Badge>
+              )}
+              {u.permissions && !isAdminRow && (
+                <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 bg-emerald-500/10">Rights Assigned</Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               <span className="font-mono">{displayCode}</span>

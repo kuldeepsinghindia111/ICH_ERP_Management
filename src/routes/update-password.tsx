@@ -67,11 +67,11 @@ function UpdatePassword() {
         
       if (roleError) {
         console.error("Failed to set user status to active:", roleError);
-        // We still let them through since auth succeeded, but log the error
       }
 
-      toast.success("Password updated successfully!");
-      router.navigate({ to: '/', replace: true });
+      await supabase.auth.signOut();
+      toast.success("Password set successfully! Please log in with your new password.");
+      router.navigate({ to: '/login', replace: true });
     }
     
     setLoading(false);

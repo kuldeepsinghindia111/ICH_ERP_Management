@@ -150,8 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const can = (section: Section, action: "view" | "entry" | "edit" = "view") => {
     if (!profile) return false;
     if (profile.role === "admin") return true;
-    const perms = profile.permissions || defaultPermissionsFor(profile.role);
-    const p = perms?.[section] || defaultPermissionsFor(profile.role)?.[section];
+    // Without explicit permissions granted by Admin, the user cannot open any section or record
+    const p = profile.permissions?.[section];
     if (!p) return false;
     if (action === "edit") return !!p.edit;
     if (action === "entry") return p.entry !== undefined ? !!(p.entry || p.edit) : !!p.edit;
