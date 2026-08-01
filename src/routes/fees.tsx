@@ -33,7 +33,7 @@ export const Route = createFileRoute("/fees")({
 
 function FeesPage() {
   const { user, can, profile } = useAuth();
-  const showSummarySection = can('fees_complete', 'view') || profile?.role === 'admin' || !!profile?.permissions?.fees?.view;
+  const showSummarySection = profile?.role === 'admin' || !!profile?.permissions?.fees_complete?.view || !!profile?.permissions?.fees?.view;
   
   const { data: canEditPayments } = useQuery({
     queryKey: ['canEditPayments', user?.id],
@@ -51,8 +51,11 @@ function FeesPage() {
     queryKey: ['programs'],
     queryFn: async () => {
       const { data, error } = await supabase.from('programs').select('*').order('created_at', { ascending: true });
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error loading programs:", error);
+        return [];
+      }
+      return data || [];
     }
   });
 
@@ -60,8 +63,11 @@ function FeesPage() {
     queryKey: ['students'],
     queryFn: async () => {
       const { data, error } = await supabase.from('students').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error loading students:", error);
+        return [];
+      }
+      return data || [];
     }
   });
   
@@ -69,7 +75,10 @@ function FeesPage() {
     queryKey: ['fee_charges'],
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_charges').select('*');
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading fee_charges:", error);
+        return [];
+      }
       return (data || []).map((d: any) => ({
         ...d,
         id: d.id, studentId: d.student_id, student_id: d.student_id,
@@ -82,7 +91,10 @@ function FeesPage() {
     queryKey: ['fee_structures'],
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_structures').select('*');
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading fee_structures:", error);
+        return [];
+      }
       return (data || []).map((d: any) => ({
         ...d,
         id: d.id, programId: d.program_id, program_id: d.program_id,
@@ -95,7 +107,10 @@ function FeesPage() {
     queryKey: ['fee_adjustments'],
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_adjustments').select('*');
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading fee_adjustments:", error);
+        return [];
+      }
       return (data || []).map((d: any) => ({
         ...d,
         id: d.id, studentId: d.student_id, student_id: d.student_id,
@@ -108,7 +123,10 @@ function FeesPage() {
     queryKey: ['fee_payments'],
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_payments').select('*');
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading fee_payments:", error);
+        return [];
+      }
       return (data || []).map((d: any) => ({
         ...d,
         id: d.id, studentId: d.student_id, student_id: d.student_id,

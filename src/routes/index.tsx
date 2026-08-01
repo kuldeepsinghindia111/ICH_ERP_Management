@@ -158,8 +158,12 @@ const MODULES: PortalModule[] = [
 function WelcomePage() {
   const { user, profile, can } = useAuth();
 
-  const authorizedModules = MODULES.filter((m) => can(m.section, "view"));
-  const displayName = profile?.name || user?.email?.split("@")[0] || "User";
+  const adminOnlySections = ["general", "users", "audit", "settings"];
+  const authorizedModules = MODULES.filter((m) => {
+    if (profile?.role !== "admin" && adminOnlySections.includes(m.section)) return false;
+    return can(m.section, "view");
+  });
+  const displayName = profile?.name || (user?.email && typeof user.email === "string" ? user.email.split("@")[0] : "User");
   const displayRole = profile?.role ? profile.role.replace(/_/g, " ").toUpperCase() : "ACCOUNT ACTIVE";
 
   return (

@@ -349,18 +349,24 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
       </div>
 
       {showPermissions && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2.5 text-left font-semibold">Section</th>
-                <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">View</th>
-                <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Data Entry</th>
-                <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Edit</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {SECTIONS.map((s) => {
+        isAdminRow ? (
+          <div className="p-4 bg-primary/5 border border-primary/20 rounded-md text-sm text-primary flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 shrink-0" />
+            <span><strong>Administrator Role:</strong> Automatically granted full View, Data Entry, and Edit permissions across all system modules. Permission checkboxes are not required.</span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-widest text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2.5 text-left font-semibold">Section</th>
+                  <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">View</th>
+                  <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Data Entry</th>
+                  <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">Edit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {SECTIONS.filter((s) => !["general", "users", "audit", "settings"].includes(s.key)).map((s) => {
                 const rawPerm = draftPerms[s.key] || { view: false, entry: false, edit: false };
                 const perm: Permission = isAdminRow
                   ? { view: true, entry: true, edit: true }
@@ -439,6 +445,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
             </div>
           </div>
         </div>
+        )
       )}
     </div>
   );

@@ -148,20 +148,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const can = (section: Section, action: "view" | "entry" | "edit" = "view") => {
-    if (!profile) return false;
-    if (profile.role === "admin") return true;
-    // Without explicit permissions granted by Admin, the user cannot open any section or record
-    let p = profile.permissions?.[section];
-    if (!p && section === "fees") {
-      p = profile.permissions?.fees_complete || profile.permissions?.fees_student;
+    try {
+      if (!profile) return false;
+      if (profile.role === "admin") return true;
+      const perms = (profile.permissions && typeof profile.permissions === "object" && !Array.isArray(profile.permissions))
+        ? (profile.permissions as any)
+        : {};
+      let p = perms[section];
+      if (!p && section === "fees") {
+        p = perms.fees_complete || perms.fees_student;
+      }
+      if (!p && section === "fees_complete") {
+        p = perms.fees;
+      }
+      if (!p || typeof p !== "object") return false;
+      if (action === "edit") return !!p.edit;
+      if (action === "entry") return p.entry !== undefined ? !!(p.entry || p.edit) : !!p.edit;
+      return !!p.view;
+    } catch (err) {
+      console.error("Error evaluating permission:", err);
+      return false;
     }
-    if (!p && section === "fees_complete") {
-      p = profile.permissions?.fees;
-    }
-    if (!p) return false;
-    if (action === "edit") return !!p.edit;
-    if (action === "entry") return p.entry !== undefined ? !!(p.entry || p.edit) : !!p.edit;
-    return !!p.view;
   };
 
   return (
