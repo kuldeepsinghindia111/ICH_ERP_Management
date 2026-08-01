@@ -176,7 +176,7 @@ function WelcomePage() {
       </div>
 
       {/* User Greeting Card */}
-      <Card className="border-border/60 bg-gradient-to-r from-background to-muted/20">
+      <Card className="border-border/60 bg-linear-to-r from-background to-muted/20">
         <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20">
