@@ -215,7 +215,7 @@ function AttendancePage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-sky-50/80 dark:bg-sky-950/40">
+                    <tr className="border-b bg-blue-600 dark:bg-blue-700 text-white">
                       <th className="px-4 py-3 text-center font-medium w-14">S.No.</th>
                       <th className="px-4 py-3 text-left font-medium">Roll No</th>
                       <th className="px-4 py-3 text-left font-medium">Student</th>

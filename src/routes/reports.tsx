@@ -493,19 +493,19 @@ function Reports() {
         <CardContent className="p-0">
           <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
             <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 z-40 bg-sky-50/80 dark:bg-sky-950/40 border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border">S.No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Date</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Receipt no</th>
-                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border shadow-sm">Student</th>
-                  <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Program</th>
-                  <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
-                  <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Method</th>
-                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Amount</th>
+              <thead className="sticky top-0 z-40 bg-blue-600 dark:bg-blue-700 text-white border-b text-left text-xs uppercase tracking-widest">
+                <tr className="bg-blue-600 dark:bg-blue-700 text-white">
+                  <th className="px-4 py-3.5 font-semibold text-center min-w-16 sticky left-0 top-0 z-50 bg-blue-600 dark:bg-blue-700 text-white border-r border-blue-500/40">S.No.</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-32 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Date</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Receipt no</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-48 sticky left-16 top-0 z-50 bg-blue-600 dark:bg-blue-700 text-white border-r border-blue-500/40 shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-44 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Father's Name</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Admission No.</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Roll No.</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Program</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-28 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Year</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-28 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Method</th>
+                  <th className="px-4 py-3.5 text-right font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -585,16 +585,16 @@ function Reports() {
         <CardContent className="p-0">
           <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
             <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 z-40 bg-sky-50/80 dark:bg-sky-950/40 border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border">S.No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border shadow-sm">Student</th>
-                  <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Class/Program</th>
-                  <th className="px-4 py-3.5 text-right font-medium min-w-36 whitespace-nowrap">Balance</th>
-                  <th className="px-4 py-3.5 min-w-36 whitespace-nowrap"></th>
+              <thead className="sticky top-0 z-40 bg-blue-600 dark:bg-blue-700 text-white border-b text-left text-xs uppercase tracking-widest">
+                <tr className="bg-blue-600 dark:bg-blue-700 text-white">
+                  <th className="px-4 py-3.5 font-semibold text-center min-w-16 sticky left-0 top-0 z-50 bg-blue-600 dark:bg-blue-700 text-white border-r border-blue-500/40">S.No.</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-48 sticky left-16 top-0 z-50 bg-blue-600 dark:bg-blue-700 text-white border-r border-blue-500/40 shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-44 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Father's Name</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Admission No.</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Roll No.</th>
+                  <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Class/Program</th>
+                  <th className="px-4 py-3.5 text-right font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Balance</th>
+                  <th className="px-4 py-3.5 min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

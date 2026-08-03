@@ -346,20 +346,20 @@ function StudentsPage() {
           <CardContent className="p-0">
             <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
               <table className="w-full text-sm border-collapse">
-                <thead className="sticky top-0 z-40 bg-sky-50/80 dark:bg-sky-950/40 border-b shadow-xs">
-                  <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border">S.No.</th>
-                    <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border shadow-sm">Student</th>
-                    <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
-                    <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No</th>
-                    <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Program</th>
-                    <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
-                    <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
-                    <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Gender</th>
-                    <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Category</th>
-                    <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Mobile No.</th>
-                    <th className="px-4 py-3.5 font-medium min-w-48 whitespace-nowrap">Address</th>
-                    <th className="px-4 py-3.5 min-w-44 text-right whitespace-nowrap">Actions</th>
+                <thead className="sticky top-0 z-40 bg-blue-600 dark:bg-blue-700 text-white border-b shadow-xs">
+                  <tr className="text-left text-xs uppercase tracking-widest bg-blue-600 dark:bg-blue-700 text-white">
+                    <th className="px-4 py-3.5 font-semibold text-center min-w-16 sticky left-0 top-0 z-50 bg-blue-600 dark:bg-blue-700 text-white border-r border-blue-500/40">S.No.</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-48 sticky left-16 top-0 z-50 bg-blue-600 dark:bg-blue-700 text-white border-r border-blue-500/40 shadow-sm">Student</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-44 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Father's Name</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Admission No</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-32 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Program</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-28 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Year</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Roll No.</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-28 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Gender</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-32 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Category</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-36 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Mobile No.</th>
+                    <th className="px-4 py-3.5 font-semibold min-w-48 whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Address</th>
+                    <th className="px-4 py-3.5 min-w-44 text-right whitespace-nowrap bg-blue-600 dark:bg-blue-700 text-white">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

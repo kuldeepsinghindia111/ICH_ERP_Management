@@ -359,7 +359,7 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-sky-50/80 dark:bg-sky-950/40 text-xs uppercase tracking-widest text-muted-foreground">
+              <thead className="bg-blue-600 dark:bg-blue-700 text-white text-xs uppercase tracking-widest">
                 <tr>
                   <th className="px-4 py-2.5 text-left font-semibold">Section</th>
                   <th className="px-4 py-2.5 text-center align-middle font-semibold w-28">View</th>
