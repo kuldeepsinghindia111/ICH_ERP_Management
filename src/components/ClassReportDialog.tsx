@@ -82,8 +82,10 @@ export function ClassReportDialog({
           "Program": prog?.name || "—",
           "Year": formatYear(s.current_semester),
           "Mobile No": s.phone || "—",
-          "Email": s.email || "—",
+          "Father/Guardian's Mob. No.": s.guardian_phone || "—",
           "Address": [s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ") || "—",
+          "Remarks": s.remarks || "—",
+          "Comments": s.comments || "—",
         };
       });
 
@@ -176,9 +178,12 @@ export function ClassReportDialog({
         "Gen.",
         "Cat.",
         "Mobile No",
+        "Father/Guardian Mob. No.",
         "Address",
+        "Remarks",
+        "Comments",
       ];
-      const colWidths = [35, 75, 65, 130, 130, 45, 55, 80, pageW - margin * 2 - (35 + 75 + 65 + 130 + 130 + 45 + 55 + 80)];
+      const colWidths = [30, 60, 55, 95, 95, 30, 40, 60, 85, 95, 50, 50];
 
       // Table Header Row
       doc.setFillColor(240, 243, 248);
@@ -241,7 +246,10 @@ export function ClassReportDialog({
           s.gender ? s.gender.substring(0, 1).toUpperCase() : "—",
           s.category || "—",
           s.phone || "—",
+          s.guardian_phone || "—",
           [s.address, s.city].filter(Boolean).join(", ") || "—",
+          s.remarks || "—",
+          s.comments || "—",
         ];
 
         let cx = margin;
@@ -320,7 +328,10 @@ export function ClassReportDialog({
           <td style="text-align:center;text-transform:capitalize;color:#1e293b;">${s.gender || "—"}</td>
           <td style="text-align:center;color:#1e293b;">${s.category || "—"}</td>
           <td style="font-family:monospace;color:#1e293b;">${s.phone || "—"}</td>
+          <td style="font-family:monospace;color:#1e293b;">${s.guardian_phone || "—"}</td>
           <td style="color:#1e293b;">${addressStr}</td>
+          <td style="color:#1e293b;">${s.remarks || ""}</td>
+          <td style="color:#1e293b;">${s.comments || ""}</td>
         </tr>
       `;
       })
@@ -435,7 +446,7 @@ export function ClassReportDialog({
     <table>
       <thead>
         <tr>
-          <th style="width: 35px; text-align: center;">S.No</th>
+          <th style="width: 30px; text-align: center;">S.No</th>
           <th>Admission No.</th>
           <th>Roll No.</th>
           <th>Student Name</th>
@@ -443,7 +454,10 @@ export function ClassReportDialog({
           <th style="text-align: center;">Gender</th>
           <th style="text-align: center;">Category</th>
           <th>Mobile No.</th>
+          <th>Father/Guardian's Mob. No.</th>
           <th>Address</th>
+          <th>Remarks</th>
+          <th>Comments</th>
         </tr>
       </thead>
       <tbody>
@@ -610,7 +624,10 @@ export function ClassReportDialog({
                       <th className="px-3 py-2 text-center">Gender</th>
                       <th className="px-3 py-2 text-center">Category</th>
                       <th className="px-3 py-2">Mobile No</th>
+                      <th className="px-3 py-2">Father/Guardian's Mob. No.</th>
                       <th className="px-3 py-2">Address</th>
+                      <th className="px-3 py-2">Remarks</th>
+                      <th className="px-3 py-2">Comments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -624,9 +641,12 @@ export function ClassReportDialog({
                         <td className="px-3 py-2.5 text-center capitalize">{s.gender || "—"}</td>
                         <td className="px-3 py-2.5 text-center">{s.category || "—"}</td>
                         <td className="px-3 py-2.5 font-mono">{s.phone || "—"}</td>
+                        <td className="px-3 py-2.5 font-mono">{s.guardian_phone || "—"}</td>
                         <td className="px-3 py-2.5 max-w-xs truncate" title={[s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ")}>
                           {[s.address, s.city].filter(Boolean).join(", ") || "—"}
                         </td>
+                        <td className="px-3 py-2.5">{s.remarks || "—"}</td>
+                        <td className="px-3 py-2.5">{s.comments || "—"}</td>
                       </tr>
                     ))}
                   </tbody>
