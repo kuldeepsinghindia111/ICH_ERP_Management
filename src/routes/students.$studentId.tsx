@@ -305,6 +305,13 @@ function StudentDetail() {
                   {student.email && <span>· ✉ {student.email}</span>}
                   {student.guardian && <span>· Guardian: {student.guardian}{student.guardian_phone ? ` (${student.guardian_phone})` : ""}</span>}
                 </div>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  {student.university_reg_no && <span>🆔 Univ Reg: {student.university_reg_no}</span>}
+                  {student.university_roll_no && <span>· Univ Roll: {student.university_roll_no}</span>}
+                  {student.aadhar_no && <span>· Aadhar: {student.aadhar_no}</span>}
+                  {student.abc_id && <span>· ABC ID: {student.abc_id}</span>}
+                  {student.family_id && <span>· Family ID: {student.family_id}</span>}
+                </div>
                 {(student.address || student.city || student.state || student.pincode) && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     🏠 {[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ")}

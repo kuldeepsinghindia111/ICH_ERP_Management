@@ -91,10 +91,14 @@ export function StudentImportDialog({ programs }: StudentImportDialogProps) {
         gender: row.gender?.toLowerCase() || null,
         category: row.category || null,
         current_semester: parseInt(row.current_semester) || 1,
-        program_id: row.program_id || null,
         guardian: row.guardian || null,
         address: row.address || null,
         status: row.status?.toLowerCase() || "active",
+        aadhar_no: row.aadhar_no?.toString() || row["Aadhar No"]?.toString() || null,
+        abc_id: row.abc_id?.toString() || row["ABC ID"]?.toString() || null,
+        family_id: row.family_id?.toString() || row["Family ID"]?.toString() || null,
+        university_reg_no: row.university_reg_no?.toString() || row["University Reg. No"]?.toString() || null,
+        university_roll_no: row.university_roll_no?.toString() || row["University Roll No"]?.toString() || null,
       }));
 
       const { error } = await supabase.from('students').insert(formattedData);

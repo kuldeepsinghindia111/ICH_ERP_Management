@@ -41,6 +41,11 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
     city: "",
     state: "",
     pincode: "",
+    aadharNo: "",
+    abcId: "",
+    familyId: "",
+    universityRegNo: "",
+    universityRollNo: "",
   });
 
   const prevOpenRef = useRef(false);
@@ -68,6 +73,11 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
           city: student.city || "",
           state: student.state || "",
           pincode: student.pincode || "",
+          aadharNo: student.aadhar_no || "",
+          abcId: student.abc_id || "",
+          familyId: student.family_id || "",
+          universityRegNo: student.university_reg_no || "",
+          universityRollNo: student.university_roll_no || "",
         });
       } else {
         setForm({
@@ -89,6 +99,11 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
           city: "",
           state: "",
           pincode: "",
+          aadharNo: "",
+          abcId: "",
+          familyId: "",
+          universityRegNo: "",
+          universityRollNo: "",
         });
       }
     }
@@ -248,6 +263,11 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
       city: form.city || null,
       state: form.state || null,
       pincode: form.pincode || null,
+      aadhar_no: form.aadharNo.trim() || null,
+      abc_id: form.abcId.trim() || null,
+      family_id: form.familyId.trim() || null,
+      university_reg_no: form.universityRegNo.trim() || null,
+      university_roll_no: form.universityRollNo.trim() || null,
       status: "active",
       roll_number: form.rollNumber.trim(),
     };
@@ -350,13 +370,21 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
               </SelectContent>
             </Select>
           </div>
-          <div className="sm:col-span-2">
-            <Label>Roll Number</Label>
+          <div>
+            <Label>College Roll Number</Label>
             <Input value={form.rollNumber} onChange={(e) => setField('rollNumber', e.target.value)} placeholder="e.g. 260bca001" />
+          </div>
+          <div>
+            <Label>University Reg. No.</Label>
+            <Input value={form.universityRegNo} onChange={(e) => setField('universityRegNo', e.target.value)} placeholder="University Reg. No." />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>University Roll No.</Label>
+            <Input value={form.universityRollNo} onChange={(e) => setField('universityRollNo', e.target.value)} placeholder="University Roll No." />
           </div>
         </div>
 
-        <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Personal</p>
+        <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Personal &amp; Government IDs</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>Gender</Label>
@@ -387,6 +415,24 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
           <div>
             <Label>Blood group</Label>
             <Input value={form.bloodGroup} onChange={(e) => setField('bloodGroup', e.target.value)} placeholder="e.g. O+" />
+          </div>
+          <div>
+            <Label>Aadhar No.</Label>
+            <Input 
+              type="text"
+              maxLength={12}
+              value={form.aadharNo} 
+              onChange={(e) => setField('aadharNo', e.target.value.replace(/\D/g, ''))} 
+              placeholder="12-digit Aadhar No." 
+            />
+          </div>
+          <div>
+            <Label>ABC ID</Label>
+            <Input value={form.abcId} onChange={(e) => setField('abcId', e.target.value)} placeholder="Academic Bank of Credits ID" />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Family ID</Label>
+            <Input value={form.familyId} onChange={(e) => setField('familyId', e.target.value)} placeholder="PPP / Family ID" />
           </div>
         </div>
 
