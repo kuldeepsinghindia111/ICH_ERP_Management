@@ -600,7 +600,7 @@ function TotalPill({
 }: { label: React.ReactNode; value: string; tone?: "default" | "success" | "warning" }) {
   const cls = tone === "success" ? "text-emerald-600 dark:text-emerald-400 font-bold" : tone === "warning" ? "text-amber-600 dark:text-amber-400 font-bold" : "text-foreground";
   return (
-    <div className="rounded-md bg-muted/50 p-2.5 text-center flex flex-col justify-between items-center h-full min-h-[76px] border border-border/40">
+    <div className="rounded-md bg-muted/50 p-2.5 text-center flex flex-col justify-between items-center h-full min-h-19 border border-border/40">
       <div className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground font-semibold leading-tight flex items-center justify-center text-center">
         {label}
       </div>
