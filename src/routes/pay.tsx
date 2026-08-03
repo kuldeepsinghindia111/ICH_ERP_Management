@@ -318,7 +318,7 @@ function PayPage() {
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Fee collection</p>
-            <h1 className="font-display text-2xl font-semibold text-foreground">
+            <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">
               {paymentInfo.collegeName} — Make Payment
             </h1>
           </div>

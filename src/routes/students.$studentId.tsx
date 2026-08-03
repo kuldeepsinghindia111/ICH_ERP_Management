@@ -292,7 +292,7 @@ function StudentDetail() {
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
                   {program?.name} · Joined {student.joined_year}
                 </p>
-                <h1 className="font-display text-2xl font-semibold text-foreground">{student.name}</h1>
+                <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">{student.name}</h1>
                 <p className="mt-1 font-mono text-xs text-muted-foreground">{student.admission_no}</p>
                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   {student.gender && <span className="capitalize">{student.gender}</span>}

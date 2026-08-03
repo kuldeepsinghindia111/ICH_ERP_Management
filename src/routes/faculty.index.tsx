@@ -58,7 +58,7 @@ function FacultyPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Administration</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Faculty Portal</h1>
+          <h1 className="font-display text-3xl font-semibold text-blue-600 dark:text-blue-400">Faculty Portal</h1>
           <p className="mt-1 text-sm text-muted-foreground">{faculty.length} members across departments.</p>
         </div>
         <div className="flex gap-2">

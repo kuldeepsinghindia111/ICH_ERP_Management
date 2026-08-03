@@ -133,7 +133,7 @@ function ManageExamMarksPage() {
             <Link to="/exams" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <h1 className="text-3xl font-bold tracking-tight">{exam.title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{exam.title}</h1>
           </div>
           <p className="text-muted-foreground mt-1">
             {exam.program?.name} (Sem {exam.semester}) • Max Marks: {exam.max_marks}

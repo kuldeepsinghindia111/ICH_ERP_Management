@@ -183,7 +183,7 @@ function WelcomePage() {
               <UserCheck className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 Hello, {displayName}!
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">

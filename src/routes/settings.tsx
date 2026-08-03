@@ -66,7 +66,7 @@ function SettingsPage() {
         </div>
         <div className="flex-1">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Configuration</p>
-          <h1 className="font-display text-2xl font-semibold text-foreground">College Payment Settings</h1>
+          <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">College Payment Settings</h1>
         </div>
         {!canEditBool && (
           <Badge variant="secondary" className="gap-1">

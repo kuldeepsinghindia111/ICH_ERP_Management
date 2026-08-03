@@ -363,7 +363,7 @@ function Reports() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Reports</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Collections & pending dues</h1>
+          <h1 className="font-display text-3xl font-semibold text-blue-600 dark:text-blue-400">Collections & pending dues</h1>
           <p className="mt-1 text-sm text-muted-foreground">Snapshot of what's been received and what's outstanding. Filter receipts and print.</p>
         </div>
         <div>

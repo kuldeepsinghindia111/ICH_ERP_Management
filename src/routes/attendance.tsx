@@ -133,7 +133,7 @@ function AttendancePage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Operations</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground flex items-center gap-2">
+          <h1 className="font-display text-3xl font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2">
             <CalendarCheck className="h-7 w-7 text-primary" /> Attendance Portal
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">Track daily student attendance.</p>

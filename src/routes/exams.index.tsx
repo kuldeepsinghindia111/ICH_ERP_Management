@@ -96,7 +96,7 @@ function ExamsPage() {
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Examinations</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">Examinations</h1>
           <p className="text-muted-foreground mt-1">Manage exams, tests, and student grades.</p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)} className="flex items-center gap-2">

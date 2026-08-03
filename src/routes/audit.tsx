@@ -142,7 +142,7 @@ function AuditPage() {
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Compliance</p>
-            <h1 className="font-display text-2xl font-semibold text-foreground">Audit Log</h1>
+            <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">Audit Log</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">

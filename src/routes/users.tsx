@@ -184,7 +184,7 @@ function UsersPage() {
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Access control</p>
-            <h1 className="font-display text-2xl font-semibold text-foreground">Users &amp; Roles</h1>
+            <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">Users &amp; Roles</h1>
           </div>
         </div>
         

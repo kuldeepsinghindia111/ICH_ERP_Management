@@ -61,7 +61,7 @@ function FacultyProfilePage() {
         </Button>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl font-semibold text-foreground">{faculty.name}</h1>
+            <h1 className="font-display text-3xl font-semibold text-blue-600 dark:text-blue-400">{faculty.name}</h1>
             <Badge variant={faculty.status === "Active" ? "default" : faculty.status === "On Leave" ? "secondary" : "destructive"}>
               {faculty.status || "Active"}
             </Badge>

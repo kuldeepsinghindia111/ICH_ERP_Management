@@ -209,7 +209,7 @@ function FeesPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Financials</p>
-          <h1 className="font-display text-3xl font-semibold text-foreground">Fees Portal</h1>
+          <h1 className="font-display text-3xl font-semibold text-blue-600 dark:text-blue-400">Fees Portal</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Collect payments and track year-wise dues across concessions, scholarships and fines.
           </p>
