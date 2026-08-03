@@ -352,7 +352,7 @@ function StudentDetail() {
       </Card>
 
       <div className="space-y-4">
-        {semesters.map((yearNum) => {
+        {semesters.filter((yearNum) => yearNum >= currentSemester).map((yearNum) => {
           const yearTotals = semesterSummary(student.id, yearNum, {
             charges,
             adjustments,

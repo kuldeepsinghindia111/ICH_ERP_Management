@@ -893,7 +893,21 @@ export function semesterSummary(
   // Calculate prescribed base fees from fee_structures for this student's program and semester
   let prescribedFee = 0;
   if (data.structures && data.student) {
-    const structs = data.structures.filter((s: any) => (s.program_id || s.programId) === data.student.program_id && Number(s.semester) === Number(semester));
+    let structs = data.structures.filter((s: any) => (s.program_id || s.programId) === data.student.program_id && Number(s.semester) === Number(semester));
+    if (structs.length === 0 || (data.student.current_semester && semester > Number(data.student.current_semester))) {
+      const currentOrFirstSem = Number(data.student.current_semester) || 1;
+      const fallbackStructs = data.structures.filter(
+        (s: any) => (s.program_id || s.programId) === data.student.program_id && Number(s.semester) === currentOrFirstSem
+      );
+      if (fallbackStructs.length > 0) {
+        structs = fallbackStructs;
+      } else {
+        const sem1Structs = data.structures.filter(
+          (s: any) => (s.program_id || s.programId) === data.student.program_id && Number(s.semester) === 1
+        );
+        if (sem1Structs.length > 0) structs = sem1Structs;
+      }
+    }
     prescribedFee = structs.reduce((sum: number, s: any) => sum + Number(s.amount || 0), 0);
   }
 
