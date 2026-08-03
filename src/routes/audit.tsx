@@ -235,7 +235,7 @@ function AuditPage() {
 
           <div className="overflow-hidden rounded-md border border-border">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase tracking-widest text-muted-foreground">
+              <thead className="bg-sky-50/80 dark:bg-sky-950/40 text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">When</th>
                   <th className="px-3 py-2 text-left">User</th>

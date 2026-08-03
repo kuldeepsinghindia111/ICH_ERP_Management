@@ -277,10 +277,10 @@ function FeesPage() {
         <CardContent className="p-0">
           <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
             <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 z-40 bg-muted border-b shadow-xs">
+              <thead className="sticky top-0 z-40 bg-sky-50/80 dark:bg-sky-950/40 border-b shadow-xs">
                 <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border">S.No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border shadow-sm">Student</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Course</th>
                   <th className="px-4 py-3.5 font-medium min-w-28 whitespace-nowrap">Year</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No</th>

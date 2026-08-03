@@ -493,12 +493,12 @@ function Reports() {
         <CardContent className="p-0">
           <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
             <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 z-40 bg-muted border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
+              <thead className="sticky top-0 z-40 bg-sky-50/80 dark:bg-sky-950/40 border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
+                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border">S.No.</th>
                   <th className="px-4 py-3.5 font-medium min-w-32 whitespace-nowrap">Date</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Receipt no</th>
-                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border shadow-sm">Student</th>
                   <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No.</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
@@ -585,10 +585,10 @@ function Reports() {
         <CardContent className="p-0">
           <div className="overflow-auto max-h-[calc(100vh-270px)] relative">
             <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 z-40 bg-muted border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
+              <thead className="sticky top-0 z-40 bg-sky-50/80 dark:bg-sky-950/40 border-b text-left text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-muted border-r border-border">S.No.</th>
-                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-muted border-r border-border shadow-sm">Student</th>
+                  <th className="px-4 py-3.5 font-medium text-center min-w-16 sticky left-0 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border">S.No.</th>
+                  <th className="px-4 py-3.5 font-medium min-w-48 sticky left-16 top-0 z-50 bg-sky-50/80 dark:bg-sky-950/40 border-r border-border shadow-sm">Student</th>
                   <th className="px-4 py-3.5 font-medium min-w-44 whitespace-nowrap">Father's Name</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Admission No.</th>
                   <th className="px-4 py-3.5 font-medium min-w-36 whitespace-nowrap">Roll No.</th>
