@@ -169,7 +169,7 @@ function WelcomePage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-3 sm:px-6 py-6 sm:py-8">
       {/* Welcome Banner */}
-      <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-4 rounded-lg flex items-center justify-center shadow-sm">
+      <div className="bg-primary/10 border border-primary/20 text-emerald-600 dark:text-emerald-400 px-4 py-4 rounded-lg flex items-center justify-center shadow-sm">
         <span className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-center leading-tight">
           Welcome to Imperial College ERP/CMS - ichacc.online Portal
         </span>
