@@ -82,7 +82,7 @@ export function ClassReportDialog({
           "Program": prog?.name || "—",
           "Year": formatYear(s.current_semester),
           "Mobile No": s.phone || "—",
-          "Father/Guardian's Mob. No.": s.guardian_phone || "—",
+          "Parent's Mobile No.": s.guardian_phone || "—",
           "Address": [s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ") || "—",
           "Remarks": s.remarks || "—",
           "Comments": s.comments || "—",
@@ -178,7 +178,7 @@ export function ClassReportDialog({
         "Gen.",
         "Cat.",
         "Mobile No",
-        "Father/Guardian Mob. No.",
+        "Parent's Mobile No.",
         "Address",
         "Remarks",
         "Comments",
@@ -454,7 +454,7 @@ export function ClassReportDialog({
           <th style="text-align: center;">Gender</th>
           <th style="text-align: center;">Category</th>
           <th>Mobile No.</th>
-          <th>Father/Guardian's Mob. No.</th>
+          <th>Parent's Mobile No.</th>
           <th>Address</th>
           <th>Remarks</th>
           <th>Comments</th>
@@ -624,7 +624,7 @@ export function ClassReportDialog({
                       <th className="px-3 py-2 text-center">Gender</th>
                       <th className="px-3 py-2 text-center">Category</th>
                       <th className="px-3 py-2">Mobile No</th>
-                      <th className="px-3 py-2">Father/Guardian's Mob. No.</th>
+                      <th className="px-3 py-2">Parent's Mobile No.</th>
                       <th className="px-3 py-2">Address</th>
                       <th className="px-3 py-2">Remarks</th>
                       <th className="px-3 py-2">Comments</th>
