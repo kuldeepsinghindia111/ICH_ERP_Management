@@ -155,7 +155,7 @@ function ManageExamMarksPage() {
             <TableRow>
               <TableHead>Roll No.</TableHead>
               <TableHead>Student Name</TableHead>
-              <TableHead className="w-[150px]">Marks Obtained</TableHead>
+              <TableHead className="w-37.5">Marks Obtained</TableHead>
               <TableHead>Remarks</TableHead>
             </TableRow>
           </TableHeader>
