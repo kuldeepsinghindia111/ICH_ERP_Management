@@ -33,7 +33,8 @@ export const Route = createFileRoute("/reports")({
 
 function Reports() {
   const { can } = useAuth();
-  const canExport = can("reports", "edit");
+  const canExport = can("fees_reports", "edit") || can("reports", "edit");
+  const canViewSummary = can("fees_summary_report", "view") || can("reports", "view");
   const paymentInfo = useStore((s) => s.paymentInfo);
 
   const { data: students = [] } = useQuery({
@@ -367,7 +368,7 @@ function Reports() {
           <p className="mt-1 text-sm text-muted-foreground">Snapshot of what's been received and what's outstanding. Filter receipts and print.</p>
         </div>
         <div>
-          <ClassReportDialog programs={programs} />
+          {canViewSummary && <ClassReportDialog programs={programs} />}
         </div>
       </div>
 

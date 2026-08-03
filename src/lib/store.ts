@@ -148,7 +148,8 @@ export type UserRole = "admin" | "management" | "chief_coordinator" | "academic_
 export type Section =
   | "general" | "students" | "exams" | "timetable" | "leaves" | "library" | "attendance"
   | "fees_complete" | "fees_student" | "fees"
-  | "payments" | "reports" | "faculty" | "payroll" | "courses" | "settings" | "audit" | "users";
+  | "payments" | "reports" | "fees_reports" | "fees_summary_report"
+  | "faculty" | "payroll" | "courses" | "settings" | "audit" | "users";
 
 export const SECTIONS: { key: Section; label: string }[] = [
   { key: "general", label: "General Portal Setup" },
@@ -161,7 +162,8 @@ export const SECTIONS: { key: Section; label: string }[] = [
   { key: "fees_complete", label: "Fees Ledger Complete" },
   { key: "fees_student", label: "Individual Students Fees Ledger" },
   { key: "payments", label: "Make Payment (collect / void)" },
-  { key: "reports", label: "Reports" },
+  { key: "fees_reports", label: "Fees Reports" },
+  { key: "fees_summary_report", label: "Fees Summary Report" },
   { key: "faculty", label: "Faculty Portal" },
   { key: "payroll", label: "Payroll & Salary" },
   { key: "courses", label: "Course Portal" },
@@ -186,7 +188,8 @@ export type AppUser = {
 const ALL_SECTIONS: Section[] = [
   "general", "students", "exams", "timetable", "leaves", "library", "attendance",
   "fees_complete", "fees_student", "fees",
-  "payments", "reports", "faculty", "payroll", "courses", "settings", "audit", "users"
+  "payments", "reports", "fees_reports", "fees_summary_report",
+  "faculty", "payroll", "courses", "settings", "audit", "users"
 ];
 
 function makePerms(fn: (s: Section) => Permission): Permissions {
@@ -200,7 +203,7 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
     return makePerms((s) => {
       if (
         s === "students" || s === "exams" || s === "timetable" || s === "leaves" || s === "library" || s === "attendance" ||
-        s === "faculty" || s === "payroll" || s === "courses" || s === "reports"
+        s === "faculty" || s === "payroll" || s === "courses" || s === "reports" || s === "fees_reports" || s === "fees_summary_report"
       )
         return { view: true, entry: true, edit: true };
       return { view: false, entry: false, edit: false };
@@ -212,7 +215,7 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
         s === "faculty" || s === "courses"
       )
         return { view: true, entry: true, edit: true };
-      if (s === "reports")
+      if (s === "reports" || s === "fees_reports" || s === "fees_summary_report")
         return { view: true, entry: false, edit: false };
       return { view: false, entry: false, edit: false };
     });
@@ -220,7 +223,7 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
     return makePerms((s) => {
       if (s === "fees_complete" || s === "fees_student" || s === "fees" || s === "payments")
         return { view: true, entry: true, edit: false };
-      if (s === "students" || s === "reports")
+      if (s === "students" || s === "reports" || s === "fees_reports" || s === "fees_summary_report")
         return { view: true, entry: false, edit: false };
       return { view: false, entry: false, edit: false };
     });
@@ -228,7 +231,7 @@ export function defaultPermissionsFor(role: UserRole): Permissions {
   return makePerms((s) => {
     if (s === "courses" || s === "faculty" || s === "attendance" || s === "library" || s === "timetable" || s === "leaves")
       return { view: true, entry: true, edit: true };
-    if (s === "students" || s === "reports") return { view: true, entry: false, edit: false };
+    if (s === "students" || s === "reports" || s === "fees_reports" || s === "fees_summary_report") return { view: true, entry: false, edit: false };
     return { view: false, entry: false, edit: false };
   });
 }

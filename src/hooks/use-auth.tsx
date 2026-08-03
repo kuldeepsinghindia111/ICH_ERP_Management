@@ -161,6 +161,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!p && section === "fees_complete") {
         p = perms.fees;
       }
+      if (!p && (section === "reports" || section === "fees_reports")) {
+        p = perms.fees_reports || perms.reports;
+      }
+      if (!p && section === "fees_summary_report") {
+        p = perms.fees_summary_report || perms.reports;
+      }
       if (!p || typeof p !== "object") return false;
       if (action === "edit") return !!p.edit;
       if (action === "entry") return p.entry !== undefined ? !!(p.entry || p.edit) : !!p.edit;
