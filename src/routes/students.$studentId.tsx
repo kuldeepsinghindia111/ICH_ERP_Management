@@ -283,89 +283,87 @@ function StudentDetail() {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardContent className="flex flex-wrap items-start justify-between gap-6 p-6">
-            <div className="flex items-start gap-4">
-              <StudentAvatar student={student} canEdit={canEditStudents ?? false} />
-              <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {program?.name} · Joined {student.joined_year}
-                </p>
-                <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">{student.name}</h1>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">{student.admission_no}</p>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {student.gender && <span className="capitalize">{student.gender}</span>}
-                  {student.dob && <span>· DOB {new Date(student.dob).toLocaleDateString()}</span>}
-                  {student.category && <span>· {student.category}</span>}
-                  {student.blood_group && <span>· Blood {student.blood_group}</span>}
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {student.phone && <span>📱 {student.phone}</span>}
-                  {student.email && <span>· ✉ {student.email}</span>}
-                  {student.guardian && <span>· Guardian: {student.guardian}{student.guardian_phone ? ` (${student.guardian_phone})` : ""}</span>}
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {student.university_reg_no && <span>🆔 Univ Reg: {student.university_reg_no}</span>}
-                  {student.university_roll_no && <span>· Univ Roll: {student.university_roll_no}</span>}
-                  {student.aadhar_no && <span>· Aadhar: {student.aadhar_no}</span>}
-                  {student.abc_id && <span>· ABC ID: {student.abc_id}</span>}
-                  {student.family_id && <span>· Family ID: {student.family_id}</span>}
-                </div>
-                {(student.address || student.city || student.state || student.pincode) && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    🏠 {[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ")}
-                  </p>
-                )}
+      <Card>
+        <CardContent className="flex flex-wrap items-start justify-between gap-6 p-6">
+          <div className="flex items-start gap-4">
+            <StudentAvatar student={student} canEdit={canEditStudents ?? false} />
+            <div>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                {program?.name} · Joined {student.joined_year}
+              </p>
+              <h1 className="font-display text-2xl font-semibold text-blue-600 dark:text-blue-400">{student.name}</h1>
+              <p className="mt-1 font-mono text-xs text-muted-foreground">{student.admission_no}</p>
+              <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {student.gender && <span className="capitalize">{student.gender}</span>}
+                {student.dob && <span>· DOB {new Date(student.dob).toLocaleDateString()}</span>}
+                {student.category && <span>· {student.category}</span>}
+                {student.blood_group && <span>· Blood {student.blood_group}</span>}
               </div>
-
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                {student.status}
-              </Badge>
-              {canEditStudents ? (
-                <Select
-                  value={String(currentSemester)}
-                  onValueChange={(v) => {
-                    updateStudentMutation.mutate({ current_semester: Number(v) });
-                    setActiveSem(v);
-                  }}
-                >
-                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {semesters.map((n) => (
-                      <SelectItem key={n} value={String(n)}>Current: {formatYear(n)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
-              )}
-              {canEditStudents && (
-                <div className="flex gap-2">
-                  <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
-                  <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
-                </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {student.phone && <span>📱 {student.phone}</span>}
+                {student.email && <span>· ✉ {student.email}</span>}
+                {student.guardian && <span>· Guardian: {student.guardian}{student.guardian_phone ? ` (${student.guardian_phone})` : ""}</span>}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {student.university_reg_no && <span>🆔 Univ Reg: {student.university_reg_no}</span>}
+                {student.university_roll_no && <span>· Univ Roll: {student.university_roll_no}</span>}
+                {student.aadhar_no && <span>· Aadhar: {student.aadhar_no}</span>}
+                {student.abc_id && <span>· ABC ID: {student.abc_id}</span>}
+                {student.family_id && <span>· Family ID: {student.family_id}</span>}
+              </div>
+              {(student.address || student.city || student.state || student.pincode) && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  🏠 {[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ")}
+                </p>
               )}
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-4">
-            <TotalPill label="Total Payable" value={inr(totals.totalCharged)} />
-            <TotalPill label="Late Fees" value={totals.totalLate > 0 ? inr(totals.totalLate) : "—"} />
-            <TotalPill label="Fine" value={totals.totalFine > 0 ? inr(totals.totalFine) : "—"} />
-            <TotalPill label="Other" value={totals.totalOther > 0 ? inr(totals.totalOther) : "—"} />
-            <TotalPill label="Concession" value={totals.totalConcession ? `− ${inr(totals.totalConcession)}` : "—"} />
-            <TotalPill label="Scholarship" value={totals.totalScholarship ? `− ${inr(totals.totalScholarship)}` : "—"} />
-            <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
-            <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
-            <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant={student.status === "active" ? "default" : "secondary"}>
+              {student.status}
+            </Badge>
+            {canEditStudents ? (
+              <Select
+                value={String(currentSemester)}
+                onValueChange={(v) => {
+                  updateStudentMutation.mutate({ current_semester: Number(v) });
+                  setActiveSem(v);
+                }}
+              >
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {semesters.map((n) => (
+                    <SelectItem key={n} value={String(n)}>Current: {formatYear(n)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
+            )}
+            {canEditStudents && (
+              <div className="flex gap-2">
+                <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
+                <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-4">
+          <TotalPill label="Total Payable" value={inr(totals.totalCharged)} />
+          <TotalPill label="Late Fees" value={totals.totalLate > 0 ? inr(totals.totalLate) : "—"} />
+          <TotalPill label="Fine" value={totals.totalFine > 0 ? inr(totals.totalFine) : "—"} />
+          <TotalPill label="Other" value={totals.totalOther > 0 ? inr(totals.totalOther) : "—"} />
+          <TotalPill label="Concession" value={totals.totalConcession ? `− ${inr(totals.totalConcession)}` : "—"} />
+          <TotalPill label="Scholarship" value={totals.totalScholarship ? `− ${inr(totals.totalScholarship)}` : "—"} />
+          <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
+          <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
+          <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="bg-background border">
