@@ -377,32 +377,54 @@ function StudentDetail() {
 
         <TabsContent value="overview" className="space-y-6 mt-6">
           <Card>
-        <CardHeader>
-          <CardTitle className="font-display text-lg">Roll Number</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Current and past roll numbers.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Current Roll No.</p>
-              <div className="mt-2 font-mono text-xl font-medium">{student.roll_number}</div>
-            </div>
-            
-            {student.past_roll_numbers && student.past_roll_numbers.length > 0 && (
+            <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Past Roll Numbers</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {student.past_roll_numbers.map((r: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="font-mono text-xs">{r}</Badge>
-                  ))}
+                <CardTitle className="font-display text-lg">Identity &amp; Academic Registration</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Official university registration numbers, roll numbers, and government IDs.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">College Roll No.</p>
+                  <div className="font-mono text-base font-medium text-foreground">{student.roll_number || "—"}</div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Univ. Reg. No.</p>
+                  <div className="font-mono text-base font-medium text-foreground">{student.university_reg_no || "—"}</div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Univ. Roll No.</p>
+                  <div className="font-mono text-base font-medium text-foreground">{student.university_roll_no || "—"}</div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Aadhar Card No.</p>
+                  <div className="font-mono text-base font-medium text-foreground">{student.aadhar_no || "—"}</div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">ABC ID</p>
+                  <div className="font-mono text-base font-medium text-foreground">{student.abc_id || "—"}</div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Family ID (PPP)</p>
+                  <div className="font-mono text-base font-medium text-foreground">{student.family_id || "—"}</div>
                 </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
+              {student.past_roll_numbers && student.past_roll_numbers.length > 0 && (
+                <div className="mt-6 border-t pt-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Past College Roll Numbers</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {student.past_roll_numbers.map((r: string, i: number) => (
+                      <Badge key={i} variant="secondary" className="font-mono text-xs">{r}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
       <Card>
         <CardHeader>
