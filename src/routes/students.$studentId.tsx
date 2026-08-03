@@ -351,19 +351,56 @@ function StudentDetail() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-4">
-          <TotalPill label="Total Payable" value={inr(totals.totalCharged)} />
-          <TotalPill label="Late Fees" value={totals.totalLate > 0 ? inr(totals.totalLate) : "—"} />
-          <TotalPill label="Fine" value={totals.totalFine > 0 ? inr(totals.totalFine) : "—"} />
-          <TotalPill label="Other" value={totals.totalOther > 0 ? inr(totals.totalOther) : "—"} />
-          <TotalPill label="Concession" value={totals.totalConcession ? `− ${inr(totals.totalConcession)}` : "—"} />
-          <TotalPill label="Scholarship" value={totals.totalScholarship ? `− ${inr(totals.totalScholarship)}` : "—"} />
-          <TotalPill label="Net Payable" value={inr(totals.netPayable)} />
-          <TotalPill label="Paid" value={inr(totals.totalPaid)} tone="success" />
-          <TotalPill label="Balance" value={inr(totals.balance)} tone={totals.balance > 0 ? "warning" : "default"} />
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {semesters.map((yearNum) => {
+          const yearTotals = semesterSummary(student.id, yearNum, {
+            charges,
+            adjustments,
+            payments,
+            structures: feeStructures,
+            student,
+          });
+
+          return (
+            <Card key={yearNum} className="overflow-hidden border shadow-xs">
+              <CardHeader className="py-2.5 px-4 bg-muted/30 border-b">
+                <CardTitle className="font-display text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                  {formatYear(yearNum)} Fees Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-3">
+                <TotalPill label="Total Payable" value={inr(yearTotals.totalCharged)} />
+                <TotalPill label="Late Fees" value={yearTotals.totalLate > 0 ? inr(yearTotals.totalLate) : "—"} />
+                <TotalPill label="Fine" value={yearTotals.totalFine > 0 ? inr(yearTotals.totalFine) : "—"} />
+                <TotalPill label="Other" value={yearTotals.totalOther > 0 ? inr(yearTotals.totalOther) : "—"} />
+                <TotalPill
+                  label={
+                    <span>
+                      Conce-
+                      <br />
+                      ssion
+                    </span>
+                  }
+                  value={yearTotals.totalConcession ? `− ${inr(yearTotals.totalConcession)}` : "—"}
+                />
+                <TotalPill
+                  label={
+                    <span>
+                      Scholar-
+                      <br />
+                      ship
+                    </span>
+                  }
+                  value={yearTotals.totalScholarship ? `− ${inr(yearTotals.totalScholarship)}` : "—"}
+                />
+                <TotalPill label="Net Payable" value={inr(yearTotals.netPayable)} />
+                <TotalPill label="Paid" value={inr(yearTotals.totalPaid)} tone="success" />
+                <TotalPill label="Balance" value={inr(yearTotals.balance)} tone={yearTotals.balance > 0 ? "warning" : "default"} />
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="bg-background border">
@@ -560,12 +597,14 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
 
 function TotalPill({
   label, value, tone = "default",
-}: { label: string; value: string; tone?: "default" | "success" | "warning" }) {
-  const cls = tone === "success" ? "text-success" : tone === "warning" ? "text-warning" : "text-foreground";
+}: { label: React.ReactNode; value: string; tone?: "default" | "success" | "warning" }) {
+  const cls = tone === "success" ? "text-emerald-600 dark:text-emerald-400 font-bold" : tone === "warning" ? "text-amber-600 dark:text-amber-400 font-bold" : "text-foreground";
   return (
-    <div className="rounded-md bg-muted/60 p-3 text-center">
-      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className={`mt-1 font-display text-lg font-semibold ${cls}`}>{value}</p>
+    <div className="rounded-md bg-muted/50 p-2.5 text-center flex flex-col justify-between items-center h-full min-h-[76px] border border-border/40">
+      <div className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground font-semibold leading-tight flex items-center justify-center text-center">
+        {label}
+      </div>
+      <p className={`mt-1.5 font-display text-sm sm:text-base font-bold ${cls}`}>{value}</p>
     </div>
   );
 }
