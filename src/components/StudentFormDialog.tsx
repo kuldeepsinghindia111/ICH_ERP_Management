@@ -167,13 +167,34 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
 
   const saveStudentMutation = useMutation({
     mutationFn: async (data: any) => {
-      if (isEditing) {
-        const { error } = await supabase.from('students').update(data).eq('id', student.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('students').insert([data]);
-        if (error) throw error;
+      const runSave = async (payload: any) => {
+        if (isEditing) {
+          const { error } = await supabase.from('students').update(payload).eq('id', student.id);
+          return error;
+        } else {
+          const { error } = await supabase.from('students').insert([payload]);
+          return error;
+        }
+      };
+
+      let error = await runSave(data);
+
+      // If Supabase throws schema cache error for missing optional columns (aadhar_no, etc.)
+      if (error && error.message && (error.message.includes('schema cache') || error.message.includes('column'))) {
+        const fallbackData = { ...data };
+        delete fallbackData.aadhar_no;
+        delete fallbackData.abc_id;
+        delete fallbackData.family_id;
+        delete fallbackData.university_reg_no;
+        delete fallbackData.university_roll_no;
+
+        const retryError = await runSave(fallbackData);
+        if (retryError) throw retryError;
+        toast.warning("Student saved! Note: Database missing Aadhar/ABC ID columns. Please run SQL migration in Supabase.");
+        return;
       }
+
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success(isEditing ? "Student updated successfully" : "Student added successfully");
@@ -263,14 +284,15 @@ export function StudentFormDialog({ programs, student, buttonVariant = "icon" }:
       city: form.city || null,
       state: form.state || null,
       pincode: form.pincode || null,
-      aadhar_no: form.aadharNo.trim() || null,
-      abc_id: form.abcId.trim() || null,
-      family_id: form.familyId.trim() || null,
-      university_reg_no: form.universityRegNo.trim() || null,
-      university_roll_no: form.universityRollNo.trim() || null,
       status: "active",
       roll_number: form.rollNumber.trim(),
     };
+
+    if (form.aadharNo.trim()) dataToSave.aadhar_no = form.aadharNo.trim();
+    if (form.abcId.trim()) dataToSave.abc_id = form.abcId.trim();
+    if (form.familyId.trim()) dataToSave.family_id = form.familyId.trim();
+    if (form.universityRegNo.trim()) dataToSave.university_reg_no = form.universityRegNo.trim();
+    if (form.universityRollNo.trim()) dataToSave.university_roll_no = form.universityRollNo.trim();
 
     if (isEditing && form.rollNumber.trim() !== student.roll_number) {
       dataToSave.past_roll_numbers = [...(student.past_roll_numbers || []), student.roll_number];

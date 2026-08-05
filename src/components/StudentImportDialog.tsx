@@ -101,7 +101,24 @@ export function StudentImportDialog({ programs }: StudentImportDialogProps) {
         university_roll_no: row.university_roll_no?.toString() || row["University Roll No"]?.toString() || null,
       }));
 
-      const { error } = await supabase.from('students').insert(formattedData);
+      let { error } = await supabase.from('students').insert(formattedData);
+      
+      if (error && error.message && (error.message.includes('schema cache') || error.message.includes('column'))) {
+        const fallbackData = formattedData.map(row => {
+          const r = { ...row };
+          delete r.aadhar_no;
+          delete r.abc_id;
+          delete r.family_id;
+          delete r.university_reg_no;
+          delete r.university_roll_no;
+          return r;
+        });
+        const retryRes = await supabase.from('students').insert(fallbackData);
+        if (retryRes.error) throw retryRes.error;
+        toast.warning("Students imported! Note: Database missing Aadhar/ABC ID columns. Please run SQL migration in Supabase.");
+        return;
+      }
+
       if (error) throw error;
     },
     onSuccess: () => {
