@@ -352,19 +352,15 @@ function StudentDetail() {
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
-        {semesters.filter((yearNum) => yearNum >= currentSemester).map((yearNum) => (
-          <YearFeesSummaryCard
-            key={yearNum}
-            yearNum={yearNum}
-            student={student}
-            charges={charges}
-            adjustments={adjustments}
-            payments={payments}
-            feeStructures={feeStructures}
-          />
-        ))}
-      </div>
+      <FeesSummaryMasterSection
+        student={student}
+        currentSemester={currentSemester}
+        semesters={semesters}
+        charges={charges}
+        adjustments={adjustments}
+        payments={payments}
+        feeStructures={feeStructures}
+      />
 
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="bg-background border">
@@ -559,6 +555,66 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
   );
 }
 
+function FeesSummaryMasterSection({
+  student,
+  currentSemester,
+  semesters,
+  charges,
+  adjustments,
+  payments,
+  feeStructures,
+}: {
+  student: any;
+  currentSemester: number;
+  semesters: number[];
+  charges: any[];
+  adjustments: any[];
+  payments: any[];
+  feeStructures: any[];
+}) {
+  const [showMaster, setShowMaster] = useState(false);
+
+  const applicableYears = semesters.filter((yearNum) => yearNum >= currentSemester);
+
+  return (
+    <div className="space-y-4">
+      <Card className="overflow-hidden border shadow-xs">
+        <CardHeader className="py-3 px-4 bg-card flex flex-row items-center justify-between">
+          <CardTitle className="font-display text-base font-bold text-foreground tracking-wide">
+            Fees Summary
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="master-fees-summary-toggle" className="text-xs text-muted-foreground font-medium cursor-pointer">
+              {showMaster ? "ON" : "OFF"}
+            </Label>
+            <Switch
+              id="master-fees-summary-toggle"
+              checked={showMaster}
+              onCheckedChange={setShowMaster}
+            />
+          </div>
+        </CardHeader>
+      </Card>
+
+      {showMaster && (
+        <div className="space-y-4 transition-all animate-in fade-in-50">
+          {applicableYears.map((yearNum) => (
+            <YearFeesSummaryCard
+              key={yearNum}
+              yearNum={yearNum}
+              student={student}
+              charges={charges}
+              adjustments={adjustments}
+              payments={payments}
+              feeStructures={feeStructures}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function YearFeesSummaryCard({
   yearNum,
   student,
@@ -587,16 +643,9 @@ function YearFeesSummaryCard({
   return (
     <Card className="overflow-hidden border shadow-xs transition-all">
       <CardHeader className="py-2.5 px-4 bg-muted/30 border-b flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <CardTitle className="font-display text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-            {formatYear(yearNum)} Fees Summary
-          </CardTitle>
-          {!showSummary && (
-            <Badge variant="outline" className="text-[11px] font-mono font-medium">
-              Net: {inr(yearTotals.netPayable)} · Paid: {inr(yearTotals.totalPaid)} · Bal: {inr(yearTotals.balance)}
-            </Badge>
-          )}
-        </div>
+        <CardTitle className="font-display text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+          {formatYear(yearNum)} Fees Summary
+        </CardTitle>
         <div className="flex items-center gap-2">
           <Label htmlFor={`toggle-year-${yearNum}`} className="text-xs text-muted-foreground font-medium cursor-pointer">
             {showSummary ? "ON" : "OFF"}
