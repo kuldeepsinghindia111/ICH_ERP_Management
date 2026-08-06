@@ -309,6 +309,8 @@ function StudentDetail() {
   });
 
   const [activeSem, setActiveSem] = useState<string | null>(null);
+  const [showMasterFeesSummary, setShowMasterFeesSummary] = useState(false);
+  const [activeSummaryYears, setActiveSummaryYears] = useState<Record<number, boolean>>({});
 
   if (loadingStudent) {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -332,9 +334,6 @@ function StudentDetail() {
   const activeSemValue = activeSem ?? String(currentSemester);
 
   const semesters = Array.from({ length: Math.ceil((program?.total_semesters ?? 6) / 2) }, (_, i) => i + 1);
-
-  const [showMasterFeesSummary, setShowMasterFeesSummary] = useState(false);
-  const [activeSummaryYears, setActiveSummaryYears] = useState<Record<number, boolean>>({});
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
