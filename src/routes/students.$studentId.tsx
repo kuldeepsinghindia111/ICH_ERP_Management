@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, nextReceiptNo, type FeeHead, type FeePayment } from "@/lib/store";
 import jsPDF from "jspdf";
-import { downloadReceiptPdf, printReceiptPdf } from "@/lib/receipt";
+import { downloadReceiptPdf, printReceiptPdf, shareReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -942,10 +942,16 @@ function StudentReportDialog({
           text: `Official Student Profile & Fee Ledger Report for ${student.name}`,
         });
         toast.success("PDF report shared successfully!");
-      } else {
-        doc.save(fileName);
-        toast.info("Web sharing not supported on this browser. Downloaded PDF file instead.");
+        return;
       }
+
+      // Gmail Fallback
+      doc.save(fileName);
+      const subject = encodeURIComponent(`Student Profile & Fee Report - ${student.name} (${student.admission_no})`);
+      const body = encodeURIComponent(`Hello,\n\nPlease find attached the official Student Profile & Fee Report for ${student.name} (${student.admission_no}).\n\nProgram: ${program?.name || '—'}\nRoll No: ${student.roll_number || '—'}\n\nNote: The PDF report "${fileName}" has been downloaded to your device. Please attach it to this email.`);
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+      window.open(gmailUrl, "_blank");
+      toast.success("PDF downloaded & Gmail opened! Please attach the downloaded file.");
     } catch (err: any) {
       if (err.name !== "AbortError") {
         toast.error("Failed to share PDF: " + err.message);
@@ -2086,6 +2092,168 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
     });
   };
 
+  const shareReceipt = (p: FeePayment) => {
+    shareReceiptPdf({
+      college: paymentInfo,
+      payment: p,
+      student: {
+        name: student.name,
+        guardian: student.guardian,
+        admissionNo: student.admission_no,
+        rollNo: student.roll_number || "",
+      },
+      program: program ? { name: program.name, code: program.code } : undefined,
+      semester: p.semester,
+    });
+  };
+
+  const generatePaymentHistoryPdfDoc = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 35;
+    let y = 40;
+
+    // Header Banner
+    doc.setFillColor(28, 43, 75);
+    doc.rect(0, 0, pageW, 55, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("IMPERIAL COLLEGE, HISAR", pageW / 2, 26, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("PAYMENT RECEIPTS HISTORY REPORT", pageW / 2, 42, { align: "center" });
+
+    y = 75;
+    doc.setTextColor(30, 41, 59);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(`Student: ${student.name}`, margin, y);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Adm No: ${student.admission_no}`, pageW - margin, y, { align: "right" });
+
+    y += 16;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageW - margin, y);
+
+    y += 18;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(`Program: ${program?.name || "—"} | Roll No: ${student.roll_number || "—"}`, margin, y);
+    y += 12;
+    doc.text(`Total Received: ${inr(totalReceived)}${totalVoided > 0 ? ` | Total Voided: ${inr(totalVoided)}` : ""}`, margin, y);
+
+    y += 18;
+    // Table Header
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y - 8, pageW - margin * 2, 16, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text("#", margin + 4, y + 3);
+    doc.text("Receipt Ref", margin + 20, y + 3);
+    doc.text("Date", margin + 120, y + 3);
+    doc.text("Mode", margin + 210, y + 3);
+    doc.text("Class / Year", margin + 275, y + 3);
+    doc.text("Status", margin + 355, y + 3);
+    doc.text("Amount (Rs.)", pageW - margin - 5, y + 3, { align: "right" });
+
+    y += 18;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+
+    rows.forEach((p: any, idx: number) => {
+      if (y > 750) {
+        doc.addPage();
+        y = 40;
+      }
+      doc.text(String(idx + 1), margin + 4, y);
+      doc.text(p.reference || `REC-${p.id.slice(0, 6)}`, margin + 20, y);
+      doc.text(new Date(p.paidAt || p.paid_at).toLocaleDateString("en-IN"), margin + 120, y);
+      doc.text((p.method || "Cash").toUpperCase(), margin + 210, y);
+      doc.text(formatYear(p.semester || 1), margin + 275, y);
+      doc.text(p.voided ? "VOIDED" : "RECEIVED", margin + 355, y);
+      doc.setFont("helvetica", "bold");
+      if (p.voided) doc.setTextColor(150, 150, 150);
+      doc.text(inr(p.amount || 0), pageW - margin - 5, y, { align: "right" });
+      doc.setTextColor(30, 41, 59);
+      doc.setFont("helvetica", "normal");
+      y += 12;
+    });
+
+    // Footer Signatures
+    y += 30;
+    if (y > 740) {
+      doc.addPage();
+      y = 60;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.line(margin, y, margin + 140, y);
+    doc.line(pageW / 2 - 70, y, pageW / 2 + 70, y);
+    doc.line(pageW - margin - 140, y, pageW - margin, y);
+
+    y += 12;
+    doc.text("Prepared By (Registry)", margin + 20, y);
+    doc.text("Verified By (Accounts)", pageW / 2 - 50, y);
+    doc.text("Principal / Director Stamp & Sign", pageW - margin - 135, y);
+
+    return doc;
+  };
+
+  const downloadPaymentHistoryPdf = () => {
+    if (rows.length === 0) return toast.error("No payment records to download");
+    const doc = generatePaymentHistoryPdfDoc();
+    const fileName = `Payment_History_${student.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+    doc.save(fileName);
+    toast.success("Payment history PDF downloaded!");
+  };
+
+  const printPaymentHistoryPdf = () => {
+    if (rows.length === 0) return toast.error("No payment records to print");
+    const doc = generatePaymentHistoryPdfDoc();
+    doc.autoPrint();
+    const url = doc.output("bloburl").toString();
+    const win = window.open(url, "_blank");
+    if (win) {
+      win.onload = () => { win.print(); };
+    }
+  };
+
+  const sharePaymentHistoryPdf = async () => {
+    if (rows.length === 0) return toast.error("No payment records to share");
+    try {
+      const doc = generatePaymentHistoryPdfDoc();
+      const pdfBlob = doc.output("blob");
+      const fileName = `Payment_History_${student.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Payment History Report - ${student.name}`,
+          text: `Official Fee Payment Receipts History for ${student.name}`,
+        });
+        toast.success("Payment history shared successfully!");
+        return;
+      }
+
+      // Gmail Fallback
+      doc.save(fileName);
+      const subject = encodeURIComponent(`Payment History Report - ${student.name} (${student.admission_no})`);
+      const body = encodeURIComponent(`Hello,\n\nPlease find attached the official Payment Receipts History Report for student ${student.name} (${student.admission_no}).\n\nTotal Received: Rs. ${totalReceived}\n\nNote: The PDF report "${fileName}" has been downloaded to your device. Please attach it to this email.`);
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+      window.open(gmailUrl, "_blank");
+      toast.success("PDF downloaded & Gmail opened! Please attach the downloaded file.");
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Failed to share PDF: " + err.message);
+      }
+    }
+  };
+
   const exportCsv = () => {
     if (rows.length === 0) return toast.error("Nothing to export for these filters");
     const escape = (v: string | number | undefined) => {
@@ -2195,16 +2363,25 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-md bg-success/10 px-2 py-1 text-success">
+            <span className="rounded-md bg-success/10 px-2 py-1 text-success font-medium">
               Received: {inr(totalReceived)}
             </span>
             {totalVoided > 0 && (
-              <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">
+              <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground font-medium">
                 Voided: {inr(totalVoided)}
               </span>
             )}
-            <Button size="sm" variant="outline" onClick={exportCsv}>
-              <FileSpreadsheet className="mr-1 h-3.5 w-3.5" /> Export CSV
+            <Button size="sm" variant="outline" onClick={printPaymentHistoryPdf} title="Print payment history">
+              <Printer className="mr-1 h-3.5 w-3.5 text-primary" /> Print
+            </Button>
+            <Button size="sm" variant="outline" onClick={downloadPaymentHistoryPdf} title="Download payment history PDF">
+              <Download className="mr-1 h-3.5 w-3.5" /> PDF
+            </Button>
+            <Button size="sm" variant="outline" onClick={sharePaymentHistoryPdf} title="Share payment history PDF (via Gmail)">
+              <Share2 className="mr-1 h-3.5 w-3.5 text-blue-600" /> Share
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportCsv} title="Export CSV spreadsheet">
+              <FileSpreadsheet className="mr-1 h-3.5 w-3.5" /> CSV
             </Button>
           </div>
         </div>
@@ -2293,6 +2470,9 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
                       </Button>
                       <Button size="icon" variant="ghost" title="Download receipt (PDF)" onClick={() => downloadReceipt(p)}>
                         <Download className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" title="Share receipt (Gmail / PDF)" onClick={() => shareReceipt(p)}>
+                        <Share2 className="h-4 w-4 text-blue-600" />
                       </Button>
                       {p.voided ? (
                         <Button

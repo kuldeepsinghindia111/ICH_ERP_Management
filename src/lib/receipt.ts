@@ -246,3 +246,31 @@ export function printReceiptPdf(data: ReceiptData) {
     win.onload = () => { win.print(); };
   }
 }
+
+export async function shareReceiptPdf(data: ReceiptData) {
+  const doc = generateReceiptPdf(data);
+  const safe = data.student.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const fileName = `receipt-${safe}-sem${data.semester}-${(data.payment.reference || Date.now()).toString()}.pdf`;
+  const blob = doc.output("blob");
+  const file = new File([blob], fileName, { type: "application/pdf" });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: `Payment Receipt - ${data.student.name}`,
+        text: `Official Fee Payment Receipt for ${data.student.name} (${data.payment.reference || "Receipt"})`,
+      });
+      return;
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+    }
+  }
+
+  // Gmail Fallback
+  doc.save(fileName);
+  const subject = encodeURIComponent(`Payment Receipt - ${data.student.name} (${data.payment.reference || "Receipt"})`);
+  const body = encodeURIComponent(`Hello,\n\nPlease find attached the official Fee Payment Receipt for ${data.student.name}.\n\nReceipt Reference: ${data.payment.reference || 'N/A'}\nAmount Paid: Rs. ${data.payment.amount}\nDate: ${new Date(data.payment.paidAt).toLocaleDateString('en-IN')}\n\nNote: The PDF receipt file "${fileName}" has been saved to your downloads. Please attach it to this email.`);
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+  window.open(gmailUrl, "_blank");
+}
