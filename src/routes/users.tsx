@@ -604,63 +604,78 @@ function UserVerificationDialog({ user, onClose }: { user: any; onClose: () => v
             {!otpSent ? (
               <div className="space-y-3 pt-2">
                 <p className="text-xs text-muted-foreground">
-                  Click below to dispatch a 4-digit verification code to the invitee's email inbox.
+                  Click below to send a 4-digit OTP code directly to the user's email inbox ({user.email}).
                 </p>
-                <Button className="w-full gap-2 bg-primary font-medium" onClick={handleSendOtp} disabled={isSending}>
+                <Button className="w-full gap-2 bg-primary font-medium h-11 text-sm" onClick={handleSendOtp} disabled={isSending}>
                   {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                   {isSending ? "Sending OTP..." : "Send OTP to User"}
                 </Button>
               </div>
             ) : (
-              /* Step B: Admin Enter 4-Digit Code */
-              <form onSubmit={handleVerifyOtp} className="space-y-4 border-t pt-4">
-                <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2 border border-emerald-200">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  OTP sent to user ({user.email}). Ask user for their 4-digit code and enter below.
-                </div>
+              /* Step B: OTP Sent Button (Changed text) + 4-digit code entry + Verify OTP Button */
+              <div className="space-y-4 border-t pt-4">
+                <Button
+                  variant="outline"
+                  disabled={true}
+                  className="w-full h-10 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-semibold cursor-default opacity-100 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  OTP Sent to {user.email}
+                </Button>
 
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block text-center mb-2">
-                    Enter 4-Digit Code Received From User
-                  </label>
-                  <div className="flex justify-center gap-3">
-                    {[0, 1, 2, 3].map((idx) => (
-                      <input
-                        key={idx}
-                        ref={(el) => { otpInputsRef.current[idx] = el; }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={otpCode[idx]}
-                        onChange={(e) => {
-                          if (!/^\d*$/.test(e.target.value)) return;
-                          const next = [...otpCode];
-                          next[idx] = e.target.value.slice(-1);
-                          setOtpCode(next);
-                          if (e.target.value && idx < 3) otpInputsRef.current[idx + 1]?.focus();
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) otpInputsRef.current[idx - 1]?.focus();
-                        }}
-                        className="h-12 w-12 text-center text-xl font-bold rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-                        autoFocus={idx === 0}
-                      />
-                    ))}
+                <form onSubmit={handleVerifyOtp} className="space-y-4 pt-1">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block text-center mb-2">
+                      Enter 4-Digit Code Received From User
+                    </label>
+                    <div className="flex justify-center gap-3">
+                      {[0, 1, 2, 3].map((idx) => (
+                        <input
+                          key={idx}
+                          ref={(el) => { otpInputsRef.current[idx] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={otpCode[idx]}
+                          onChange={(e) => {
+                            if (!/^\d*$/.test(e.target.value)) return;
+                            const next = [...otpCode];
+                            next[idx] = e.target.value.slice(-1);
+                            setOtpCode(next);
+                            if (e.target.value && idx < 3) otpInputsRef.current[idx + 1]?.focus();
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) otpInputsRef.current[idx - 1]?.focus();
+                          }}
+                          className="h-12 w-12 text-center text-xl font-bold rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+                          autoFocus={idx === 0}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {error && <p className="text-xs text-destructive text-center font-medium">{error}</p>}
+                  {error && <p className="text-xs text-destructive text-center font-medium">{error}</p>}
 
-                <div className="flex items-center gap-2 pt-2">
-                  <Button type="button" variant="outline" size="sm" onClick={handleSendOtp} disabled={isSending}>
-                    Resend OTP
-                  </Button>
-                  <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium" disabled={isVerifying || otpCode.some(d => !d)}>
-                    {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ShieldCheck className="h-4 w-4 mr-1" />}
-                    {isVerifying ? "Verifying..." : "Verify & Approve User"}
-                  </Button>
-                </div>
-              </form>
+                  {/* VERIFY OTP BUTTON DIRECTLY BELOW 4-DIGIT ENTRY FIELD */}
+                  <div className="space-y-2 pt-1">
+                    <Button type="submit" className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm" disabled={isVerifying || otpCode.some(d => !d)}>
+                      {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ShieldCheck className="h-4 w-4 mr-1" />}
+                      {isVerifying ? "Verifying OTP..." : "Verify OTP"}
+                    </Button>
+
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={isSending}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        Resend OTP Code
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
             )}
           </div>
         )}
@@ -726,7 +741,7 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
                         <p className="font-semibold text-sm">{u.name || u.email}</p>
                         {isOtpReq ? (
                           <Badge variant="default" className="bg-blue-600 text-white text-[10px] animate-pulse">
-                            OTP Requested by Invitee
+                            OTP Request by User
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[10px]">

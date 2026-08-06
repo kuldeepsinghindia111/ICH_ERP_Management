@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ShieldCheck, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute('/request-otp')({
   component: RequestOtpLanding,
@@ -13,12 +14,21 @@ function RequestOtpLanding() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    // 1. Force sign out immediately so user is NOT signed in or redirected to dashboard
+    supabase.auth.signOut();
+
     const searchParams = new URLSearchParams(window.location.search);
-    const emailParam = searchParams.get('email');
+    let emailParam = searchParams.get('email');
+
+    // If email is not in query params, try parsing from hash or localStorage
+    if (!emailParam) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      emailParam = hashParams.get('email');
+    }
 
     if (!emailParam) {
       setStatus('error');
-      setMessage('Missing email parameter in request link.');
+      setMessage('Missing email parameter in request link. Please check your invitation email.');
       return;
     }
 
@@ -27,7 +37,7 @@ function RequestOtpLanding() {
 
     const triggerRequest = async () => {
       try {
-        // 1. Try edge function request
+        // 2. Trigger edge function request to set user_roles.status = 'otp_requested'
         const { data, error } = await supabase.functions.invoke('request-otp-event', {
           body: { email: cleanEmail }
         });
@@ -43,7 +53,7 @@ function RequestOtpLanding() {
         }
 
         setStatus('success');
-        setMessage('Your request for verification code has been submitted! Your system administrator has been notified to generate your 4-digit OTP.');
+        setMessage('Your OTP request has been submitted to the Admin. Your Admin will now send the 4-digit verification code to your email inbox.');
       } catch (err: any) {
         setStatus('error');
         setMessage(err.message || 'Failed to submit OTP request to administrator.');
@@ -67,7 +77,7 @@ function RequestOtpLanding() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">
             {status === 'loading' && 'Submitting OTP Request...'}
-            {status === 'success' && 'OTP Request Submitted'}
+            {status === 'success' && 'OTP Request Registered'}
             {status === 'error' && 'Request Error'}
           </h1>
           {email && (
@@ -82,16 +92,32 @@ function RequestOtpLanding() {
         </p>
 
         {status === 'success' && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 p-4 text-xs text-blue-800 dark:text-blue-200 text-left space-y-2">
-            <div className="font-bold flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" /> Next Steps:
+          <div className="space-y-4 pt-2">
+            {/* INACTIVE / DISABLED BUTTON showing Request Has Been Sent */}
+            <div className="w-full">
+              <Button
+                disabled={true}
+                className="w-full h-11 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-semibold cursor-not-allowed opacity-100 flex items-center justify-center gap-2"
+              >
+                <Check className="h-4 w-4 text-emerald-600" />
+                Request Has Been Sent
+              </Button>
+              <p className="text-[11px] text-muted-foreground mt-1.5 text-center">
+                Button is inactive as your request is now queued in Admin Pending Approvals.
+              </p>
             </div>
-            <ol className="list-decimal pl-4 space-y-1 text-muted-foreground">
-              <li>Contact your System Administrator personally or via call.</li>
-              <li>Ask your Admin to click <strong>"User Verification Process"</strong> in their Admin portal.</li>
-              <li>Admin will click <strong>"Send OTP to User"</strong> to dispatch your 4-digit code.</li>
-              <li>Provide the 4-digit OTP code received in your inbox to your Admin for instant approval.</li>
-            </ol>
+
+            <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 p-4 text-xs text-blue-800 dark:text-blue-200 text-left space-y-2">
+              <div className="font-bold flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" /> What Happens Next:
+              </div>
+              <ol className="list-decimal pl-4 space-y-1 text-muted-foreground">
+                <li>Your Admin will see <strong>"OTP Request by User"</strong> badge in Admin portal.</li>
+                <li>Admin will click <strong>"User Verification Process"</strong> and click <strong>"Send OTP"</strong>.</li>
+                <li>You will receive a 4-digit code in your email inbox.</li>
+                <li>Communicate the 4-digit OTP to your Admin to complete verification.</li>
+              </ol>
+            </div>
           </div>
         )}
 
