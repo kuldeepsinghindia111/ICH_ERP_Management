@@ -327,7 +327,7 @@ function StudentDetail() {
   }
 
   const program = programs.find((p: any) => p.id === student.program_id);
-  const currentSemester = student.current_semester;
+  const currentSemester = Number(student?.current_semester) || 1;
   const totals = studentTotals(student.id, currentSemester, { charges, adjustments, payments, structures: feeStructures, student });
   const activeSemValue = activeSem ?? String(currentSemester);
 
@@ -1895,7 +1895,7 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
   const totalReceived = rows.filter((p) => !p.voided).reduce((s, p) => s + p.amount, 0);
   const totalVoided = rows.filter((p) => p.voided).reduce((s, p) => s + p.amount, 0);
 
-  const semList = Array.from({ length: student.current_semester }, (_, i) => i + 1);
+  const semList = Array.from({ length: Math.max(1, Number(student?.current_semester) || 1) }, (_, i) => i + 1);
 
   const downloadReceipt = (p: FeePayment) => {
     const rolls = student.rolls || {};
