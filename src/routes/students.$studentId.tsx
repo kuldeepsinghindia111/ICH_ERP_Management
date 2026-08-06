@@ -277,21 +277,15 @@ function StudentDetail() {
 
   const semesters = Array.from({ length: Math.ceil((program?.total_semesters ?? 6) / 2) }, (_, i) => i + 1);
 
+  const [showMasterFeesSummary, setShowMasterFeesSummary] = useState(false);
+  const [activeSummaryYears, setActiveSummaryYears] = useState<Record<number, boolean>>({});
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-      <div className="flex items-center justify-between">
+      <div>
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link to="/students"><ArrowLeft className="mr-1 h-4 w-4" /> Back to students</Link>
         </Button>
-        <StudentReportDialog
-          student={student}
-          program={program}
-          semesters={semesters}
-          charges={charges}
-          adjustments={adjustments}
-          payments={payments}
-          feeStructures={feeStructures}
-        />
       </div>
 
       <Card>
@@ -352,23 +346,25 @@ function StudentDetail() {
             ) : (
               <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
             )}
-            <div className="flex flex-wrap gap-2 justify-end">
-              <StudentReportDialog
-                student={student}
-                program={program}
-                semesters={semesters}
-                charges={charges}
-                adjustments={adjustments}
-                payments={payments}
-                feeStructures={feeStructures}
-              />
-              {canEditStudents && (
-                <>
-                  <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
-                  <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
-                </>
-              )}
-            </div>
+              <div className="flex flex-wrap gap-2 justify-end">
+                <StudentReportDialog
+                  student={student}
+                  program={program}
+                  semesters={semesters}
+                  charges={charges}
+                  adjustments={adjustments}
+                  payments={payments}
+                  feeStructures={feeStructures}
+                  showMasterFeesSummary={showMasterFeesSummary}
+                  activeSummaryYears={activeSummaryYears}
+                />
+                {canEditStudents && (
+                  <>
+                    <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
+                    <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
+                  </>
+                )}
+              </div>
           </div>
         </CardContent>
       </Card>
@@ -381,6 +377,10 @@ function StudentDetail() {
         adjustments={adjustments}
         payments={payments}
         feeStructures={feeStructures}
+        showMaster={showMasterFeesSummary}
+        setShowMaster={setShowMasterFeesSummary}
+        activeYears={activeSummaryYears}
+        setActiveYears={setActiveSummaryYears}
       />
 
       <Tabs defaultValue="overview" className="mt-6">
@@ -584,6 +584,8 @@ function StudentReportDialog({
   adjustments,
   payments,
   feeStructures,
+  showMasterFeesSummary,
+  activeSummaryYears,
 }: {
   student: any;
   program: any;
@@ -592,24 +594,263 @@ function StudentReportDialog({
   adjustments: any[];
   payments: any[];
   feeStructures: any[];
+  showMasterFeesSummary: boolean;
+  activeSummaryYears: Record<number, boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleShare = () => {
+  const activeYearsForReport = showMasterFeesSummary
+    ? semesters.filter((y) => y >= student.current_semester && activeSummaryYears[y])
+    : [];
+
+  const studentCharges = charges.filter((c: any) => c.student_id === student.id);
+  const activePayments = payments.filter((p: any) => p.student_id === student.id && !p.voided);
+
+  const generatePDFDoc = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 35;
+    let y = 40;
+
+    // Header Banner
+    doc.setFillColor(28, 43, 75);
+    doc.rect(0, 0, pageW, 55, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("IMPERIAL COLLEGE, HISAR", pageW / 2, 26, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("OFFICIAL STUDENT PROFILE & FEE LEDGER REPORT", pageW / 2, 42, { align: "center" });
+
+    y = 75;
+    doc.setTextColor(30, 41, 59);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(`Student: ${student.name}`, margin, y);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Adm No: ${student.admission_no}`, pageW - margin, y, { align: "right" });
+
+    y += 16;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageW - margin, y);
+
+    // 1. Personal & Academic Registration Details
+    y += 18;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("1. PERSONAL & REGISTRATION DETAILS", margin, y);
+
+    y += 14;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+
+    const details = [
+      [`Program: ${program?.name || "—"}`, `Joined Year: ${student.joined_year}`, `Current Year: ${formatYear(student.current_semester)}`],
+      [`College Roll No: ${student.roll_number || "—"}`, `Univ Reg No: ${student.university_reg_no || "—"}`, `Univ Roll No: ${student.university_roll_no || "—"}`],
+      [`Aadhar No: ${student.aadhar_no || "—"}`, `ABC ID: ${student.abc_id || "—"}`, `Family ID: ${student.family_id || "—"}`],
+      [`Father's Name: ${student.guardian || "—"}`, `Father's Contact: ${student.guardian_phone || "—"}`, `Student Mobile: ${student.phone || "—"}`],
+      [`Address: ${[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ") || "—"}`, "", ""],
+    ];
+
+    details.forEach((row) => {
+      if (row[0]) doc.text(row[0], margin, y);
+      if (row[1]) doc.text(row[1], margin + 185, y);
+      if (row[2]) doc.text(row[2], margin + 350, y);
+      y += 13;
+    });
+
+    let secIdx = 2;
+
+    // 2. Fees Summary (ONLY if master toggle is ON and specific year is ON)
+    if (activeYearsForReport.length > 0) {
+      y += 6;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin, y, pageW - margin, y);
+
+      y += 16;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(`${secIdx}. YEAR-WISE FEES SUMMARY`, margin, y);
+      secIdx++;
+
+      y += 14;
+      activeYearsForReport.forEach((yNum) => {
+        const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(`${formatYear(yNum)} Fees Summary:`, margin, y);
+
+        y += 12;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(`Total Charged: ${inr(sum.totalCharged)} | Late Fee: ${inr(sum.totalLate)} | Fine: ${inr(sum.totalFine)} | Other: ${inr(sum.totalOther)}`, margin + 10, y);
+        y += 11;
+        doc.text(`Concession: ${inr(sum.totalConcession)} | Scholarship: ${inr(sum.totalScholarship)} | Net Payable: ${inr(sum.netPayable)}`, margin + 10, y);
+        y += 11;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Paid: ${inr(sum.totalPaid)} | Remaining Balance: ${inr(sum.balance)}`, margin + 10, y);
+        y += 15;
+      });
+    }
+
+    // 3. Fee Ledger Charges Breakdown
+    y += 6;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, y, pageW - margin, y);
+
+    y += 16;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`${secIdx}. FEE LEDGER CHARGES BREAKDOWN`, margin, y);
+    secIdx++;
+
+    y += 14;
+    if (studentCharges.length === 0) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8.5);
+      doc.text("No fee ledger charge entries recorded.", margin, y);
+      y += 14;
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y - 8, pageW - margin * 2, 14, "F");
+      doc.text("#", margin + 4, y);
+      doc.text("Date", margin + 20, y);
+      doc.text("Fee Head / Description", margin + 85, y);
+      doc.text("Year", margin + 250, y);
+      doc.text("Base (Rs.)", margin + 300, y);
+      doc.text("Concession", margin + 360, y);
+      doc.text("Net Fee (Rs.)", pageW - margin - 5, y, { align: "right" });
+
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+
+      studentCharges.forEach((c: any, idx: number) => {
+        const net = Math.max(0, (c.amount || 0) - (c.concession || 0) - (c.scholarship || 0));
+        doc.text(String(idx + 1), margin + 4, y);
+        doc.text(new Date(c.created_at || Date.now()).toLocaleDateString("en-IN"), margin + 20, y);
+        doc.text((c.fee_head || c.description || "Fee Charge").slice(0, 30), margin + 85, y);
+        doc.text(formatYear(c.semester || 1), margin + 250, y);
+        doc.text(inr(c.amount || 0), margin + 300, y);
+        doc.text(c.concession ? inr(c.concession) : "—", margin + 360, y);
+        doc.setFont("helvetica", "bold");
+        doc.text(inr(net), pageW - margin - 5, y, { align: "right" });
+        doc.setFont("helvetica", "normal");
+        y += 12;
+      });
+    }
+
+    // 4. Payment Receipts History
+    y += 10;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`${secIdx}. PAYMENT RECEIPTS HISTORY`, margin, y);
+
+    y += 14;
+    if (activePayments.length === 0) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8.5);
+      doc.text("No payment receipt records found.", margin, y);
+      y += 14;
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y - 8, pageW - margin * 2, 14, "F");
+      doc.text("#", margin + 4, y);
+      doc.text("Receipt Ref", margin + 20, y);
+      doc.text("Date", margin + 120, y);
+      doc.text("Mode", margin + 210, y);
+      doc.text("Academic Year", margin + 280, y);
+      doc.text("Paid Amount (Rs.)", pageW - margin - 5, y, { align: "right" });
+
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+
+      activePayments.forEach((p: any, idx: number) => {
+        doc.text(String(idx + 1), margin + 4, y);
+        doc.text(p.reference || `REC-${p.id.slice(0, 6)}`, margin + 20, y);
+        doc.text(new Date(p.paidAt).toLocaleDateString("en-IN"), margin + 120, y);
+        doc.text((p.method || "Cash").toUpperCase(), margin + 210, y);
+        doc.text(formatYear(p.semester || 1), margin + 280, y);
+        doc.setFont("helvetica", "bold");
+        doc.text(inr(p.amount || 0), pageW - margin - 5, y, { align: "right" });
+        doc.setFont("helvetica", "normal");
+        y += 12;
+      });
+    }
+
+    // Signatures Footer
+    y += 40;
+    if (y > 740) {
+      doc.addPage();
+      y = 60;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.line(margin, y, margin + 140, y);
+    doc.line(pageW / 2 - 70, y, pageW / 2 + 70, y);
+    doc.line(pageW - margin - 140, y, pageW - margin, y);
+
+    y += 12;
+    doc.text("Prepared By (Registry)", margin + 20, y);
+    doc.text("Verified By (Accounts)", pageW / 2 - 50, y);
+    doc.text("Principal / Director Stamp & Sign", pageW - margin - 135, y);
+
+    return doc;
+  };
+
+  const handleSharePDF = async () => {
     try {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Student profile report link copied to clipboard!");
-    } catch (err) {
-      toast.error("Failed to copy link");
+      setIsExporting(true);
+      const doc = generatePDFDoc();
+      const pdfBlob = doc.output("blob");
+      const fileName = `Student_Report_${student.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Student Report - ${student.name}`,
+          text: `Official Student Profile & Fee Ledger Report for ${student.name}`,
+        });
+        toast.success("PDF report shared successfully!");
+      } else {
+        doc.save(fileName);
+        toast.info("Web sharing not supported on this browser. Downloaded PDF file instead.");
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Failed to share PDF: " + err.message);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    try {
+      setIsExporting(true);
+      const doc = generatePDFDoc();
+      doc.save(`Student_Report_${student.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+      toast.success("PDF report downloaded successfully!");
+    } catch (err: any) {
+      toast.error("Failed to generate PDF: " + err.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handlePrint = () => {
-    const activePayments = payments.filter((p: any) => !p.voided);
-
-    const yearCardsHtml = semesters
-      .filter((y) => y >= student.current_semester)
+    const yearCardsHtml = activeYearsForReport
       .map((y) => {
         const sum = semesterSummary(student.id, y, {
           charges,
@@ -666,6 +907,22 @@ function StudentReportDialog({
       })
       .join("");
 
+    const chargesRowsHtml = studentCharges
+      .map(
+        (c: any, idx: number) => `
+        <tr>
+          <td style="text-align: center;">${idx + 1}</td>
+          <td>${new Date(c.created_at || Date.now()).toLocaleDateString("en-IN")}</td>
+          <td>${c.fee_head || c.description || "Fee Charge"}</td>
+          <td>${formatYear(c.semester || 1)}</td>
+          <td style="text-align: right;">${inr(c.amount || 0)}</td>
+          <td style="text-align: right;">${c.concession ? inr(c.concession) : "—"}</td>
+          <td style="font-weight: 700; text-align: right;">${inr(Math.max(0, (c.amount || 0) - (c.concession || 0) - (c.scholarship || 0)))}</td>
+        </tr>
+      `
+      )
+      .join("");
+
     const paymentsRowsHtml = activePayments
       .map(
         (p: any, idx: number) => `
@@ -680,6 +937,8 @@ function StudentReportDialog({
       `
       )
       .join("");
+
+    let secCount = 1;
 
     const html = `<!doctype html>
 <html>
@@ -696,9 +955,10 @@ function StudentReportDialog({
       .detail-item { font-size: 11px; }
       .detail-label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.05em; }
       .detail-val { font-weight: 600; color: #0f172a; margin-top: 1px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 10px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 16px; font-size: 10px; }
       th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
       th { background-color: #f1f5f9; font-weight: 700; text-transform: uppercase; }
+      .sec-title { font-weight: 700; font-size: 12px; margin-top: 14px; margin-bottom: 8px; color: #0f172a; text-transform: uppercase; }
       .footer { margin-top: 36px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; page-break-inside: avoid; }
       .sig { border-top: 1px solid #0f172a; width: 180px; text-align: center; padding-top: 4px; }
     </style>
@@ -726,10 +986,33 @@ function StudentReportDialog({
       </div>
     </div>
 
-    <div style="font-weight: 700; font-size: 12px; margin-bottom: 8px; color: #0f172a; text-transform: uppercase;">1. Year-Wise Fees Summary</div>
-    ${yearCardsHtml}
+    ${
+      activeYearsForReport.length > 0
+        ? `<div class="sec-title">1. Year-Wise Fees Summary</div>${yearCardsHtml}`
+        : ""
+    }
 
-    <div style="font-weight: 700; font-size: 12px; margin-top: 16px; margin-bottom: 8px; color: #0f172a; text-transform: uppercase;">2. Payment Receipts History</div>
+    <div class="sec-title">${activeYearsForReport.length > 0 ? "2" : "1"}. Fee Ledger Charges Breakdown</div>
+    ${
+      studentCharges.length === 0
+        ? `<p style="color:#64748b;">No fee ledger entries recorded.</p>`
+        : `<table>
+            <thead>
+              <tr>
+                <th style="width:30px; text-align:center;">#</th>
+                <th>Date</th>
+                <th>Fee Head / Description</th>
+                <th>Academic Year</th>
+                <th style="text-align:right;">Base Charge</th>
+                <th style="text-align:right;">Concession</th>
+                <th style="text-align:right;">Net Fee (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody>${chargesRowsHtml}</tbody>
+          </table>`
+    }
+
+    <div class="sec-title">${activeYearsForReport.length > 0 ? "3" : "2"}. Payment Receipts History</div>
     ${
       activePayments.length === 0
         ? `<p style="color:#64748b;">No payment records found.</p>`
@@ -766,97 +1049,6 @@ function StudentReportDialog({
     w.document.close();
   };
 
-  const handleDownloadPDF = () => {
-    try {
-      setIsExporting(true);
-      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-      const pageW = doc.internal.pageSize.getWidth();
-      const margin = 35;
-      let y = 40;
-
-      // Header Banner
-      doc.setFillColor(28, 43, 75);
-      doc.rect(0, 0, pageW, 55, "F");
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("IMPERIAL COLLEGE, HISAR", pageW / 2, 26, { align: "center" });
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text("OFFICIAL STUDENT PROFILE & FEE LEDGER REPORT", pageW / 2, 42, { align: "center" });
-
-      y = 75;
-      doc.setTextColor(30, 41, 59);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text(`Student: ${student.name}`, margin, y);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Adm No: ${student.admission_no}`, pageW - margin, y, { align: "right" });
-
-      y += 18;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, y, pageW - margin, y);
-
-      y += 18;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("1. PERSONAL & ACADEMIC REGISTRATION DETAILS", margin, y);
-
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-
-      const details = [
-        [`Program: ${program?.name || "—"}`, `Joined Year: ${student.joined_year}`, `Current Year: ${formatYear(student.current_semester)}`],
-        [`College Roll No: ${student.roll_number || "—"}`, `Univ Reg No: ${student.university_reg_no || "—"}`, `Univ Roll No: ${student.university_roll_no || "—"}`],
-        [`Aadhar No: ${student.aadhar_no || "—"}`, `ABC ID: ${student.abc_id || "—"}`, `Family ID: ${student.family_id || "—"}`],
-        [`Father's Name: ${student.guardian || "—"}`, `Father's Contact: ${student.guardian_phone || "—"}`, `Student Mobile: ${student.phone || "—"}`],
-      ];
-
-      details.forEach((row) => {
-        doc.text(row[0], margin, y);
-        doc.text(row[1], margin + 180, y);
-        doc.text(row[2], margin + 350, y);
-        y += 14;
-      });
-
-      y += 10;
-      doc.line(margin, y, pageW - margin, y);
-
-      y += 18;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("2. YEAR-WISE FEES SUMMARY", margin, y);
-
-      y += 14;
-      const applicableYears = semesters.filter((y) => y >= student.current_semester);
-      applicableYears.forEach((yNum) => {
-        const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.text(`${formatYear(yNum)} Fees Summary:`, margin, y);
-
-        y += 12;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8.5);
-        doc.text(`Total Payable: ${inr(sum.totalCharged)} | Concession: ${inr(sum.totalConcession)} | Scholarship: ${inr(sum.totalScholarship)}`, margin + 10, y);
-        y += 12;
-        doc.text(`Net Payable: ${inr(sum.netPayable)} | Paid: ${inr(sum.totalPaid)} | Balance: ${inr(sum.balance)}`, margin + 10, y);
-        y += 16;
-      });
-
-      doc.save(`Student_Report_${student.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
-      toast.success("PDF report downloaded successfully!");
-    } catch (err: any) {
-      toast.error("Failed to generate PDF: " + err.message);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -880,9 +1072,9 @@ function StudentReportDialog({
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={handleShare} className="gap-1.5 text-xs">
+              <Button size="sm" variant="outline" onClick={handleSharePDF} disabled={isExporting} className="gap-1.5 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950">
                 <Share2 className="h-3.5 w-3.5" />
-                Share Link
+                Share PDF
               </Button>
               <Button size="sm" variant="outline" onClick={handleDownloadPDF} disabled={isExporting} className="gap-1.5 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950">
                 <Download className="h-3.5 w-3.5" />
@@ -923,28 +1115,105 @@ function StudentReportDialog({
               <div className="sm:col-span-2 lg:col-span-3"><span className="text-muted-foreground font-medium">Address:</span> <p className="font-semibold text-foreground">{[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ") || "—"}</p></div>
             </div>
 
-            {/* Fees Summary */}
-            <div className="space-y-3">
-              <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Fees Summary</h3>
-              {semesters.filter(y => y >= student.current_semester).map(yNum => {
-                const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
-                return (
-                  <div key={yNum} className="border rounded-lg p-3 bg-muted/20 space-y-2">
-                    <div className="font-bold text-xs text-blue-600 uppercase">{formatYear(yNum)} Fees Summary</div>
-                    <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 text-center text-xs">
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">TOTAL PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.totalCharged)}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">LATE FEES</div><div className="font-bold mt-0.5">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">FINE</div><div className="font-bold mt-0.5">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">OTHER</div><div className="font-bold mt-0.5">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">CONCESSION</div><div className="font-bold mt-0.5">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">SCHOLARSHIP</div><div className="font-bold mt-0.5">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">NET PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.netPayable)}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-emerald-600">PAID</div><div className="font-bold text-emerald-600 mt-0.5">{inr(sum.totalPaid)}</div></div>
-                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600">BALANCE</div><div className="font-bold text-amber-600 mt-0.5">{inr(sum.balance)}</div></div>
+            {/* Fees Summary (Only if toggled ON) */}
+            {activeYearsForReport.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Fees Summary</h3>
+                {activeYearsForReport.map((yNum) => {
+                  const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+                  return (
+                    <div key={yNum} className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                      <div className="font-bold text-xs text-blue-600 uppercase">{formatYear(yNum)} Fees Summary</div>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 text-center text-xs">
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">TOTAL PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.totalCharged)}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">LATE FEES</div><div className="font-bold mt-0.5">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">FINE</div><div className="font-bold mt-0.5">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">OTHER</div><div className="font-bold mt-0.5">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">CONCESSION</div><div className="font-bold mt-0.5">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">SCHOLARSHIP</div><div className="font-bold mt-0.5">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">NET PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.netPayable)}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-emerald-600">PAID</div><div className="font-bold text-emerald-600 mt-0.5">{inr(sum.totalPaid)}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600">BALANCE</div><div className="font-bold text-amber-600 mt-0.5">{inr(sum.balance)}</div></div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Fee Ledger Breakdown */}
+            <div className="space-y-3">
+              <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Fee Ledger Charges Breakdown</h3>
+              {studentCharges.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No fee ledger entries recorded.</p>
+              ) : (
+                <div className="border rounded-lg overflow-hidden text-xs">
+                  <table className="w-full text-left">
+                    <thead className="bg-muted/60 font-semibold border-b">
+                      <tr>
+                        <th className="p-2 text-center w-8">#</th>
+                        <th className="p-2">Date</th>
+                        <th className="p-2">Fee Head / Description</th>
+                        <th className="p-2">Year</th>
+                        <th className="p-2 text-right">Base Charge</th>
+                        <th className="p-2 text-right">Concession</th>
+                        <th className="p-2 text-right">Net Fee</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {studentCharges.map((c: any, idx: number) => {
+                        const net = Math.max(0, (c.amount || 0) - (c.concession || 0) - (c.scholarship || 0));
+                        return (
+                          <tr key={c.id || idx}>
+                            <td className="p-2 text-center text-muted-foreground">{idx + 1}</td>
+                            <td className="p-2">{new Date(c.created_at || Date.now()).toLocaleDateString("en-IN")}</td>
+                            <td className="p-2 font-medium">{c.fee_head || c.description || "Fee Charge"}</td>
+                            <td className="p-2">{formatYear(c.semester || 1)}</td>
+                            <td className="p-2 text-right">{inr(c.amount || 0)}</td>
+                            <td className="p-2 text-right text-muted-foreground">{c.concession ? inr(c.concession) : "—"}</td>
+                            <td className="p-2 text-right font-bold">{inr(net)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Receipts History */}
+            <div className="space-y-3">
+              <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Payment Receipts History</h3>
+              {activePayments.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No payment receipt records found.</p>
+              ) : (
+                <div className="border rounded-lg overflow-hidden text-xs">
+                  <table className="w-full text-left">
+                    <thead className="bg-muted/60 font-semibold border-b">
+                      <tr>
+                        <th className="p-2 text-center w-8">#</th>
+                        <th className="p-2">Receipt / Ref No.</th>
+                        <th className="p-2">Date</th>
+                        <th className="p-2">Method</th>
+                        <th className="p-2">Year</th>
+                        <th className="p-2 text-right">Paid Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {activePayments.map((p: any, idx: number) => (
+                        <tr key={p.id || idx}>
+                          <td className="p-2 text-center text-muted-foreground">{idx + 1}</td>
+                          <td className="p-2 font-mono font-medium">{p.reference || "REC-" + p.id.slice(0, 6)}</td>
+                          <td className="p-2">{new Date(p.paidAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                          <td className="p-2 capitalize">{p.method}</td>
+                          <td className="p-2">{formatYear(p.semester)}</td>
+                          <td className="p-2 text-right font-bold text-emerald-600">{inr(p.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -961,6 +1230,10 @@ function FeesSummaryMasterSection({
   adjustments,
   payments,
   feeStructures,
+  showMaster,
+  setShowMaster,
+  activeYears,
+  setActiveYears,
 }: {
   student: any;
   currentSemester: number;
@@ -969,9 +1242,11 @@ function FeesSummaryMasterSection({
   adjustments: any[];
   payments: any[];
   feeStructures: any[];
+  showMaster: boolean;
+  setShowMaster: (v: boolean) => void;
+  activeYears: Record<number, boolean>;
+  setActiveYears: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
 }) {
-  const [showMaster, setShowMaster] = useState(false);
-
   const applicableYears = semesters.filter((yearNum) => yearNum >= currentSemester);
 
   return (
@@ -1005,6 +1280,8 @@ function FeesSummaryMasterSection({
               adjustments={adjustments}
               payments={payments}
               feeStructures={feeStructures}
+              isOpen={!!activeYears[yearNum]}
+              onToggle={(val) => setActiveYears((prev) => ({ ...prev, [yearNum]: val }))}
             />
           ))}
         </div>
@@ -1020,6 +1297,8 @@ function YearFeesSummaryCard({
   adjustments,
   payments,
   feeStructures,
+  isOpen,
+  onToggle,
 }: {
   yearNum: number;
   student: any;
@@ -1027,9 +1306,9 @@ function YearFeesSummaryCard({
   adjustments: any[];
   payments: any[];
   feeStructures: any[];
+  isOpen: boolean;
+  onToggle: (val: boolean) => void;
 }) {
-  const [showSummary, setShowSummary] = useState(false);
-
   const yearTotals = semesterSummary(student.id, yearNum, {
     charges,
     adjustments,
@@ -1046,16 +1325,16 @@ function YearFeesSummaryCard({
         </CardTitle>
         <div className="flex items-center gap-2">
           <Label htmlFor={`toggle-year-${yearNum}`} className="text-xs text-muted-foreground font-medium cursor-pointer">
-            {showSummary ? "ON" : "OFF"}
+            {isOpen ? "ON" : "OFF"}
           </Label>
           <Switch
             id={`toggle-year-${yearNum}`}
-            checked={showSummary}
-            onCheckedChange={setShowSummary}
+            checked={isOpen}
+            onCheckedChange={onToggle}
           />
         </div>
       </CardHeader>
-      {showSummary && (
+      {isOpen && (
         <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-3 transition-all animate-in fade-in-50">
           <TotalPill label="Total Payable" value={inr(yearTotals.totalCharged)} />
           <TotalPill label="Late Fees" value={yearTotals.totalLate > 0 ? inr(yearTotals.totalLate) : "—"} />
