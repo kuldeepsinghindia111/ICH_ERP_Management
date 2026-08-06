@@ -2371,18 +2371,6 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
                 Voided: {inr(totalVoided)}
               </span>
             )}
-            <Button size="sm" variant="outline" onClick={printPaymentHistoryPdf} title="Print payment history">
-              <Printer className="mr-1 h-3.5 w-3.5 text-primary" /> Print
-            </Button>
-            <Button size="sm" variant="outline" onClick={downloadPaymentHistoryPdf} title="Download payment history PDF">
-              <Download className="mr-1 h-3.5 w-3.5" /> PDF
-            </Button>
-            <Button size="sm" variant="outline" onClick={sharePaymentHistoryPdf} title="Share payment history PDF (via Gmail)">
-              <Share2 className="mr-1 h-3.5 w-3.5 text-blue-600" /> Share
-            </Button>
-            <Button size="sm" variant="outline" onClick={exportCsv} title="Export CSV spreadsheet">
-              <FileSpreadsheet className="mr-1 h-3.5 w-3.5" /> CSV
-            </Button>
           </div>
         </div>
       </CardHeader>
@@ -2436,13 +2424,12 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
                 <th className="px-3 py-2 text-left">Reference</th>
                 <th className="px-3 py-2 text-right">Amount</th>
                 <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
                     No payments match these filters.
                   </td>
                 </tr>
@@ -2462,39 +2449,6 @@ function PaymentHistory({ student, program, payments, canEditPayments, userRole 
                     ) : (
                       <Badge variant="default">Received</Badge>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" title="Print receipt" onClick={() => printReceipt(p)}>
-                        <Printer className="h-4 w-4 text-primary" />
-                      </Button>
-                      <Button size="icon" variant="ghost" title="Download receipt (PDF)" onClick={() => downloadReceipt(p)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" title="Share receipt (Gmail / PDF)" onClick={() => shareReceipt(p)}>
-                        <Share2 className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      {p.voided ? (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title={isAdmin ? "Un-void" : "Admin only"}
-                          disabled={!isAdmin || unvoidPaymentMutation.isPending}
-                          onClick={() => {
-                            unvoidPaymentMutation.mutate(p);
-                          }}
-                        >
-                          {isAdmin ? <Undo2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                        </Button>
-                      ) : (
-                        <VoidPaymentDialog 
-                          paymentId={p.id} 
-                          voidPayment={(id, reason) => voidPaymentMutation.mutate({ id, reason, payment: p })} 
-                          isAdmin={isAdmin}
-                          isPending={voidPaymentMutation.isPending}
-                        />
-                      )}
-                    </div>
                   </td>
                 </tr>
               ))}
