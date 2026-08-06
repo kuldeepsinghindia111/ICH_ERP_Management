@@ -1,11 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download, Camera, FileText, Eye, Upload } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Lock, Plus, Printer, RotateCcw, Trash2, Undo2, Loader2, Download, Camera, FileText, Eye, Upload, Share2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useStore, formatYear, semesterSummary, studentTotals, inr, FEE_HEADS, nextReceiptNo, type FeeHead, type FeePayment } from "@/lib/store";
+import jsPDF from "jspdf";
 import { downloadReceiptPdf, printReceiptPdf } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -278,10 +279,19 @@ function StudentDetail() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-      <div>
+      <div className="flex items-center justify-between">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link to="/students"><ArrowLeft className="mr-1 h-4 w-4" /> Back to students</Link>
         </Button>
+        <StudentReportDialog
+          student={student}
+          program={program}
+          semesters={semesters}
+          charges={charges}
+          adjustments={adjustments}
+          payments={payments}
+          feeStructures={feeStructures}
+        />
       </div>
 
       <Card>
@@ -342,12 +352,23 @@ function StudentDetail() {
             ) : (
               <div className="text-sm font-medium">Current: {formatYear(currentSemester)}</div>
             )}
-            {canEditStudents && (
-              <div className="flex gap-2">
-                <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
-                <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2 justify-end">
+              <StudentReportDialog
+                student={student}
+                program={program}
+                semesters={semesters}
+                charges={charges}
+                adjustments={adjustments}
+                payments={payments}
+                feeStructures={feeStructures}
+              />
+              {canEditStudents && (
+                <>
+                  <PhotoUploadButton student={student} canEdit={canEditStudents ?? false} />
+                  <StudentFormDialog programs={programs} student={student} buttonVariant="outline" />
+                </>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -552,6 +573,383 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function StudentReportDialog({
+  student,
+  program,
+  semesters,
+  charges,
+  adjustments,
+  payments,
+  feeStructures,
+}: {
+  student: any;
+  program: any;
+  semesters: number[];
+  charges: any[];
+  adjustments: any[];
+  payments: any[];
+  feeStructures: any[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleShare = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Student profile report link copied to clipboard!");
+    } catch (err) {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handlePrint = () => {
+    const activePayments = payments.filter((p: any) => !p.voided);
+
+    const yearCardsHtml = semesters
+      .filter((y) => y >= student.current_semester)
+      .map((y) => {
+        const sum = semesterSummary(student.id, y, {
+          charges,
+          adjustments,
+          payments,
+          structures: feeStructures,
+          student,
+        });
+        return `
+          <div style="border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 12px; overflow: hidden;">
+            <div style="background: #f1f5f9; padding: 6px 10px; font-weight: 700; font-size: 11px; color: #1e3a8a; border-bottom: 1px solid #cbd5e1;">
+              ${formatYear(y).toUpperCase()} FEES SUMMARY
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 8px; text-align: center; font-size: 9.5px;">
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">TOTAL PAYABLE</div>
+                <div style="font-weight: 700; margin-top: 2px;">${inr(sum.totalCharged)}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">LATE FEES</div>
+                <div style="font-weight: 700; margin-top: 2px;">${sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">FINE</div>
+                <div style="font-weight: 700; margin-top: 2px;">${sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">OTHER</div>
+                <div style="font-weight: 700; margin-top: 2px;">${sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">CONCESSION</div>
+                <div style="font-weight: 700; margin-top: 2px;">${sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">SCHOLARSHIP</div>
+                <div style="font-weight: 700; margin-top: 2px;">${sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#64748b; font-size: 8px; font-weight: 600;">NET PAYABLE</div>
+                <div style="font-weight: 700; margin-top: 2px;">${inr(sum.netPayable)}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#166534; font-size: 8px; font-weight: 600;">PAID</div>
+                <div style="font-weight: 700; color:#166534; margin-top: 2px;">${inr(sum.totalPaid)}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
+                <div style="color:#b45309; font-size: 8px; font-weight: 600;">BALANCE</div>
+                <div style="font-weight: 700; color:${sum.balance > 0 ? '#b45309' : '#0f172a'}; margin-top: 2px;">${inr(sum.balance)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    const paymentsRowsHtml = activePayments
+      .map(
+        (p: any, idx: number) => `
+        <tr>
+          <td style="text-align: center;">${idx + 1}</td>
+          <td style="font-family: monospace;">${p.reference || "REC-" + p.id.slice(0, 6)}</td>
+          <td>${new Date(p.paidAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+          <td style="text-transform: capitalize;">${p.method}</td>
+          <td>${formatYear(p.semester)}</td>
+          <td style="font-weight: 700; text-align: right;">${inr(p.amount)}</td>
+        </tr>
+      `
+      )
+      .join("");
+
+    const html = `<!doctype html>
+<html>
+  <head>
+    <title>Student Profile & Fee Report — ${student.name}</title>
+    <style>
+      @page { size: A4 portrait; margin: 12mm; }
+      body { font-family: system-ui, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 11px; }
+      .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; }
+      .header h1 { font-size: 20px; font-weight: 800; text-transform: uppercase; margin: 0 0 2px 0; letter-spacing: 0.05em; }
+      .header p { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #475569; margin: 0; letter-spacing: 0.1em; }
+      .profile-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 16px; background: #f8fafc; }
+      .grid-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+      .detail-item { font-size: 11px; }
+      .detail-label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.05em; }
+      .detail-val { font-weight: 600; color: #0f172a; margin-top: 1px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 10px; }
+      th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+      th { background-color: #f1f5f9; font-weight: 700; text-transform: uppercase; }
+      .footer { margin-top: 36px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; page-break-inside: avoid; }
+      .sig { border-top: 1px solid #0f172a; width: 180px; text-align: center; padding-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Imperial College, Hisar</h1>
+      <p>Official Student Profile &amp; Fee Ledger Report</p>
+    </div>
+    <div class="profile-card">
+      <div class="grid-details">
+        <div class="detail-item"><div class="detail-label">Student Name</div><div class="detail-val">${student.name}</div></div>
+        <div class="detail-item"><div class="detail-label">Admission No</div><div class="detail-val" style="font-family:monospace">${student.admission_no}</div></div>
+        <div class="detail-item"><div class="detail-label">Program / Class</div><div class="detail-val">${program?.name || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">College Roll No</div><div class="detail-val" style="font-family:monospace">${student.roll_number || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Univ Reg No</div><div class="detail-val" style="font-family:monospace">${student.university_reg_no || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Univ Roll No</div><div class="detail-val" style="font-family:monospace">${student.university_roll_no || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Aadhar Card No</div><div class="detail-val" style="font-family:monospace">${student.aadhar_no || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">ABC ID</div><div class="detail-val">${student.abc_id || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Family ID (PPP)</div><div class="detail-val">${student.family_id || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Father's Name</div><div class="detail-val">${student.guardian || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Father's Contact</div><div class="detail-val" style="font-family:monospace">${student.guardian_phone || "—"}</div></div>
+        <div class="detail-item"><div class="detail-label">Student Mobile</div><div class="detail-val" style="font-family:monospace">${student.phone || "—"}</div></div>
+        <div class="detail-item" style="grid-column: span 3;"><div class="detail-label">Full Address</div><div class="detail-val">${[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ") || "—"}</div></div>
+      </div>
+    </div>
+
+    <div style="font-weight: 700; font-size: 12px; margin-bottom: 8px; color: #0f172a; text-transform: uppercase;">1. Year-Wise Fees Summary</div>
+    ${yearCardsHtml}
+
+    <div style="font-weight: 700; font-size: 12px; margin-top: 16px; margin-bottom: 8px; color: #0f172a; text-transform: uppercase;">2. Payment Receipts History</div>
+    ${
+      activePayments.length === 0
+        ? `<p style="color:#64748b;">No payment records found.</p>`
+        : `<table>
+            <thead>
+              <tr>
+                <th style="width:30px; text-align:center;">#</th>
+                <th>Receipt / Ref No.</th>
+                <th>Date</th>
+                <th>Payment Method</th>
+                <th>Academic Year</th>
+                <th style="text-align:right;">Amount (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody>${paymentsRowsHtml}</tbody>
+          </table>`
+    }
+
+    <div class="footer">
+      <div class="sig">Prepared By (Registry)</div>
+      <div class="sig">Verified By (Accounts)</div>
+      <div class="sig">Principal / Director Stamp &amp; Sign</div>
+    </div>
+    <script>window.onload = () => { window.print(); };</script>
+  </body>
+</html>`;
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("Please allow popups to print report.");
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const handleDownloadPDF = () => {
+    try {
+      setIsExporting(true);
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 35;
+      let y = 40;
+
+      // Header Banner
+      doc.setFillColor(28, 43, 75);
+      doc.rect(0, 0, pageW, 55, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("IMPERIAL COLLEGE, HISAR", pageW / 2, 26, { align: "center" });
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("OFFICIAL STUDENT PROFILE & FEE LEDGER REPORT", pageW / 2, 42, { align: "center" });
+
+      y = 75;
+      doc.setTextColor(30, 41, 59);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`Student: ${student.name}`, margin, y);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Adm No: ${student.admission_no}`, pageW - margin, y, { align: "right" });
+
+      y += 18;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, y, pageW - margin, y);
+
+      y += 18;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("1. PERSONAL & ACADEMIC REGISTRATION DETAILS", margin, y);
+
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      const details = [
+        [`Program: ${program?.name || "—"}`, `Joined Year: ${student.joined_year}`, `Current Year: ${formatYear(student.current_semester)}`],
+        [`College Roll No: ${student.roll_number || "—"}`, `Univ Reg No: ${student.university_reg_no || "—"}`, `Univ Roll No: ${student.university_roll_no || "—"}`],
+        [`Aadhar No: ${student.aadhar_no || "—"}`, `ABC ID: ${student.abc_id || "—"}`, `Family ID: ${student.family_id || "—"}`],
+        [`Father's Name: ${student.guardian || "—"}`, `Father's Contact: ${student.guardian_phone || "—"}`, `Student Mobile: ${student.phone || "—"}`],
+      ];
+
+      details.forEach((row) => {
+        doc.text(row[0], margin, y);
+        doc.text(row[1], margin + 180, y);
+        doc.text(row[2], margin + 350, y);
+        y += 14;
+      });
+
+      y += 10;
+      doc.line(margin, y, pageW - margin, y);
+
+      y += 18;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("2. YEAR-WISE FEES SUMMARY", margin, y);
+
+      y += 14;
+      const applicableYears = semesters.filter((y) => y >= student.current_semester);
+      applicableYears.forEach((yNum) => {
+        const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(`${formatYear(yNum)} Fees Summary:`, margin, y);
+
+        y += 12;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.text(`Total Payable: ${inr(sum.totalCharged)} | Concession: ${inr(sum.totalConcession)} | Scholarship: ${inr(sum.totalScholarship)}`, margin + 10, y);
+        y += 12;
+        doc.text(`Net Payable: ${inr(sum.netPayable)} | Paid: ${inr(sum.totalPaid)} | Balance: ${inr(sum.balance)}`, margin + 10, y);
+        y += 16;
+      });
+
+      doc.save(`Student_Report_${student.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+      toast.success("PDF report downloaded successfully!");
+    } catch (err: any) {
+      toast.error("Failed to generate PDF: " + err.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="default" className="gap-2 shadow-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium">
+          <FileText className="h-4 w-4" />
+          Generate Report
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <div className="p-6 space-y-6">
+          {/* Top Dialog Action Bar */}
+          <div className="flex flex-wrap items-center justify-between border-b pb-4 gap-3">
+            <div>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                Student Official Profile &amp; Fee Report
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                Official college record for {student.name} ({student.admission_no})
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleShare} className="gap-1.5 text-xs">
+                <Share2 className="h-3.5 w-3.5" />
+                Share Link
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleDownloadPDF} disabled={isExporting} className="gap-1.5 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950">
+                <Download className="h-3.5 w-3.5" />
+                Download PDF
+              </Button>
+              <Button size="sm" variant="default" onClick={handlePrint} className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700">
+                <Printer className="h-3.5 w-3.5" />
+                Print Report
+              </Button>
+            </div>
+          </div>
+
+          {/* Letterhead Preview Card */}
+          <div className="bg-card text-card-foreground border rounded-xl p-6 shadow-xs space-y-6">
+            <div className="text-center border-b pb-4 space-y-1">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-primary uppercase">
+                Imperial College, Hisar
+              </h1>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Official Student Profile &amp; Fee Ledger Report
+              </p>
+            </div>
+
+            {/* Profile Grid */}
+            <div className="bg-muted/40 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+              <div><span className="text-muted-foreground font-medium">Student Name:</span> <p className="font-semibold text-foreground">{student.name}</p></div>
+              <div><span className="text-muted-foreground font-medium">Admission No:</span> <p className="font-mono font-semibold text-foreground">{student.admission_no}</p></div>
+              <div><span className="text-muted-foreground font-medium">Program / Class:</span> <p className="font-semibold text-foreground">{program?.name || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">College Roll No:</span> <p className="font-mono font-semibold text-foreground">{student.roll_number || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Univ Reg No:</span> <p className="font-mono font-semibold text-foreground">{student.university_reg_no || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Univ Roll No:</span> <p className="font-mono font-semibold text-foreground">{student.university_roll_no || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Aadhar Card No:</span> <p className="font-mono font-semibold text-foreground">{student.aadhar_no || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">ABC ID:</span> <p className="font-semibold text-foreground">{student.abc_id || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Family ID (PPP):</span> <p className="font-semibold text-foreground">{student.family_id || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Father's Name:</span> <p className="font-semibold text-foreground">{student.guardian || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Father's Contact:</span> <p className="font-mono font-semibold text-foreground">{student.guardian_phone || "—"}</p></div>
+              <div><span className="text-muted-foreground font-medium">Student Mobile:</span> <p className="font-mono font-semibold text-foreground">{student.phone || "—"}</p></div>
+              <div className="sm:col-span-2 lg:col-span-3"><span className="text-muted-foreground font-medium">Address:</span> <p className="font-semibold text-foreground">{[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ") || "—"}</p></div>
+            </div>
+
+            {/* Fees Summary */}
+            <div className="space-y-3">
+              <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Fees Summary</h3>
+              {semesters.filter(y => y >= student.current_semester).map(yNum => {
+                const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+                return (
+                  <div key={yNum} className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                    <div className="font-bold text-xs text-blue-600 uppercase">{formatYear(yNum)} Fees Summary</div>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 text-center text-xs">
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">TOTAL PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.totalCharged)}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">LATE FEES</div><div className="font-bold mt-0.5">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">FINE</div><div className="font-bold mt-0.5">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">OTHER</div><div className="font-bold mt-0.5">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">CONCESSION</div><div className="font-bold mt-0.5">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">SCHOLARSHIP</div><div className="font-bold mt-0.5">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">NET PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.netPayable)}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-emerald-600">PAID</div><div className="font-bold text-emerald-600 mt-0.5">{inr(sum.totalPaid)}</div></div>
+                      <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600">BALANCE</div><div className="font-bold text-amber-600 mt-0.5">{inr(sum.balance)}</div></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
