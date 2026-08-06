@@ -8,20 +8,17 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Create a Supabase client with the Auth context of the logged in user.
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Get the session or user object
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header found');
     
@@ -34,7 +31,7 @@ serve(async (req) => {
     if (userError) throw userError;
     if (!user) throw new Error('Not logged in')
 
-    // Check if the user is an admin by querying the user_roles table
+    // Check if the user is an admin
     const { data: roleData, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
@@ -45,7 +42,6 @@ serve(async (req) => {
       throw new Error('Unauthorized. Only admins can invite users.')
     }
 
-    // Now that we confirmed they are an admin, we use the SERVICE_ROLE_KEY to invite the new user
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -63,59 +59,60 @@ serve(async (req) => {
       throw new Error("Invalid email format. Please provide a valid email address (e.g. user@college.edu)")
     }
 
-    // Invite the user via email and set their name in auth metadata so it shows in Supabase Dashboard
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(cleanedEmail, {
+    const requestOtpRedirectUrl = `${redirectTo ? new URL(redirectTo).origin : 'https://ichacc.online'}/request-otp?email=${encodeURIComponent(cleanedEmail)}`
+
+    // Generate link / invite user with custom redirect to /request-otp
+    let inviteUserRes = await supabaseAdmin.auth.admin.inviteUserByEmail(cleanedEmail, {
       data: { name: name, full_name: name },
-      redirectTo: redirectTo || undefined
+      redirectTo: requestOtpRedirectUrl
     })
 
-    if (inviteError) throw inviteError
+    if (inviteUserRes.error && inviteUserRes.error.message.includes('already exists')) {
+      // Fallback: generate link if user exists
+      const genRes = await supabaseAdmin.auth.admin.generateLink({
+        type: 'invite',
+        email: cleanedEmail,
+        options: {
+          data: { name: name, full_name: name },
+          redirectTo: requestOtpRedirectUrl
+        }
+      })
+      if (!genRes.error) {
+        inviteUserRes = { data: { user: genRes.data.user }, error: null }
+      }
+    }
 
-    // Insert or update their role in the user_roles table
+    if (inviteUserRes.error) throw inviteUserRes.error
+
+    const invitedUserId = inviteUserRes.data?.user?.id
+    if (!invitedUserId) throw new Error('Failed to retrieve invited user ID')
+
+    // Upsert role into user_roles with initial status 'pending'
     const { error: insertRoleError } = await supabaseAdmin
       .from('user_roles')
       .upsert([
-        { id: inviteData.user.id, email: inviteData.user.email, role: role, name: name, status: 'pending' }
+        { id: invitedUserId, email: cleanedEmail, role: role, name: name, status: 'pending' }
       ], { onConflict: 'id' })
       
     if (insertRoleError) throw insertRoleError
 
     return new Response(
-      JSON.stringify({ message: `Successfully sent invite to ${email}`, user: inviteData.user }),
+      JSON.stringify({ 
+        message: `Successfully sent OTP request invite to ${email}`, 
+        user: inviteUserRes.data.user,
+        requestOtpUrl: requestOtpRedirectUrl
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     )
-  } catch (error) {
-    let errorMsg = "Unknown error";
-    try {
-      if (error instanceof Error) {
-        errorMsg = error.message || String(error);
-        if (errorMsg.includes("Unable to validate email address") || errorMsg.includes("invalid format")) {
-          errorMsg = "Invalid email format. Please provide a valid email address (e.g. user@college.edu)";
-        } else if (errorMsg.includes("User already registered") || errorMsg.includes("already exists")) {
-          errorMsg = "A user with this email address is already registered.";
-        }
-      } else if (typeof error === 'object' && error !== null) {
-        const props = Object.getOwnPropertyNames(error);
-        const obj: Record<string, unknown> = {};
-        for (const p of props) {
-          if (p !== 'stack') {
-            obj[p] = (error as Record<string, unknown>)[p];
-          }
-        }
-        errorMsg = obj.message ? String(obj.message) : JSON.stringify(obj);
-      } else {
-        errorMsg = String(error);
-      }
-    } catch(e) {
-      errorMsg = "Failed to parse error: " + String(e);
-    }
-    
-    // Fallback if it still resolves to "{}"
-    if (errorMsg === "{}" || !errorMsg) {
-       errorMsg = "Empty error object returned! Error type: " + (typeof error) + " IsArray: " + Array.isArray(error);
+  } catch (error: any) {
+    let errorMsg = error?.message || String(error);
+    if (errorMsg.includes("Unable to validate email address") || errorMsg.includes("invalid format")) {
+      errorMsg = "Invalid email format. Please provide a valid email address (e.g. user@college.edu)";
+    } else if (errorMsg.includes("User already registered") || errorMsg.includes("already exists")) {
+      errorMsg = "A user with this email address is already registered.";
     }
     
     return new Response(JSON.stringify({ error: errorMsg }), {
