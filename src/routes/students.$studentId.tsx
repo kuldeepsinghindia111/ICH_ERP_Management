@@ -223,8 +223,16 @@ function StudentDetail() {
       const { data, error } = await supabase.from('fee_charges').select('*').eq('student_id', targetStudentId);
       if (error) return [];
       return (data || []).map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
+        ...d,
+        id: d.id,
+        studentId: d.student_id,
+        student_id: d.student_id,
+        semester: d.semester,
+        head: d.head || d.fee_head,
+        fee_head: d.fee_head || d.head,
+        amount: d.amount,
+        createdAt: d.created_at,
+        created_at: d.created_at,
       }));
     },
     enabled: !!targetStudentId,
@@ -237,8 +245,16 @@ function StudentDetail() {
       const { data, error } = await supabase.from('fee_adjustments').select('*').eq('student_id', targetStudentId);
       if (error) return [];
       return (data || []).map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
+        ...d,
+        id: d.id,
+        studentId: d.student_id,
+        student_id: d.student_id,
+        semester: d.semester,
+        type: d.type,
+        label: d.label,
+        amount: d.amount,
+        createdAt: d.created_at,
+        created_at: d.created_at,
       }));
     },
     enabled: !!targetStudentId,
@@ -251,10 +267,20 @@ function StudentDetail() {
       const { data, error } = await supabase.from('fee_payments').select('*').eq('student_id', targetStudentId);
       if (error) return [];
       return (data || []).map((d: any) => ({
-        id: d.id, studentId: d.student_id, semester: d.semester,
-        amount: d.amount, method: d.method, reference: d.reference,
-        note: d.note, paidAt: d.paid_at, voided: d.voided,
-        voidedAt: d.voided_at, voidReason: d.void_reason
+        ...d,
+        id: d.id,
+        studentId: d.student_id,
+        student_id: d.student_id,
+        semester: d.semester,
+        amount: d.amount,
+        method: d.method,
+        reference: d.reference,
+        note: d.note,
+        paidAt: d.paid_at,
+        paid_at: d.paid_at,
+        voided: d.voided,
+        voidedAt: d.voided_at,
+        voidReason: d.void_reason,
       }));
     },
     enabled: !!targetStudentId,
@@ -634,8 +660,8 @@ function StudentReportDialog({
     ? semesters.filter((y) => y >= student.current_semester && activeSummaryYears[y])
     : [];
 
-  const studentCharges = charges.filter((c: any) => c.student_id === student.id);
-  const activePayments = payments.filter((p: any) => p.student_id === student.id && !p.voided);
+  const studentCharges = charges.filter((c: any) => (c.student_id || c.studentId) === student.id || !c.studentId);
+  const activePayments = payments.filter((p: any) => ((p.student_id || p.studentId) === student.id || !p.studentId) && !p.voided);
 
   const generatePDFDoc = () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
