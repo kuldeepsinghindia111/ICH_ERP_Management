@@ -122,15 +122,28 @@ function Login() {
       return;
     }
 
-    // Step 2: Check user role
-    const { data: roleData } = await supabase
+    // Step 2: Check user role (by ID or case-insensitive email)
+    let userRole = '';
+    const { data: roleById } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('email', cleanedEmail)
+      .eq('id', authData.user.id)
       .maybeSingle();
 
-    // ADMIN BYPASS: Admin logs in directly without OTP requirement
-    if (roleData?.role === 'admin') {
+    if (roleById) {
+      userRole = roleById.role;
+    } else {
+      const { data: roleByEmail } = await supabase
+        .from('user_roles')
+        .select('role')
+        .ilike('email', cleanedEmail)
+        .maybeSingle();
+      if (roleByEmail) userRole = roleByEmail.role;
+    }
+
+    // ADMIN BYPASS ONLY: Admin logs in directly without OTP requirement.
+    // ALL OTHER ROLES (management, chief_coordinator, academic_coordinator, accountant, faculty) REQUIRE 4-DIGIT OTP!
+    if (userRole === 'admin') {
       toast.success("Admin login successful");
       router.navigate({ to: '/', replace: true });
       setLoading(false);

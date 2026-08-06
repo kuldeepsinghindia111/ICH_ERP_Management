@@ -25,14 +25,14 @@ serve(async (req) => {
 
     const cleanedEmail = String(email).trim().toLowerCase()
 
-    // 1. Check user role
-    const { data: roleData, error: roleError } = await supabaseAdmin
+    // 1. Check user role using case-insensitive email lookup
+    const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role, name')
-      .eq('email', cleanedEmail)
+      .ilike('email', cleanedEmail)
       .maybeSingle()
 
-    // If Admin, bypass OTP
+    // ONLY Admin role bypasses OTP; ALL OTHER ROLES require 4-digit code
     if (roleData && roleData.role === 'admin') {
       return new Response(
         JSON.stringify({ bypassOtp: true, message: 'Admin login bypass' }),
