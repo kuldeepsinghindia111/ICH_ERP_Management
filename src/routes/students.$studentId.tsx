@@ -185,74 +185,94 @@ function StudentDetail() {
   const { data: student, isLoading: loadingStudent } = useQuery({
     queryKey: ['student', studentId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('students').select('*').eq('id', studentId).single();
-      if (error) throw error;
-      return data;
+      if (!studentId) return null;
+      // 1. Try finding by ID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);
+      if (isUuid) {
+        const { data } = await supabase.from('students').select('*').eq('id', studentId).maybeSingle();
+        if (data) return data;
+      }
+      // 2. Try finding by admission_no
+      const admRes = await supabase.from('students').select('*').eq('admission_no', studentId).maybeSingle();
+      if (admRes.data) return admRes.data;
+
+      // 3. Try finding by roll_number
+      const rollRes = await supabase.from('students').select('*').eq('roll_number', studentId).maybeSingle();
+      if (rollRes.data) return rollRes.data;
+
+      return null;
     },
+    enabled: !!studentId,
   });
+
+  const targetStudentId = student?.id || studentId;
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
     queryFn: async () => {
       const { data, error } = await supabase.from('programs').select('*');
       if (error) throw error;
-      return data;
+      return data || [];
     }
   });
 
   const { data: charges = [] } = useQuery({
-    queryKey: ['fee_charges', studentId],
+    queryKey: ['fee_charges', targetStudentId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('fee_charges').select('*').eq('student_id', studentId);
-      if (error) throw error;
-      return data.map((d: any) => ({
+      if (!targetStudentId) return [];
+      const { data, error } = await supabase.from('fee_charges').select('*').eq('student_id', targetStudentId);
+      if (error) return [];
+      return (data || []).map((d: any) => ({
         id: d.id, studentId: d.student_id, semester: d.semester,
         head: d.head, label: d.label, amount: d.amount, createdAt: d.created_at
       }));
     },
-    enabled: !!studentId,
+    enabled: !!targetStudentId,
   });
   
   const { data: adjustments = [] } = useQuery({
-    queryKey: ['fee_adjustments', studentId],
+    queryKey: ['fee_adjustments', targetStudentId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('fee_adjustments').select('*').eq('student_id', studentId);
-      if (error) throw error;
-      return data.map((d: any) => ({
+      if (!targetStudentId) return [];
+      const { data, error } = await supabase.from('fee_adjustments').select('*').eq('student_id', targetStudentId);
+      if (error) return [];
+      return (data || []).map((d: any) => ({
         id: d.id, studentId: d.student_id, semester: d.semester,
         type: d.type, label: d.label, amount: d.amount, createdAt: d.created_at
       }));
     },
-    enabled: !!studentId,
+    enabled: !!targetStudentId,
   });
   
   const { data: payments = [] } = useQuery({
-    queryKey: ['fee_payments', studentId], // Only this student's payments
+    queryKey: ['fee_payments', targetStudentId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('fee_payments').select('*').eq('student_id', studentId);
-      if (error) throw error;
-      return data.map((d: any) => ({
+      if (!targetStudentId) return [];
+      const { data, error } = await supabase.from('fee_payments').select('*').eq('student_id', targetStudentId);
+      if (error) return [];
+      return (data || []).map((d: any) => ({
         id: d.id, studentId: d.student_id, semester: d.semester,
         amount: d.amount, method: d.method, reference: d.reference,
         note: d.note, paidAt: d.paid_at, voided: d.voided,
         voidedAt: d.voided_at, voidReason: d.void_reason
       }));
     },
-    enabled: !!studentId,
+    enabled: !!targetStudentId,
   });
 
   const { data: feeStructures = [] } = useQuery({
     queryKey: ['fee_structures'],
     queryFn: async () => {
       const { data, error } = await supabase.from('fee_structures').select('*');
-      if (error) throw error;
-      return data;
+      if (error) return [];
+      return data || [];
     }
   });
 
   const updateStudentMutation = useMutation({
     mutationFn: async (updates: any) => {
-      const { error } = await supabase.from('students').update(updates).eq('id', studentId);
+      if (!targetStudentId) return;
+      const { error } = await supabase.from('students').update(updates).eq('id', targetStudentId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -268,7 +288,17 @@ function StudentDetail() {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
   
-  if (!student) throw notFound();
+  if (!student) {
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center space-y-4">
+        <h2 className="text-xl font-bold text-foreground">Student Record Not Found</h2>
+        <p className="text-sm text-muted-foreground">No student profile matches requested identifier ({studentId}).</p>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/students"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Student Directory</Link>
+        </Button>
+      </div>
+    );
+  }
 
   const program = programs.find((p: any) => p.id === student.program_id);
   const currentSemester = student.current_semester;
