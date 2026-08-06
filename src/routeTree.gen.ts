@@ -13,6 +13,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as UpdatePasswordRouteImport } from './routes/update-password'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RequestOtpRouteImport } from './routes/request-otp'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PayrollRouteImport } from './routes/payroll'
 import { Route as PayRouteImport } from './routes/pay'
@@ -51,6 +52,11 @@ const TimetableRoute = TimetableRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestOtpRoute = RequestOtpRouteImport.update({
+  id: '/request-otp',
+  path: '/request-otp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/pay': typeof PayRoute
   '/payroll': typeof PayrollRoute
   '/reports': typeof ReportsRoute
+  '/request-otp': typeof RequestOtpRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
   '/update-password': typeof UpdatePasswordRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/pay': typeof PayRoute
   '/payroll': typeof PayrollRoute
   '/reports': typeof ReportsRoute
+  '/request-otp': typeof RequestOtpRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
   '/update-password': typeof UpdatePasswordRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/pay': typeof PayRoute
   '/payroll': typeof PayrollRoute
   '/reports': typeof ReportsRoute
+  '/request-otp': typeof RequestOtpRoute
   '/settings': typeof SettingsRoute
   '/timetable': typeof TimetableRoute
   '/update-password': typeof UpdatePasswordRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/pay'
     | '/payroll'
     | '/reports'
+    | '/request-otp'
     | '/settings'
     | '/timetable'
     | '/update-password'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/pay'
     | '/payroll'
     | '/reports'
+    | '/request-otp'
     | '/settings'
     | '/timetable'
     | '/update-password'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/pay'
     | '/payroll'
     | '/reports'
+    | '/request-otp'
     | '/settings'
     | '/timetable'
     | '/update-password'
@@ -317,6 +329,7 @@ export interface RootRouteChildren {
   PayRoute: typeof PayRoute
   PayrollRoute: typeof PayrollRoute
   ReportsRoute: typeof ReportsRoute
+  RequestOtpRoute: typeof RequestOtpRoute
   SettingsRoute: typeof SettingsRoute
   TimetableRoute: typeof TimetableRoute
   UpdatePasswordRoute: typeof UpdatePasswordRoute
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/request-otp': {
+      id: '/request-otp'
+      path: '/request-otp'
+      fullPath: '/request-otp'
+      preLoaderRoute: typeof RequestOtpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -509,6 +529,7 @@ const rootRouteChildren: RootRouteChildren = {
   PayRoute: PayRoute,
   PayrollRoute: PayrollRoute,
   ReportsRoute: ReportsRoute,
+  RequestOtpRoute: RequestOtpRoute,
   SettingsRoute: SettingsRoute,
   TimetableRoute: TimetableRoute,
   UpdatePasswordRoute: UpdatePasswordRoute,

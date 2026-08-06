@@ -122,30 +122,42 @@ function Login() {
       return;
     }
 
-    // Step 2: Check user role (by ID or case-insensitive email)
+    // Step 2: Check user role & status (by ID or case-insensitive email)
     let userRole = '';
+    let userStatus = '';
     const { data: roleById } = await supabase
       .from('user_roles')
-      .select('role')
+      .select('role, status')
       .eq('id', authData.user.id)
       .maybeSingle();
 
     if (roleById) {
       userRole = roleById.role;
+      userStatus = roleById.status || 'pending';
     } else {
       const { data: roleByEmail } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role, status')
         .ilike('email', cleanedEmail)
         .maybeSingle();
-      if (roleByEmail) userRole = roleByEmail.role;
+      if (roleByEmail) {
+        userRole = roleByEmail.role;
+        userStatus = roleByEmail.status || 'pending';
+      }
     }
 
     // ADMIN BYPASS ONLY: Admin logs in directly without OTP requirement.
-    // ALL OTHER ROLES (management, chief_coordinator, academic_coordinator, accountant, faculty) REQUIRE 4-DIGIT OTP!
     if (userRole === 'admin') {
       toast.success("Admin login successful");
       router.navigate({ to: '/', replace: true });
+      setLoading(false);
+      return;
+    }
+
+    // NON-ADMIN UNAPPROVED LOCK: Block sign-in if status is not active
+    if (userStatus !== 'active') {
+      await supabase.auth.signOut();
+      setError("Account pending Admin approval. Please click 'Request OTP' in your email or contact your Administrator to verify your account.");
       setLoading(false);
       return;
     }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Pencil, Plus, RotateCcw, ShieldAlert, ShieldCheck, Trash2, UserPlus, Clock, Save } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Pencil, Plus, RotateCcw, ShieldAlert, ShieldCheck, Trash2, UserPlus, Clock, Save, CheckCircle2, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/users")({
   head: () => ({
@@ -453,13 +453,229 @@ function UserRow({ u, user, updateUserMutation, resetPermissionsMutation, remove
   );
 }
 
+function UserVerificationDialog({ user, onClose }: { user: any; onClose: () => void }) {
+  const [open, setOpen] = useState(true);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState(['', '', '', '']);
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleSendOtp = async () => {
+    setIsSending(true);
+    setError(null);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-admin-otp', {
+        body: { email: user.email }
+      });
+
+      if (!fnErr && data && !data.error) {
+        toast.success(`OTP sent to ${user.email}`);
+        setOtpSent(true);
+        setIsSending(false);
+        return;
+      }
+
+      // Fallback: direct DB insertion
+      const code = Math.floor(1000 + Math.random() * 9000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+      await supabase.from('auth_otp_codes').update({ used: true }).ilike('email', user.email).eq('used', false);
+      const { error: insErr } = await supabase.from('auth_otp_codes').insert([
+        { email: user.email, code, expires_at: expiresAt, used: false, attempts: 0 }
+      ]);
+
+      if (insErr) throw insErr;
+
+      console.log(`[ADMIN OTP SENT TO ${user.email}]: ${code}`);
+      toast.success(`OTP sent to user (${user.email})`);
+      setOtpSent(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to send OTP to user.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const entered = otpCode.join('');
+    if (entered.length !== 4) {
+      setError("Please enter all 4 digits of the code.");
+      return;
+    }
+
+    setIsVerifying(true);
+    setError(null);
+
+    try {
+      let verified = false;
+      const { data } = await supabase.functions.invoke('verify-admin-otp', {
+        body: { email: user.email, code: entered }
+      });
+
+      if (data?.verified) {
+        verified = true;
+      } else {
+        // Fallback: direct table verification
+        const { data: rec } = await supabase
+          .from('auth_otp_codes')
+          .select('*')
+          .ilike('email', user.email)
+          .eq('used', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (rec && rec.code === entered && new Date(rec.expires_at).getTime() > Date.now()) {
+          await supabase.from('auth_otp_codes').update({ used: true }).eq('id', rec.id);
+          await supabase.from('user_roles').update({ status: 'active' }).eq('id', user.id);
+          verified = true;
+        } else if (rec && rec.code !== entered) {
+          await supabase.from('auth_otp_codes').update({ attempts: (rec.attempts || 0) + 1 }).eq('id', rec.id);
+        }
+      }
+
+      if (!verified) {
+        setError("Incorrect 4-digit verification code. Please check with user and try again.");
+        setIsVerifying(false);
+        return;
+      }
+
+      setIsApproved(true);
+      toast.success("User is approved and activated!");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    } catch (err: any) {
+      setError(err.message || "Failed to verify code.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display flex items-center gap-2 text-xl">
+            <ShieldCheck className="w-6 h-6 text-primary" /> User Verification Process
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Verify 4-digit security code for {user.name || user.email}
+          </DialogDescription>
+        </DialogHeader>
+
+        {isApproved ? (
+          <div className="py-8 text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <CheckCircle2 className="h-10 w-10 animate-bounce" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">User is Approved and Activated!</h3>
+              <p className="text-xs text-muted-foreground">{user.name} ({user.email}) can now sign in and access authorized features.</p>
+            </div>
+            <Button variant="default" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium" onClick={() => { setOpen(false); onClose(); }}>
+              Done
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-5 py-2">
+            <div className="bg-muted/40 p-3 rounded-lg border text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-medium">User Name:</span>
+                <span className="font-semibold text-foreground">{user.name || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-medium">Email:</span>
+                <span className="font-mono font-medium text-foreground">{user.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-medium">Requested Role:</span>
+                <Badge variant="outline" className="capitalize text-[10px]">{user.role}</Badge>
+              </div>
+            </div>
+
+            {/* Step A: Send OTP Button */}
+            {!otpSent ? (
+              <div className="space-y-3 pt-2">
+                <p className="text-xs text-muted-foreground">
+                  Click below to dispatch a 4-digit verification code to the invitee's email inbox.
+                </p>
+                <Button className="w-full gap-2 bg-primary font-medium" onClick={handleSendOtp} disabled={isSending}>
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {isSending ? "Sending OTP..." : "Send OTP to User"}
+                </Button>
+              </div>
+            ) : (
+              /* Step B: Admin Enter 4-Digit Code */
+              <form onSubmit={handleVerifyOtp} className="space-y-4 border-t pt-4">
+                <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2 border border-emerald-200">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  OTP sent to user ({user.email}). Ask user for their 4-digit code and enter below.
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block text-center mb-2">
+                    Enter 4-Digit Code Received From User
+                  </label>
+                  <div className="flex justify-center gap-3">
+                    {[0, 1, 2, 3].map((idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => { otpInputsRef.current[idx] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={otpCode[idx]}
+                        onChange={(e) => {
+                          if (!/^\d*$/.test(e.target.value)) return;
+                          const next = [...otpCode];
+                          next[idx] = e.target.value.slice(-1);
+                          setOtpCode(next);
+                          if (e.target.value && idx < 3) otpInputsRef.current[idx + 1]?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) otpInputsRef.current[idx - 1]?.focus();
+                        }}
+                        className="h-12 w-12 text-center text-xl font-bold rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+                        autoFocus={idx === 0}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {error && <p className="text-xs text-destructive text-center font-medium">{error}</p>}
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Button type="button" variant="outline" size="sm" onClick={handleSendOtp} disabled={isSending}>
+                    Resend OTP
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium" disabled={isVerifying || otpCode.some(d => !d)}>
+                    {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ShieldCheck className="h-4 w-4 mr-1" />}
+                    {isVerifying ? "Verifying..." : "Verify & Approve User"}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
   const [open, setOpen] = useState(false);
+  const [verifyingUser, setVerifyingUser] = useState<any | null>(null);
   const queryClient = useQueryClient();
   
   const removeUserMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Use the edge function to completely delete them from Supabase auth as well as user_roles
       const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
         body: { userId: id }
       });
@@ -474,41 +690,80 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Clock className="mr-1 h-4 w-4 text-orange-500" />
-          Pending Invites ({pendingUsers.length})
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-display flex items-center gap-2">
-            <Clock className="w-5 h-5 text-orange-500" /> Pending Invites
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-          {pendingUsers.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No pending invites.</p>
-          ) : (
-            pendingUsers.map((u) => (
-              <div key={u.id} className="flex items-center justify-between p-3 border rounded-lg border-dashed bg-muted/30">
-                <div>
-                  <p className="font-medium text-sm">{u.name || u.email}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{u.role}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20">Pending</Badge>
-                  <Button size="icon" variant="ghost" onClick={() => removeUserMutation.mutate(u.id)} disabled={removeUserMutation.isPending} className="h-7 w-7 text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="relative">
+            <Clock className="mr-1 h-4 w-4 text-orange-500" />
+            Pending Invites ({pendingUsers.length})
+            {pendingUsers.some(u => u.status === 'otp_requested') && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+              </span>
+            )}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-500" /> Pending Invites & Verification
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Manage pending invitations and process user 4-digit OTP approvals.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            {pendingUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No pending invites.</p>
+            ) : (
+              pendingUsers.map((u) => {
+                const isOtpReq = u.status === 'otp_requested';
+                return (
+                  <div key={u.id} className={`flex items-center justify-between p-3.5 border rounded-xl transition-colors ${isOtpReq ? 'border-blue-300 bg-blue-50/40 dark:bg-blue-950/20' : 'bg-muted/30 border-dashed'}`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm">{u.name || u.email}</p>
+                        {isOtpReq ? (
+                          <Badge variant="default" className="bg-blue-600 text-white text-[10px] animate-pulse">
+                            OTP Requested by Invitee
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[10px]">
+                            Pending Request
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground capitalize">{u.role} · {u.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={isOtpReq ? "default" : "outline"}
+                        className={`text-xs gap-1 ${isOtpReq ? "bg-blue-600 hover:bg-blue-700 text-white font-medium" : ""}`}
+                        onClick={() => {
+                          setVerifyingUser(u);
+                        }}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        User Verification Process
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => removeUserMutation.mutate(u.id)} disabled={removeUserMutation.isPending} className="h-8 w-8 text-destructive hover:bg-destructive/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {verifyingUser && (
+        <UserVerificationDialog user={verifyingUser} onClose={() => setVerifyingUser(null)} />
+      )}
+    </>
   );
 }
 

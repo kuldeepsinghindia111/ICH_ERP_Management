@@ -46,10 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single();
     if (!error && data) {
+      if (data.status !== 'active' && data.role !== 'admin') {
+        // Unapproved / pending user is forcibly signed out and denied access
+        currentUserIdRef.current = null;
+        await supabase.auth.signOut();
+        setProfile(null);
+        setUser(null);
+        setSession(null);
+        return;
+      }
       setProfile(data as UserProfile);
     } else {
-      // If the user's role/profile is missing (meaning they were deleted by admin),
-      // we must forcefully terminate their session so they can't linger in the dashboard.
+      // If the user's role/profile is missing, terminate session
       currentUserIdRef.current = null;
       await supabase.auth.signOut();
       setProfile(null);
