@@ -59,41 +59,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        if (currentUserIdRef.current !== session.user.id) {
-          currentUserIdRef.current = session.user.id;
-          setIsLoading(true);
-          fetchProfile(session.user.id).finally(() => setIsLoading(false));
-        }
-      } else {
+    let mounted = true;
+
+    // Safety fallback: Never stay stuck in loading state for more than 3 seconds
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
         setIsLoading(false);
       }
-    });
+    }, 3000);
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          currentUserIdRef.current = session.user.id;
+          await fetchProfile(session.user.id);
+        }
+      } catch (err) {
+        console.error('initAuth error:', err);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+          clearTimeout(safetyTimer);
+        }
+      }
+    };
+
+    initAuth();
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         if (currentUserIdRef.current !== session.user.id) {
           currentUserIdRef.current = session.user.id;
-          setIsLoading(true);
-          fetchProfile(session.user.id).finally(() => setIsLoading(false));
+          await fetchProfile(session.user.id);
         }
       } else {
         currentUserIdRef.current = null;
         setProfile(null);
-        setIsLoading(false);
       }
+      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refetchProfile = async () => {

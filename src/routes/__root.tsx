@@ -16,7 +16,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { useStore, type UserRole, type Section } from "@/lib/store";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserRound, CalendarRange } from "lucide-react";
+import { UserRound, CalendarRange, Loader2 } from "lucide-react";
 import { AuthProvider, useAuth } from "../hooks/use-auth";
 import { useLocation } from "@tanstack/react-router";
 import { SplashScreen } from "@/components/splash-screen";
@@ -275,7 +275,12 @@ function AuthGuard({ children }: { children: ReactNode }) {
   }, [user, isLoading]);
 
   if (isLoading) {
-    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground font-medium">Loading session...</p>
+      </div>
+    );
   }
 
   // Render standalone pages completely outside the dashboard layout
