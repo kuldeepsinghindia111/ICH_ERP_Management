@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { StudentFormDialog } from "@/components/StudentFormDialog";
+import { Switch } from "@/components/ui/switch";
 
 
 export const Route = createFileRoute("/students/$studentId")({
@@ -352,54 +353,17 @@ function StudentDetail() {
       </Card>
 
       <div className="space-y-4">
-        {semesters.filter((yearNum) => yearNum >= currentSemester).map((yearNum) => {
-          const yearTotals = semesterSummary(student.id, yearNum, {
-            charges,
-            adjustments,
-            payments,
-            structures: feeStructures,
-            student,
-          });
-
-          return (
-            <Card key={yearNum} className="overflow-hidden border shadow-xs">
-              <CardHeader className="py-2.5 px-4 bg-muted/30 border-b">
-                <CardTitle className="font-display text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                  {formatYear(yearNum)} Fees Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-3">
-                <TotalPill label="Total Payable" value={inr(yearTotals.totalCharged)} />
-                <TotalPill label="Late Fees" value={yearTotals.totalLate > 0 ? inr(yearTotals.totalLate) : "—"} />
-                <TotalPill label="Fine" value={yearTotals.totalFine > 0 ? inr(yearTotals.totalFine) : "—"} />
-                <TotalPill label="Other" value={yearTotals.totalOther > 0 ? inr(yearTotals.totalOther) : "—"} />
-                <TotalPill
-                  label={
-                    <span>
-                      Conce-
-                      <br />
-                      ssion
-                    </span>
-                  }
-                  value={yearTotals.totalConcession ? `− ${inr(yearTotals.totalConcession)}` : "—"}
-                />
-                <TotalPill
-                  label={
-                    <span>
-                      Scholar-
-                      <br />
-                      ship
-                    </span>
-                  }
-                  value={yearTotals.totalScholarship ? `− ${inr(yearTotals.totalScholarship)}` : "—"}
-                />
-                <TotalPill label="Net Payable" value={inr(yearTotals.netPayable)} />
-                <TotalPill label="Paid" value={inr(yearTotals.totalPaid)} tone="success" />
-                <TotalPill label="Balance" value={inr(yearTotals.balance)} tone={yearTotals.balance > 0 ? "warning" : "default"} />
-              </CardContent>
-            </Card>
-          );
-        })}
+        {semesters.filter((yearNum) => yearNum >= currentSemester).map((yearNum) => (
+          <YearFeesSummaryCard
+            key={yearNum}
+            yearNum={yearNum}
+            student={student}
+            charges={charges}
+            adjustments={adjustments}
+            payments={payments}
+            feeStructures={feeStructures}
+          />
+        ))}
       </div>
 
       <Tabs defaultValue="overview" className="mt-6">
@@ -591,6 +555,90 @@ function IDCardPreview({ student, program }: { student: any, program: any }) {
           </div>
         </div>
       </CardContent>
+    </Card>
+  );
+}
+
+function YearFeesSummaryCard({
+  yearNum,
+  student,
+  charges,
+  adjustments,
+  payments,
+  feeStructures,
+}: {
+  yearNum: number;
+  student: any;
+  charges: any[];
+  adjustments: any[];
+  payments: any[];
+  feeStructures: any[];
+}) {
+  const [showSummary, setShowSummary] = useState(false);
+
+  const yearTotals = semesterSummary(student.id, yearNum, {
+    charges,
+    adjustments,
+    payments,
+    structures: feeStructures,
+    student,
+  });
+
+  return (
+    <Card className="overflow-hidden border shadow-xs transition-all">
+      <CardHeader className="py-2.5 px-4 bg-muted/30 border-b flex flex-row items-center justify-between">
+        <div className="flex items-center gap-3">
+          <CardTitle className="font-display text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+            {formatYear(yearNum)} Fees Summary
+          </CardTitle>
+          {!showSummary && (
+            <Badge variant="outline" className="text-[11px] font-mono font-medium">
+              Net: {inr(yearTotals.netPayable)} · Paid: {inr(yearTotals.totalPaid)} · Bal: {inr(yearTotals.balance)}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor={`toggle-year-${yearNum}`} className="text-xs text-muted-foreground font-medium cursor-pointer">
+            {showSummary ? "ON" : "OFF"}
+          </Label>
+          <Switch
+            id={`toggle-year-${yearNum}`}
+            checked={showSummary}
+            onCheckedChange={setShowSummary}
+          />
+        </div>
+      </CardHeader>
+      {showSummary && (
+        <CardContent className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 p-3 transition-all animate-in fade-in-50">
+          <TotalPill label="Total Payable" value={inr(yearTotals.totalCharged)} />
+          <TotalPill label="Late Fees" value={yearTotals.totalLate > 0 ? inr(yearTotals.totalLate) : "—"} />
+          <TotalPill label="Fine" value={yearTotals.totalFine > 0 ? inr(yearTotals.totalFine) : "—"} />
+          <TotalPill label="Other" value={yearTotals.totalOther > 0 ? inr(yearTotals.totalOther) : "—"} />
+          <TotalPill
+            label={
+              <span>
+                Conce-
+                <br />
+                ssion
+              </span>
+            }
+            value={yearTotals.totalConcession ? `− ${inr(yearTotals.totalConcession)}` : "—"}
+          />
+          <TotalPill
+            label={
+              <span>
+                Scholar-
+                <br />
+                ship
+              </span>
+            }
+            value={yearTotals.totalScholarship ? `− ${inr(yearTotals.totalScholarship)}` : "—"}
+          />
+          <TotalPill label="Net Payable" value={inr(yearTotals.netPayable)} />
+          <TotalPill label="Paid" value={inr(yearTotals.totalPaid)} tone="success" />
+          <TotalPill label="Balance" value={inr(yearTotals.balance)} tone={yearTotals.balance > 0 ? "warning" : "default"} />
+        </CardContent>
+      )}
     </Card>
   );
 }
