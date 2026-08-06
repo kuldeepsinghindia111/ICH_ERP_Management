@@ -741,10 +741,41 @@ function StudentReportDialog({
         y += 16;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
-        doc.text(`${secIdx}. ${formatYear(yNum).toUpperCase()} FEE LEDGER`, margin, y);
+        doc.text(`${secIdx}. ${formatYear(yNum).toUpperCase()} FEES SUMMARY & LEDGER`, margin, y);
         secIdx++;
 
-        y += 14;
+        y += 12;
+        // 9 Pills Summary Box Banner
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.rect(margin, y, pageW - margin * 2, 28, "FD");
+
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "bold");
+        const colW = (pageW - margin * 2) / 9;
+        const pills = [
+          ["TOTAL PAYABLE", inr(sum.totalCharged)],
+          ["LATE FEES", sum.totalLate > 0 ? inr(sum.totalLate) : "—"],
+          ["FINE", sum.totalFine > 0 ? inr(sum.totalFine) : "—"],
+          ["OTHER", sum.totalOther > 0 ? inr(sum.totalOther) : "—"],
+          ["CONCESSION", sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"],
+          ["SCHOLARSHIP", sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"],
+          ["NET PAYABLE", inr(sum.netPayable)],
+          ["PAID", inr(sum.totalPaid)],
+          ["BALANCE", inr(sum.balance)],
+        ];
+
+        pills.forEach(([hdr, val], i) => {
+          const px = margin + i * colW + colW / 2;
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(100, 116, 139);
+          doc.text(hdr, px, y + 10, { align: "center" });
+          doc.setTextColor(i === 7 ? 22 : i === 8 ? (sum.balance > 0 ? 220 : 15) : 30, i === 7 ? 101 : i === 8 ? (sum.balance > 0 ? 38 : 118) : 41, i === 7 ? 52 : i === 8 ? (sum.balance > 0 ? 38 : 52) : 59);
+          doc.text(val, px, y + 21, { align: "center" });
+        });
+        doc.setTextColor(30, 41, 59);
+        y += 36;
+
         // Summary Block Box (Left Side)
         doc.setDrawColor(203, 213, 225);
         doc.setFillColor(255, 255, 255);
@@ -988,6 +1019,23 @@ function StudentReportDialog({
         const yPayments = activePayments.filter((p: any) => (p.semester || 1) === y);
 
         return `
+          <div style="border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; overflow: hidden; background: #ffffff; page-break-inside: avoid;">
+            <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 700; font-size: 11px; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; text-transform: uppercase;">
+              ${formatYear(y).toUpperCase()} FEES SUMMARY
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 8px; text-align: center; font-size: 9px; background: #f8fafc;">
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#64748b; font-size: 7.5px; font-weight: 700;">TOTAL PAYABLE</div><div style="font-weight: 700; margin-top: 2px;">${inr(sum.totalCharged)}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#64748b; font-size: 7.5px; font-weight: 700;">LATE FEES</div><div style="font-weight: 700; margin-top: 2px;">${sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#64748b; font-size: 7.5px; font-weight: 700;">FINE</div><div style="font-weight: 700; margin-top: 2px;">${sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#64748b; font-size: 7.5px; font-weight: 700;">OTHER</div><div style="font-weight: 700; margin-top: 2px;">${sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#d97706; font-size: 7.5px; font-weight: 700;">CONCESSION</div><div style="font-weight: 700; color:#d97706; margin-top: 2px;">${sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#d97706; font-size: 7.5px; font-weight: 700;">SCHOLARSHIP</div><div style="font-weight: 700; color:#d97706; margin-top: 2px;">${sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#64748b; font-size: 7.5px; font-weight: 700;">NET PAYABLE</div><div style="font-weight: 700; margin-top: 2px;">${inr(sum.netPayable)}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#166534; font-size: 7.5px; font-weight: 700;">PAID</div><div style="font-weight: 700; color:#166534; margin-top: 2px;">${inr(sum.totalPaid)}</div></div>
+              <div style="background: #ffffff; padding: 5px 2px; border-radius: 4px; border: 1px solid #e2e8f0;"><div style="color:#b45309; font-size: 7.5px; font-weight: 700;">BALANCE</div><div style="font-weight: 700; color:${sum.balance > 0 ? '#dc2626' : '#166534'}; margin-top: 2px;">${inr(sum.balance)}</div></div>
+            </div>
+          </div>
+
           <div style="display: grid; grid-template-columns: 220px 1fr; gap: 14px; margin-bottom: 18px; page-break-inside: avoid;">
             <!-- Left Side: Summary Panel -->
             <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #ffffff;">
@@ -1271,7 +1319,26 @@ function StudentReportDialog({
                   const yPayments = activePayments.filter((p: any) => (p.semester || 1) === yNum);
 
                   return (
-                    <div key={yNum} className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-6 last:border-b-0 last:pb-0">
+                    <div key={yNum} className="space-y-4 border-b pb-6 last:border-b-0 last:pb-0">
+                      {/* 9-Pills Summary Banner */}
+                      <div className="border rounded-xl p-3 bg-muted/20 space-y-2">
+                        <div className="font-bold text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                          {formatYear(yNum)} FEES SUMMARY
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 text-center text-xs">
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground font-semibold">TOTAL PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.totalCharged)}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground font-semibold">LATE FEES</div><div className="font-bold mt-0.5">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground font-semibold">FINE</div><div className="font-bold mt-0.5">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground font-semibold">OTHER</div><div className="font-bold mt-0.5">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600 font-semibold">CONCESSION</div><div className="font-bold text-amber-600 mt-0.5">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600 font-semibold">SCHOLARSHIP</div><div className="font-bold text-amber-600 mt-0.5">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground font-semibold">NET PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.netPayable)}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-emerald-600 font-semibold">PAID</div><div className="font-bold text-emerald-600 mt-0.5">{inr(sum.totalPaid)}</div></div>
+                          <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600 font-semibold">BALANCE</div><div className="font-bold text-amber-600 mt-0.5">{inr(sum.balance)}</div></div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Left Summary Panel */}
                       <Card className="md:col-span-1 border shadow-xs">
                         <CardContent className="space-y-2 p-4 text-xs">
@@ -1392,8 +1459,9 @@ function StudentReportDialog({
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
               </div>
             ) : (
               <div className="p-4 border rounded-xl bg-muted/20 text-center text-xs text-muted-foreground">
