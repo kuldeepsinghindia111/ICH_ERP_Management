@@ -580,6 +580,10 @@ function AddUserDialog() {
               </SelectContent>
             </Select>
           </div>
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1 bg-muted/30 p-2 rounded border">
+            <ShieldCheck className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+            Non-admin invitees will be required to enter a 4-digit email code for 2-step login verification.
+          </p>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
