@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { CalendarCheck, Save, CheckCircle2, Search } from "lucide-react";
+import { CalendarCheck, Save, CheckCircle2, Search, Users } from "lucide-react";
 import { format } from "date-fns";
+
+const formatYear = (y: number) => (y === 1 ? "1st Year" : y === 2 ? "2nd Year" : y === 3 ? "3rd Year" : `${y}th Year`);
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

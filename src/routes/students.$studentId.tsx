@@ -721,8 +721,92 @@ function StudentReportDialog({
 
     let secIdx = 2;
 
-    // 2. Fees Summary (ONLY if master toggle is ON and specific year is ON)
+    // 2. Year-Wise Fee Ledgers & Summaries (for active toggled-ON years)
     if (activeYearsForReport.length > 0) {
+      activeYearsForReport.forEach((yNum) => {
+        if (y > 700) {
+          doc.addPage();
+          y = 40;
+        }
+
+        const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+        const yCharges = studentCharges.filter((c: any) => (c.semester || 1) === yNum);
+        const yAdjustments = adjustments.filter((a: any) => (a.semester || 1) === yNum);
+        const yPayments = activePayments.filter((p: any) => (p.semester || 1) === yNum);
+
+        y += 6;
+        doc.setDrawColor(220, 220, 220);
+        doc.line(margin, y, pageW - margin, y);
+
+        y += 16;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(`${secIdx}. ${formatYear(yNum).toUpperCase()} FEE LEDGER & SUMMARY`, margin, y);
+        secIdx++;
+
+        y += 14;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.text(`Total Charged: ${inr(sum.totalCharged)} | Concession: ${inr(sum.totalConcession)} | Scholarship: ${inr(sum.totalScholarship)} | Net: ${inr(sum.netPayable)}`, margin, y);
+        y += 12;
+        doc.text(`Paid: ${inr(sum.totalPaid)} | Remaining Balance: ${inr(sum.balance)}`, margin, y);
+
+        // Charges for this year
+        y += 14;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text(`Fee Charges (${formatYear(yNum)}):`, margin, y);
+        y += 10;
+        if (yCharges.length === 0) {
+          doc.setFont("helvetica", "italic");
+          doc.text("No fee charges recorded for this year.", margin + 10, y);
+          y += 12;
+        } else {
+          yCharges.forEach((c: any, idx: number) => {
+            doc.setFont("helvetica", "normal");
+            doc.text(`${idx + 1}. ${c.fee_head || c.description || 'Charge'} - ${inr(c.amount)}`, margin + 10, y);
+            y += 11;
+          });
+        }
+
+        // Concessions & Scholarships for this year
+        y += 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text(`Concessions & Scholarships (${formatYear(yNum)}):`, margin, y);
+        y += 10;
+        if (yAdjustments.length === 0) {
+          doc.setFont("helvetica", "italic");
+          doc.text("No concessions or scholarships applied for this year.", margin + 10, y);
+          y += 12;
+        } else {
+          yAdjustments.forEach((a: any, idx: number) => {
+            doc.setFont("helvetica", "normal");
+            doc.text(`${idx + 1}. [${a.type}] ${a.label || 'Adjustment'} - ${inr(a.amount)}`, margin + 10, y);
+            y += 11;
+          });
+        }
+
+        // Payments for this year
+        y += 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text(`Payment Receipts (${formatYear(yNum)}):`, margin, y);
+        y += 10;
+        if (yPayments.length === 0) {
+          doc.setFont("helvetica", "italic");
+          doc.text("No payment receipts recorded for this year.", margin + 10, y);
+          y += 14;
+        } else {
+          yPayments.forEach((p: any, idx: number) => {
+            doc.setFont("helvetica", "normal");
+            doc.text(`${idx + 1}. Ref: ${p.reference || 'REC-'+p.id.slice(0,6)} | ${new Date(p.paidAt || p.paid_at).toLocaleDateString('en-IN')} | Mode: ${p.method} | Paid: ${inr(p.amount)}`, margin + 10, y);
+            y += 11;
+          });
+        }
+      });
+    } else {
+      // General Overall Ledger when no specific year is toggled ON
       y += 6;
       doc.setDrawColor(220, 220, 220);
       doc.line(margin, y, pageW - margin, y);
@@ -730,117 +814,42 @@ function StudentReportDialog({
       y += 16;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.text(`${secIdx}. YEAR-WISE FEES SUMMARY`, margin, y);
-      secIdx++;
+      doc.text("2. OVERALL PAYMENT RECEIPTS HISTORY", margin, y);
 
       y += 14;
-      activeYearsForReport.forEach((yNum) => {
-        const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+      if (activePayments.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8.5);
+        doc.text("No payment receipt records found.", margin, y);
+        y += 14;
+      } else {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.text(`${formatYear(yNum)} Fees Summary:`, margin, y);
+        doc.setFontSize(8);
+        doc.setFillColor(241, 245, 249);
+        doc.rect(margin, y - 8, pageW - margin * 2, 14, "F");
+        doc.text("#", margin + 4, y);
+        doc.text("Receipt Ref", margin + 20, y);
+        doc.text("Date", margin + 120, y);
+        doc.text("Mode", margin + 210, y);
+        doc.text("Academic Year", margin + 280, y);
+        doc.text("Paid Amount (Rs.)", pageW - margin - 5, y, { align: "right" });
 
-        y += 12;
+        y += 14;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
-        doc.text(`Total Charged: ${inr(sum.totalCharged)} | Late Fee: ${inr(sum.totalLate)} | Fine: ${inr(sum.totalFine)} | Other: ${inr(sum.totalOther)}`, margin + 10, y);
-        y += 11;
-        doc.text(`Concession: ${inr(sum.totalConcession)} | Scholarship: ${inr(sum.totalScholarship)} | Net Payable: ${inr(sum.netPayable)}`, margin + 10, y);
-        y += 11;
-        doc.setFont("helvetica", "bold");
-        doc.text(`Paid: ${inr(sum.totalPaid)} | Remaining Balance: ${inr(sum.balance)}`, margin + 10, y);
-        y += 15;
-      });
-    }
 
-    // 3. Fee Ledger Charges Breakdown
-    y += 6;
-    doc.setDrawColor(220, 220, 220);
-    doc.line(margin, y, pageW - margin, y);
-
-    y += 16;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(`${secIdx}. FEE LEDGER CHARGES BREAKDOWN`, margin, y);
-    secIdx++;
-
-    y += 14;
-    if (studentCharges.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8.5);
-      doc.text("No fee ledger charge entries recorded.", margin, y);
-      y += 14;
-    } else {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setFillColor(241, 245, 249);
-      doc.rect(margin, y - 8, pageW - margin * 2, 14, "F");
-      doc.text("#", margin + 4, y);
-      doc.text("Date", margin + 20, y);
-      doc.text("Fee Head / Description", margin + 85, y);
-      doc.text("Year", margin + 250, y);
-      doc.text("Base (Rs.)", margin + 300, y);
-      doc.text("Concession", margin + 360, y);
-      doc.text("Net Fee (Rs.)", pageW - margin - 5, y, { align: "right" });
-
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-
-      studentCharges.forEach((c: any, idx: number) => {
-        const net = Math.max(0, (c.amount || 0) - (c.concession || 0) - (c.scholarship || 0));
-        doc.text(String(idx + 1), margin + 4, y);
-        doc.text(new Date(c.created_at || Date.now()).toLocaleDateString("en-IN"), margin + 20, y);
-        doc.text((c.fee_head || c.description || "Fee Charge").slice(0, 30), margin + 85, y);
-        doc.text(formatYear(c.semester || 1), margin + 250, y);
-        doc.text(inr(c.amount || 0), margin + 300, y);
-        doc.text(c.concession ? inr(c.concession) : "—", margin + 360, y);
-        doc.setFont("helvetica", "bold");
-        doc.text(inr(net), pageW - margin - 5, y, { align: "right" });
-        doc.setFont("helvetica", "normal");
-        y += 12;
-      });
-    }
-
-    // 4. Payment Receipts History
-    y += 10;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(`${secIdx}. PAYMENT RECEIPTS HISTORY`, margin, y);
-
-    y += 14;
-    if (activePayments.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8.5);
-      doc.text("No payment receipt records found.", margin, y);
-      y += 14;
-    } else {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setFillColor(241, 245, 249);
-      doc.rect(margin, y - 8, pageW - margin * 2, 14, "F");
-      doc.text("#", margin + 4, y);
-      doc.text("Receipt Ref", margin + 20, y);
-      doc.text("Date", margin + 120, y);
-      doc.text("Mode", margin + 210, y);
-      doc.text("Academic Year", margin + 280, y);
-      doc.text("Paid Amount (Rs.)", pageW - margin - 5, y, { align: "right" });
-
-      y += 14;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-
-      activePayments.forEach((p: any, idx: number) => {
-        doc.text(String(idx + 1), margin + 4, y);
-        doc.text(p.reference || `REC-${p.id.slice(0, 6)}`, margin + 20, y);
-        doc.text(new Date(p.paidAt).toLocaleDateString("en-IN"), margin + 120, y);
-        doc.text((p.method || "Cash").toUpperCase(), margin + 210, y);
-        doc.text(formatYear(p.semester || 1), margin + 280, y);
-        doc.setFont("helvetica", "bold");
-        doc.text(inr(p.amount || 0), pageW - margin - 5, y, { align: "right" });
-        doc.setFont("helvetica", "normal");
-        y += 12;
-      });
+        activePayments.forEach((p: any, idx: number) => {
+          doc.text(String(idx + 1), margin + 4, y);
+          doc.text(p.reference || `REC-${p.id.slice(0, 6)}`, margin + 20, y);
+          doc.text(new Date(p.paidAt).toLocaleDateString("en-IN"), margin + 120, y);
+          doc.text((p.method || "Cash").toUpperCase(), margin + 210, y);
+          doc.text(formatYear(p.semester || 1), margin + 280, y);
+          doc.setFont("helvetica", "bold");
+          doc.text(inr(p.amount || 0), pageW - margin - 5, y, { align: "right" });
+          doc.setFont("helvetica", "normal");
+          y += 12;
+        });
+      }
     }
 
     // Signatures Footer
@@ -890,7 +899,6 @@ function StudentReportDialog({
       setIsExporting(false);
     }
   };
-
   const handleDownloadPDF = () => {
     try {
       setIsExporting(true);
@@ -905,7 +913,7 @@ function StudentReportDialog({
   };
 
   const handlePrint = () => {
-    const yearCardsHtml = activeYearsForReport
+    const yearLedgersHtml = activeYearsForReport
       .map((y) => {
         const sum = semesterSummary(student.id, y, {
           charges,
@@ -914,47 +922,57 @@ function StudentReportDialog({
           structures: feeStructures,
           student,
         });
+        const yCharges = studentCharges.filter((c: any) => (c.semester || 1) === y);
+        const yAdjustments = adjustments.filter((a: any) => (a.semester || 1) === y);
+        const yPayments = activePayments.filter((p: any) => (p.semester || 1) === y);
+
+        const chargesRows = yCharges.length === 0 
+          ? `<p style="font-size: 9px; color: #64748b; margin: 0 0 6px 0;">No custom fee charges for this year.</p>`
+          : `<table style="width:100%; border-collapse:collapse; margin-bottom:8px; font-size:9.5px;">
+              <thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1; padding:3px 5px;">#</th><th style="border:1px solid #cbd5e1; padding:3px 5px;">Fee Head</th><th style="border:1px solid #cbd5e1; padding:3px 5px; text-align:right;">Amount</th></tr></thead>
+              <tbody>${yCharges.map((c: any, i: number) => `<tr><td style="border:1px solid #cbd5e1; padding:3px 5px; text-align:center;">${i+1}</td><td style="border:1px solid #cbd5e1; padding:3px 5px;">${c.fee_head || c.description || 'Charge'}</td><td style="border:1px solid #cbd5e1; padding:3px 5px; text-align:right;">${inr(c.amount)}</td></tr>`).join('')}</tbody>
+             </table>`;
+
+        const adjustmentsRows = yAdjustments.length === 0
+          ? `<p style="font-size: 9px; color: #64748b; margin: 0 0 6px 0;">No concessions or scholarships applied.</p>`
+          : `<table style="width:100%; border-collapse:collapse; margin-bottom:8px; font-size:9.5px;">
+              <thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1; padding:3px 5px;">#</th><th style="border:1px solid #cbd5e1; padding:3px 5px;">Type</th><th style="border:1px solid #cbd5e1; padding:3px 5px;">Label</th><th style="border:1px solid #cbd5e1; padding:3px 5px; text-align:right;">Amount</th></tr></thead>
+              <tbody>${yAdjustments.map((a: any, i: number) => `<tr><td style="border:1px solid #cbd5e1; padding:3px 5px; text-align:center;">${i+1}</td><td style="border:1px solid #cbd5e1; padding:3px 5px; text-transform:capitalize;">${a.type}</td><td style="border:1px solid #cbd5e1; padding:3px 5px;">${a.label || 'Adjustment'}</td><td style="border:1px solid #cbd5e1; padding:3px 5px; text-align:right; color:#d97706;">− ${inr(a.amount)}</td></tr>`).join('')}</tbody>
+             </table>`;
+
+        const paymentsRows = yPayments.length === 0
+          ? `<p style="font-size: 9px; color: #64748b; margin: 0;">No payment receipts recorded for this year.</p>`
+          : `<table style="width:100%; border-collapse:collapse; font-size:9.5px;">
+              <thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1; padding:3px 5px;">#</th><th style="border:1px solid #cbd5e1; padding:3px 5px;">Receipt Ref</th><th style="border:1px solid #cbd5e1; padding:3px 5px;">Date</th><th style="border:1px solid #cbd5e1; padding:3px 5px;">Mode</th><th style="border:1px solid #cbd5e1; padding:3px 5px; text-align:right;">Amount</th></tr></thead>
+              <tbody>${yPayments.map((p: any, i: number) => `<tr><td style="border:1px solid #cbd5e1; padding:3px 5px; text-align:center;">${i+1}</td><td style="border:1px solid #cbd5e1; padding:3px 5px; font-family:monospace;">${p.reference || 'REC-'+p.id.slice(0,6)}</td><td style="border:1px solid #cbd5e1; padding:3px 5px;">${new Date(p.paidAt || p.paid_at).toLocaleDateString('en-IN')}</td><td style="border:1px solid #cbd5e1; padding:3px 5px; text-transform:capitalize;">${p.method}</td><td style="border:1px solid #cbd5e1; padding:3px 5px; text-align:right; color:#166534; font-weight:700;">${inr(p.amount)}</td></tr>`).join('')}</tbody>
+             </table>`;
+
         return `
-          <div style="border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 12px; overflow: hidden;">
-            <div style="background: #f1f5f9; padding: 6px 10px; font-weight: 700; font-size: 11px; color: #1e3a8a; border-bottom: 1px solid #cbd5e1;">
-              ${formatYear(y).toUpperCase()} FEES SUMMARY
+          <div style="border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 14px; padding: 10px; background: #ffffff; page-break-inside: avoid;">
+            <div style="font-weight: 800; font-size: 11px; color: #1e3a8a; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase;">
+              ${formatYear(y).toUpperCase()} FEE LEDGER &amp; SUMMARY
             </div>
-            <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 8px; text-align: center; font-size: 9.5px;">
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">TOTAL PAYABLE</div>
-                <div style="font-weight: 700; margin-top: 2px;">${inr(sum.totalCharged)}</div>
+            <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 6px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 10px; font-size: 9px;">
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">TOTAL CHARGED</div><div style="font-weight:700;">${inr(sum.totalCharged)}</div></div>
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">LATE FEES</div><div style="font-weight:700;">${sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">FINE</div><div style="font-weight:700;">${sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">OTHER</div><div style="font-weight:700;">${sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">CONCESSION</div><div style="font-weight:700; color:#d97706;">${sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">SCHOLARSHIP</div><div style="font-weight:700; color:#d97706;">${sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
+              <div><div style="color:#64748b; font-size: 7.5px; font-weight: 600;">NET PAYABLE</div><div style="font-weight:700;">${inr(sum.netPayable)}</div></div>
+              <div><div style="color:#166534; font-size: 7.5px; font-weight: 600;">PAID</div><div style="font-weight:700; color:#166534;">${inr(sum.totalPaid)}</div></div>
+              <div><div style="color:#b45309; font-size: 7.5px; font-weight: 600;">BALANCE</div><div style="font-weight:700; color:${sum.balance > 0 ? '#b45309' : '#0f172a'};">${inr(sum.balance)}</div></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <div style="font-weight: 700; font-size: 9.5px; color: #334155; margin-bottom: 3px; text-transform: uppercase;">Charges</div>
+                ${chargesRows}
+                <div style="font-weight: 700; font-size: 9.5px; color: #334155; margin-top: 6px; margin-bottom: 3px; text-transform: uppercase;">Concessions &amp; Scholarships</div>
+                ${adjustmentsRows}
               </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">LATE FEES</div>
-                <div style="font-weight: 700; margin-top: 2px;">${sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">FINE</div>
-                <div style="font-weight: 700; margin-top: 2px;">${sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">OTHER</div>
-                <div style="font-weight: 700; margin-top: 2px;">${sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">CONCESSION</div>
-                <div style="font-weight: 700; margin-top: 2px;">${sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">SCHOLARSHIP</div>
-                <div style="font-weight: 700; margin-top: 2px;">${sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#64748b; font-size: 8px; font-weight: 600;">NET PAYABLE</div>
-                <div style="font-weight: 700; margin-top: 2px;">${inr(sum.netPayable)}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#166534; font-size: 8px; font-weight: 600;">PAID</div>
-                <div style="font-weight: 700; color:#166534; margin-top: 2px;">${inr(sum.totalPaid)}</div>
-              </div>
-              <div style="background: #f8fafc; padding: 4px; border-radius: 4px;">
-                <div style="color:#b45309; font-size: 8px; font-weight: 600;">BALANCE</div>
-                <div style="font-weight: 700; color:${sum.balance > 0 ? '#b45309' : '#0f172a'}; margin-top: 2px;">${inr(sum.balance)}</div>
+              <div>
+                <div style="font-weight: 700; font-size: 9.5px; color: #334155; margin-bottom: 3px; text-transform: uppercase;">Payment Receipts</div>
+                ${paymentsRows}
               </div>
             </div>
           </div>
@@ -962,29 +980,13 @@ function StudentReportDialog({
       })
       .join("");
 
-    const chargesRowsHtml = studentCharges
-      .map(
-        (c: any, idx: number) => `
-        <tr>
-          <td style="text-align: center;">${idx + 1}</td>
-          <td>${new Date(c.created_at || Date.now()).toLocaleDateString("en-IN")}</td>
-          <td>${c.fee_head || c.description || "Fee Charge"}</td>
-          <td>${formatYear(c.semester || 1)}</td>
-          <td style="text-align: right;">${inr(c.amount || 0)}</td>
-          <td style="text-align: right;">${c.concession ? inr(c.concession) : "—"}</td>
-          <td style="font-weight: 700; text-align: right;">${inr(Math.max(0, (c.amount || 0) - (c.concession || 0) - (c.scholarship || 0)))}</td>
-        </tr>
-      `
-      )
-      .join("");
-
-    const paymentsRowsHtml = activePayments
+    const overallPaymentsRowsHtml = activePayments
       .map(
         (p: any, idx: number) => `
         <tr>
           <td style="text-align: center;">${idx + 1}</td>
           <td style="font-family: monospace;">${p.reference || "REC-" + p.id.slice(0, 6)}</td>
-          <td>${new Date(p.paidAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+          <td>${new Date(p.paidAt || p.paid_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
           <td style="text-transform: capitalize;">${p.method}</td>
           <td>${formatYear(p.semester)}</td>
           <td style="font-weight: 700; text-align: right;">${inr(p.amount)}</td>
@@ -992,8 +994,6 @@ function StudentReportDialog({
       `
       )
       .join("");
-
-    let secCount = 1;
 
     const html = `<!doctype html>
 <html>
@@ -1010,8 +1010,8 @@ function StudentReportDialog({
       .detail-item { font-size: 11px; }
       .detail-label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.05em; }
       .detail-val { font-weight: 600; color: #0f172a; margin-top: 1px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 16px; font-size: 10px; }
-      th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+      table { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 12px; font-size: 10px; }
+      th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; }
       th { background-color: #f1f5f9; font-weight: 700; text-transform: uppercase; }
       .sec-title { font-weight: 700; font-size: 12px; margin-top: 14px; margin-bottom: 8px; color: #0f172a; text-transform: uppercase; }
       .footer { margin-top: 36px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; page-break-inside: avoid; }
@@ -1043,47 +1043,24 @@ function StudentReportDialog({
 
     ${
       activeYearsForReport.length > 0
-        ? `<div class="sec-title">1. Year-Wise Fees Summary</div>${yearCardsHtml}`
-        : ""
-    }
-
-    <div class="sec-title">${activeYearsForReport.length > 0 ? "2" : "1"}. Fee Ledger Charges Breakdown</div>
-    ${
-      studentCharges.length === 0
-        ? `<p style="color:#64748b;">No fee ledger entries recorded.</p>`
-        : `<table>
-            <thead>
-              <tr>
-                <th style="width:30px; text-align:center;">#</th>
-                <th>Date</th>
-                <th>Fee Head / Description</th>
-                <th>Academic Year</th>
-                <th style="text-align:right;">Base Charge</th>
-                <th style="text-align:right;">Concession</th>
-                <th style="text-align:right;">Net Fee (Rs.)</th>
-              </tr>
-            </thead>
-            <tbody>${chargesRowsHtml}</tbody>
-          </table>`
-    }
-
-    <div class="sec-title">${activeYearsForReport.length > 0 ? "3" : "2"}. Payment Receipts History</div>
-    ${
-      activePayments.length === 0
-        ? `<p style="color:#64748b;">No payment records found.</p>`
-        : `<table>
-            <thead>
-              <tr>
-                <th style="width:30px; text-align:center;">#</th>
-                <th>Receipt / Ref No.</th>
-                <th>Date</th>
-                <th>Payment Method</th>
-                <th>Academic Year</th>
-                <th style="text-align:right;">Amount (Rs.)</th>
-              </tr>
-            </thead>
-            <tbody>${paymentsRowsHtml}</tbody>
-          </table>`
+        ? `<div class="sec-title">Year-Wise Fee Ledgers &amp; Summaries</div>${yearLedgersHtml}`
+        : `<div class="sec-title">Payment Receipts History</div>
+           ${activePayments.length === 0
+             ? `<p style="color:#64748b;">No payment records found.</p>`
+             : `<table>
+                 <thead>
+                   <tr>
+                     <th style="width:30px; text-align:center;">#</th>
+                     <th>Receipt / Ref No.</th>
+                     <th>Date</th>
+                     <th>Payment Method</th>
+                     <th>Academic Year</th>
+                     <th style="text-align:right;">Amount (Rs.)</th>
+                   </tr>
+                 </thead>
+                 <tbody>${overallPaymentsRowsHtml}</tbody>
+               </table>`
+           }`
     }
 
     <div class="footer">
@@ -1170,71 +1147,113 @@ function StudentReportDialog({
               <div className="sm:col-span-2 lg:col-span-3"><span className="text-muted-foreground font-medium">Address:</span> <p className="font-semibold text-foreground">{[student.address, student.city, student.state, student.pincode].filter(Boolean).join(", ") || "—"}</p></div>
             </div>
 
-            {/* Fees Summary (Only if toggled ON) */}
-            {activeYearsForReport.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Fees Summary</h3>
+            {/* Fees & Ledgers Section for Toggled-ON Years */}
+            {activeYearsForReport.length > 0 ? (
+              <div className="space-y-4">
+                <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary border-b pb-1">
+                  Year-Wise Fee Ledgers &amp; Summaries
+                </h3>
                 {activeYearsForReport.map((yNum) => {
                   const sum = semesterSummary(student.id, yNum, { charges, adjustments, payments, structures: feeStructures, student });
+                  const yCharges = studentCharges.filter((c: any) => (c.semester || 1) === yNum);
+                  const yAdjustments = adjustments.filter((a: any) => (a.semester || 1) === yNum);
+                  const yPayments = activePayments.filter((p: any) => (p.semester || 1) === yNum);
+
                   return (
-                    <div key={yNum} className="border rounded-lg p-3 bg-muted/20 space-y-2">
-                      <div className="font-bold text-xs text-blue-600 uppercase">{formatYear(yNum)} Fees Summary</div>
+                    <div key={yNum} className="border rounded-xl p-4 bg-muted/20 space-y-4">
+                      <div className="font-bold text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide flex items-center justify-between border-b pb-2">
+                        <span>{formatYear(yNum)} Fee Ledger &amp; Summary</span>
+                        <Badge variant="outline" className="font-mono text-[11px]">
+                          Net: {inr(sum.netPayable)} · Paid: {inr(sum.totalPaid)} · Bal: {inr(sum.balance)}
+                        </Badge>
+                      </div>
+
+                      {/* 9 Pills Grid */}
                       <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 text-center text-xs">
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">TOTAL PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.totalCharged)}</div></div>
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">LATE FEES</div><div className="font-bold mt-0.5">{sum.totalLate > 0 ? inr(sum.totalLate) : "—"}</div></div>
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">FINE</div><div className="font-bold mt-0.5">{sum.totalFine > 0 ? inr(sum.totalFine) : "—"}</div></div>
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">OTHER</div><div className="font-bold mt-0.5">{sum.totalOther > 0 ? inr(sum.totalOther) : "—"}</div></div>
-                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">CONCESSION</div><div className="font-bold mt-0.5">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
-                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">SCHOLARSHIP</div><div className="font-bold mt-0.5">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600">CONCESSION</div><div className="font-bold text-amber-600 mt-0.5">{sum.totalConcession ? `− ${inr(sum.totalConcession)}` : "—"}</div></div>
+                        <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600">SCHOLARSHIP</div><div className="font-bold text-amber-600 mt-0.5">{sum.totalScholarship ? `− ${inr(sum.totalScholarship)}` : "—"}</div></div>
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-muted-foreground">NET PAYABLE</div><div className="font-bold mt-0.5">{inr(sum.netPayable)}</div></div>
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-emerald-600">PAID</div><div className="font-bold text-emerald-600 mt-0.5">{inr(sum.totalPaid)}</div></div>
                         <div className="bg-background p-1.5 rounded border"><div className="text-[10px] text-amber-600">BALANCE</div><div className="font-bold text-amber-600 mt-0.5">{inr(sum.balance)}</div></div>
+                      </div>
+
+                      {/* Ledger Details Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">Charges</h4>
+                            {yCharges.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">No custom charges added for {formatYear(yNum)}.</p>
+                            ) : (
+                              <div className="border rounded overflow-hidden text-xs">
+                                <table className="w-full text-left">
+                                  <thead className="bg-muted/50 font-semibold border-b">
+                                    <tr><th className="p-1.5 text-center w-6">#</th><th className="p-1.5">Fee Head</th><th className="p-1.5 text-right">Amount</th></tr>
+                                  </thead>
+                                  <tbody className="divide-y">
+                                    {yCharges.map((c: any, i: number) => (
+                                      <tr key={c.id || i}><td className="p-1.5 text-center text-muted-foreground">{i + 1}</td><td className="p-1.5 font-medium">{c.fee_head || c.description || 'Charge'}</td><td className="p-1.5 text-right font-semibold">{inr(c.amount)}</td></tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">Concessions &amp; Scholarships</h4>
+                            {yAdjustments.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">No concessions or scholarships applied for {formatYear(yNum)}.</p>
+                            ) : (
+                              <div className="border rounded overflow-hidden text-xs">
+                                <table className="w-full text-left">
+                                  <thead className="bg-muted/50 font-semibold border-b">
+                                    <tr><th className="p-1.5 text-center w-6">#</th><th className="p-1.5">Type</th><th className="p-1.5">Label</th><th className="p-1.5 text-right">Amount</th></tr>
+                                  </thead>
+                                  <tbody className="divide-y">
+                                    {yAdjustments.map((a: any, i: number) => (
+                                      <tr key={a.id || i}><td className="p-1.5 text-center text-muted-foreground">{i + 1}</td><td className="p-1.5 capitalize font-medium">{a.type}</td><td className="p-1.5">{a.label || 'Adjustment'}</td><td className="p-1.5 text-right font-semibold text-amber-600">− {inr(a.amount)}</td></tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">Payment Receipts</h4>
+                          {yPayments.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No payment receipts recorded for {formatYear(yNum)}.</p>
+                          ) : (
+                            <div className="border rounded overflow-hidden text-xs">
+                              <table className="w-full text-left">
+                                <thead className="bg-muted/50 font-semibold border-b">
+                                  <tr><th className="p-1.5 text-center w-6">#</th><th className="p-1.5">Receipt Ref</th><th className="p-1.5">Date</th><th className="p-1.5">Mode</th><th className="p-1.5 text-right">Amount</th></tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                  {yPayments.map((p: any, i: number) => (
+                                    <tr key={p.id || i}><td className="p-1.5 text-center text-muted-foreground">{i + 1}</td><td className="p-1.5 font-mono">{p.reference || 'REC-'+p.id.slice(0,6)}</td><td className="p-1.5">{new Date(p.paidAt || p.paid_at).toLocaleDateString('en-IN')}</td><td className="p-1.5 capitalize">{p.method}</td><td className="p-1.5 text-right font-bold text-emerald-600">{inr(p.amount)}</td></tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
+            ) : (
+              <div className="p-4 border rounded-xl bg-muted/20 text-center text-xs text-muted-foreground">
+                No specific year fees summary toggled ON. Turn ON any year toggle in the Fees Summary section to view and print its complete fee ledger.
+              </div>
             )}
-
-            {/* Fee Ledger Breakdown */}
-            <div className="space-y-3">
-              <h3 className="font-display font-bold text-sm uppercase tracking-wide text-primary">Fee Ledger Charges Breakdown</h3>
-              {studentCharges.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No fee ledger entries recorded.</p>
-              ) : (
-                <div className="border rounded-lg overflow-hidden text-xs">
-                  <table className="w-full text-left">
-                    <thead className="bg-muted/60 font-semibold border-b">
-                      <tr>
-                        <th className="p-2 text-center w-8">#</th>
-                        <th className="p-2">Date</th>
-                        <th className="p-2">Fee Head / Description</th>
-                        <th className="p-2">Year</th>
-                        <th className="p-2 text-right">Base Charge</th>
-                        <th className="p-2 text-right">Concession</th>
-                        <th className="p-2 text-right">Net Fee</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {studentCharges.map((c: any, idx: number) => {
-                        const net = Math.max(0, (c.amount || 0) - (c.concession || 0) - (c.scholarship || 0));
-                        return (
-                          <tr key={c.id || idx}>
-                            <td className="p-2 text-center text-muted-foreground">{idx + 1}</td>
-                            <td className="p-2">{new Date(c.created_at || Date.now()).toLocaleDateString("en-IN")}</td>
-                            <td className="p-2 font-medium">{c.fee_head || c.description || "Fee Charge"}</td>
-                            <td className="p-2">{formatYear(c.semester || 1)}</td>
-                            <td className="p-2 text-right">{inr(c.amount || 0)}</td>
-                            <td className="p-2 text-right text-muted-foreground">{c.concession ? inr(c.concession) : "—"}</td>
-                            <td className="p-2 text-right font-bold">{inr(net)}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
 
             {/* Payment Receipts History */}
             <div className="space-y-3">
