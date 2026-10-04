@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -22,6 +23,7 @@ import { useLocation } from "@tanstack/react-router";
 import { SplashScreen } from "@/components/splash-screen";
 import { SupabaseStatus } from "@/components/supabase-status";
 import { useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 function NotFoundComponent() {
   return (
@@ -45,21 +47,28 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error("Root Error Boundary Caught:", error);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+      ? error
+      : (error as any)?.message || null;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center space-y-3">
         <h1 className="font-display text-xl font-semibold text-foreground">This page didn't load</h1>
         <p className="text-sm text-muted-foreground">Something went wrong. Try again or go home.</p>
-        {error?.message && (
+        {errorMessage && (
           <div className="mt-2 text-left bg-muted/60 p-3 rounded text-xs font-mono text-rose-600 dark:text-rose-400 wrap-break-word max-h-40 overflow-auto border">
-            {error.message}
+            {errorMessage}
           </div>
         )}
         <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -153,6 +162,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        <Analytics />
         <Scripts />
       </body>
     </html>
