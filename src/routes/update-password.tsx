@@ -59,16 +59,6 @@ function UpdatePassword() {
     if (authError) {
       setError(authError.message);
     } else {
-      // Mark their account as active in the user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ status: 'active' })
-        .eq('id', user.id);
-        
-      if (roleError) {
-        console.error("Failed to set user status to active:", roleError);
-      }
-
       await supabase.auth.signOut();
       toast.success("Password set successfully! Please log in with your new password.");
       router.navigate({ to: '/login', replace: true });

@@ -59,12 +59,12 @@ serve(async (req) => {
       throw new Error("Invalid email format. Please provide a valid email address (e.g. user@college.edu)")
     }
 
-    const requestOtpRedirectUrl = `${redirectTo ? new URL(redirectTo).origin : 'https://ichacc.online'}/request-otp?email=${encodeURIComponent(cleanedEmail)}`
+    const redirectUrl = redirectTo || 'https://ichacc.online/update-password'
 
-    // Generate link / invite user with custom redirect to /request-otp
+    // Generate link / invite user
     let inviteUserRes = await supabaseAdmin.auth.admin.inviteUserByEmail(cleanedEmail, {
       data: { name: name, full_name: name },
-      redirectTo: requestOtpRedirectUrl
+      redirectTo: redirectUrl
     })
 
     if (inviteUserRes.error && inviteUserRes.error.message.includes('already exists')) {
@@ -74,7 +74,7 @@ serve(async (req) => {
         email: cleanedEmail,
         options: {
           data: { name: name, full_name: name },
-          redirectTo: requestOtpRedirectUrl
+          redirectTo: redirectUrl
         }
       })
       if (!genRes.error) {

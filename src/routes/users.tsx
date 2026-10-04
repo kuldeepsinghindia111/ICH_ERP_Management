@@ -686,9 +686,20 @@ function UserVerificationDialog({ user, onClose }: { user: any; onClose: () => v
 
 function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
   const [open, setOpen] = useState(false);
-  const [verifyingUser, setVerifyingUser] = useState<any | null>(null);
   const queryClient = useQueryClient();
   
+  const approveUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('user_roles').update({ status: 'active' }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("User approved successfully");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const removeUserMutation = useMutation({
     mutationFn: async (id: string) => {
       const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
@@ -711,7 +722,7 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
           <Button variant="outline" size="sm" className="relative">
             <Clock className="mr-1 h-4 w-4 text-orange-500" />
             Pending Invites ({pendingUsers.length})
-            {pendingUsers.some(u => u.status === 'otp_requested') && (
+            {pendingUsers.some(u => u.status === 'otp_requested' || u.status === 'pending') && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
@@ -722,10 +733,10 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500" /> Pending Invites & Verification
+              <Clock className="w-5 h-5 text-orange-500" /> Pending Invites
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Manage pending invitations and process user 4-digit OTP approvals.
+              Manage pending invitations and approve new users.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -733,35 +744,26 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
               <p className="text-sm text-muted-foreground text-center py-4">No pending invites.</p>
             ) : (
               pendingUsers.map((u) => {
-                const isOtpReq = u.status === 'otp_requested';
                 return (
-                  <div key={u.id} className={`flex items-center justify-between p-3.5 border rounded-xl transition-colors ${isOtpReq ? 'border-blue-300 bg-blue-50/40 dark:bg-blue-950/20' : 'bg-muted/30 border-dashed'}`}>
+                  <div key={u.id} className="flex items-center justify-between p-3.5 border rounded-xl transition-colors bg-muted/30 border-dashed">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm">{u.name || u.email}</p>
-                        {isOtpReq ? (
-                          <Badge variant="default" className="bg-blue-600 text-white text-[10px] animate-pulse">
-                            OTP Request by User
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[10px]">
-                            Pending Request
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[10px]">
+                          Pending Approval
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground capitalize">{u.role} · {u.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        variant={isOtpReq ? "default" : "outline"}
-                        className={`text-xs gap-1 ${isOtpReq ? "bg-blue-600 hover:bg-blue-700 text-white font-medium" : ""}`}
-                        onClick={() => {
-                          setVerifyingUser(u);
-                        }}
+                        className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                        onClick={() => approveUserMutation.mutate(u.id)}
+                        disabled={approveUserMutation.isPending}
                       >
                         <ShieldCheck className="h-3.5 w-3.5" />
-                        User Verification Process
+                        Approve User
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => removeUserMutation.mutate(u.id)} disabled={removeUserMutation.isPending} className="h-8 w-8 text-destructive hover:bg-destructive/10">
                         <Trash2 className="w-4 h-4" />
@@ -774,10 +776,6 @@ function PendingInvitesDialog({ pendingUsers }: { pendingUsers: any[] }) {
           </div>
         </DialogContent>
       </Dialog>
-
-      {verifyingUser && (
-        <UserVerificationDialog user={verifyingUser} onClose={() => setVerifyingUser(null)} />
-      )}
     </>
   );
 }
@@ -852,7 +850,7 @@ function AddUserDialog() {
           </div>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1 bg-muted/30 p-2 rounded border">
             <ShieldCheck className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-            Non-admin invitees will be required to enter a 4-digit email code for 2-step login verification.
+            Invited users will require your approval from the Pending Invites tab before they can log in.
           </p>
         </div>
         <DialogFooter>
