@@ -59,7 +59,8 @@ serve(async (req) => {
       throw new Error("Invalid email format. Please provide a valid email address (e.g. user@college.edu)")
     }
 
-    const redirectUrl = redirectTo || 'https://ichacc.online/update-password'
+    const isLocal = redirectTo && (redirectTo.includes('localhost') || redirectTo.includes('127.0.0.1') || redirectTo.includes('172.') || redirectTo.includes('192.'));
+    const redirectUrl = (!redirectTo || isLocal) ? 'https://ichacc.online/update-password' : redirectTo;
 
     // Generate link / invite user
     let inviteUserRes = await supabaseAdmin.auth.admin.inviteUserByEmail(cleanedEmail, {

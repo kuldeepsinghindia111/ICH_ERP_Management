@@ -46,7 +46,9 @@ function Login() {
     // Forgot Password Flow
     if (isResetMode) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') || window.location.origin.includes('172.') || window.location.origin.includes('192.'))
+          ? 'https://ichacc.online/update-password'
+          : `${window.location.origin}/update-password`,
       });
 
       if (error) {
