@@ -39,30 +39,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const currentUserIdRef = useRef<string | null>(null);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (!error && data) {
-      if (data.status !== 'active' && data.role !== 'admin') {
-        // Unapproved / pending user is forcibly signed out and denied access
-        currentUserIdRef.current = null;
-        await supabase.auth.signOut();
-        setProfile(null);
-        setUser(null);
-        setSession(null);
-        return;
+  const fetchProfile = async (userId: string, userEmail?: string | null) => {
+    try {
+      // 1. Try finding by ID
+      let { data, error } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      // 2. If not found by ID and email exists, fallback to finding by email
+      if (!data && userEmail) {
+        const { data: byEmail } = await supabase
+          .from('user_roles')
+          .select('*')
+          .ilike('email', userEmail)
+          .maybeSingle();
+
+        if (byEmail) {
+          data = byEmail;
+          // Sync auth ID and ensure active status so subsequent queries by ID work
+          await supabase
+            .from('user_roles')
+            .update({ id: userId, status: 'active' })
+            .ilike('email', userEmail);
+        }
       }
-      setProfile(data as UserProfile);
-    } else {
-      // If the user's role/profile is missing, terminate session
-      currentUserIdRef.current = null;
-      await supabase.auth.signOut();
-      setProfile(null);
-      setUser(null);
-      setSession(null);
+
+      if (data) {
+        setProfile(data as UserProfile);
+      }
+    } catch (err) {
+      console.error('fetchProfile error:', err);
     }
   };
 
@@ -84,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           currentUserIdRef.current = session.user.id;
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user.email);
         }
       } catch (err) {
         console.error('initAuth error:', err);
@@ -106,9 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        if (currentUserIdRef.current !== session.user.id) {
+        if (currentUserIdRef.current !== session.user.id || !profile) {
           currentUserIdRef.current = session.user.id;
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user.email);
         }
       } else {
         currentUserIdRef.current = null;
@@ -126,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refetchProfile = async () => {
     if (user?.id) {
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, user.email);
     }
   };
 

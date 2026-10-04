@@ -236,12 +236,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
       else if (user && location.pathname === '/login') {
         router.navigate({ to: '/', replace: true });
       }
-      // 3. SECURE LOCK: If they are logged in but still "pending", FORCE them to update-password page
-      else if (user && profile?.status === 'pending' && location.pathname !== '/update-password') {
-        router.navigate({ to: '/update-password', replace: true });
-      }
-      // 4. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
-      else if (user && profile?.status === 'active' && location.pathname !== '/update-password') {
+      // 3. GLOBAL ROUTE PROTECTION: Check if they have permission for the route they are trying to access
+      else if (user && location.pathname !== '/update-password') {
         const requiredSection = getRequiredSection(location.pathname);
         if (requiredSection && !can(requiredSection, 'view')) {
           router.navigate({ to: '/', replace: true });

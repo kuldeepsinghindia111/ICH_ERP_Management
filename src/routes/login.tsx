@@ -75,36 +75,35 @@ function Login() {
       return;
     }
 
-    // Check user role & status
-    let userRole = '';
-    let userStatus = '';
-    const { data: roleById } = await supabase
-      .from('user_roles')
-      .select('role, status')
-      .eq('id', authData.user.id)
-      .maybeSingle();
-
-    if (roleById) {
-      userRole = roleById.role;
-      userStatus = roleById.status || 'pending';
-    } else {
-      const { data: roleByEmail } = await supabase
+    // Sync user role and ensure active status upon login
+    try {
+      const { data: roleById } = await supabase
         .from('user_roles')
-        .select('role, status')
-        .ilike('email', cleanedEmail)
+        .select('id, role, status')
+        .eq('id', authData.user.id)
         .maybeSingle();
-      if (roleByEmail) {
-        userRole = roleByEmail.role;
-        userStatus = roleByEmail.status || 'pending';
-      }
-    }
 
-    // UNAPPROVED LOCK: Block sign-in if status is not active
-    if (userStatus !== 'active' && userRole !== 'admin') {
-      await supabase.auth.signOut();
-      setError("Account pending Admin approval. Please contact your Administrator to verify your account.");
-      setLoading(false);
-      return;
+      if (!roleById) {
+        const { data: roleByEmail } = await supabase
+          .from('user_roles')
+          .select('id, role, status')
+          .ilike('email', cleanedEmail)
+          .maybeSingle();
+
+        if (roleByEmail) {
+          await supabase
+            .from('user_roles')
+            .update({ id: authData.user.id, status: 'active' })
+            .ilike('email', cleanedEmail);
+        }
+      } else if (roleById.status !== 'active') {
+        await supabase
+          .from('user_roles')
+          .update({ status: 'active' })
+          .eq('id', authData.user.id);
+      }
+    } catch (e) {
+      console.warn("Could not sync user status on login:", e);
     }
 
     toast.success("Login successful");

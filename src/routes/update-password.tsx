@@ -59,6 +59,22 @@ function UpdatePassword() {
     if (authError) {
       setError(authError.message);
     } else {
+      try {
+        await supabase
+          .from('user_roles')
+          .update({ status: 'active' })
+          .eq('id', user.id);
+
+        if (user.email) {
+          await supabase
+            .from('user_roles')
+            .update({ status: 'active', id: user.id })
+            .ilike('email', user.email);
+        }
+      } catch (err) {
+        console.warn("Could not update status to active:", err);
+      }
+
       await supabase.auth.signOut();
       toast.success("Password set successfully! Please log in with your new password.");
       router.navigate({ to: '/login', replace: true });
